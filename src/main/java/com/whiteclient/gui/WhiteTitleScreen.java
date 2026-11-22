@@ -122,13 +122,12 @@ public class WhiteTitleScreen extends Screen {
 		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.3) * 1.2f);
 		String word = "WHITECLIENT";
 		float tw = textRenderer.getWidth(UiFont.title(word));
-		float logoW = 34;
+		float logoW = 38;
 		float total = logoW + 6 + tw;
 		float lx = cx - total / 2f;
 		int la = (int) (255 * li);
-		Render2D.circle(ctx, lx + logoW / 2f, logoY, 15, Colors.withAlpha(0xFFFFFF, (int) (la * 0.08f)));
-		Render2D.logo(ctx, lx + logoW / 2f, logoY, 11, time);
-		ctx.drawText(textRenderer, UiFont.title(word), Math.round(lx + logoW + 6), Math.round(logoY - 8), Colors.withAlpha(0xFFFFFF, la), false);
+		Render2D.planetLogo(ctx, lx + logoW / 2f, logoY, 8.5f, time, la);
+		ctx.drawText(textRenderer, UiFont.title(word), Math.round(lx + logoW + 6), Math.round(logoY + 3), Colors.withAlpha(0xFFFFFF, la), false);
 		String tag = "visuals client  ·  1.21.11";
 		UiFont.drawCentered(ctx, textRenderer, tag, cx, logoY + 16, Colors.withAlpha(SUB, la));
 		m.popMatrix();

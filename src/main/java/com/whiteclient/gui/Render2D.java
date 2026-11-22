@@ -218,6 +218,43 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
+	/** Big planet logo: white planet with a tilted dotted ring and a small orbiting moon. */
+	public static void planetLogo(DrawContext ctx, float cx, float cy, float r, float time, int alpha) {
+		double tilt = Math.toRadians(-20);
+		float ra = r * 1.95f, rb = r * 0.52f;
+		float dot = Math.max(0.45f, r * 0.085f);
+		int n = 70;
+		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
+		// back half of the ring
+		for (int i = 0; i < n; i++) {
+			double a = Math.PI * 2 * i / n;
+			if (Math.sin(a) >= 0) {
+				continue;
+			}
+			float ex = (float) Math.cos(a) * ra, ey = (float) Math.sin(a) * rb;
+			circle(ctx, cx + ex * cos - ey * sin, cy + ex * sin + ey * cos, dot, Colors.withAlpha(0xFFFFFF, (int) (alpha * 0.45f)));
+		}
+		circle(ctx, cx, cy, r * 1.25f, Colors.withAlpha(0xFFFFFF, (int) (alpha * 0.06f)));
+		circle(ctx, cx, cy, r, Colors.withAlpha(0xFFFFFF, alpha));
+		// soft shadow on the planet's lower right
+		circle(ctx, cx + r * 0.28f, cy + r * 0.3f, r * 0.62f, Colors.withAlpha(0xD8DCE6, (int) (alpha * 0.55f)));
+		circle(ctx, cx - r * 0.12f, cy - r * 0.12f, r * 0.7f, Colors.withAlpha(0xFFFFFF, alpha));
+		// front half of the ring
+		for (int i = 0; i < n; i++) {
+			double a = Math.PI * 2 * i / n;
+			if (Math.sin(a) < 0) {
+				continue;
+			}
+			float ex = (float) Math.cos(a) * ra, ey = (float) Math.sin(a) * rb;
+			circle(ctx, cx + ex * cos - ey * sin, cy + ex * sin + ey * cos, dot, Colors.withAlpha(0xFFFFFF, alpha));
+		}
+		double m = time * 0.9;
+		float mx = (float) Math.cos(m) * ra * 1.08f, my = (float) Math.sin(m) * rb * 1.08f;
+		if (Math.sin(m) >= 0 || Math.abs(mx) > r) {
+			circle(ctx, cx + mx * cos - my * sin, cy + mx * sin + my * cos, r * 0.16f, Colors.withAlpha(0xFFFFFF, alpha));
+		}
+	}
+
 	/** Small white planet-with-ring logo. */
 	public static void logo(DrawContext ctx, float cx, float cy, float size, float time) {
 		float r = size * 0.42f;
