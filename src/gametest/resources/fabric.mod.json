@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"id": "whiteclient-gametest",
+	"version": "1.0.0",
+	"name": "WHITECLIENT game test",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": ["com.whiteclient.test.WhiteClientGameTest"]
+	},
+	"depends": {
+		"whiteclient": "*"
+	}
+}
