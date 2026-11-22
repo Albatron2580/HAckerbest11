@@ -172,6 +172,69 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
+	/**
+	 * Filled polygon (any shape, even-odd rule) with anti-aliased left/right edges.
+	 * {@code pts} = x0,y0,x1,y1,... in GUI coordinates.
+	 */
+	public static void polygon(DrawContext ctx, float[] pts, int argb) {
+		int n = pts.length / 2;
+		if (n < 3 || (argb >>> 24) == 0) {
+			return;
+		}
+		int s = scale();
+		Matrix3x2fStack m = ctx.getMatrices();
+		m.pushMatrix();
+		m.scale(1f / s, 1f / s);
+		float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+		float[] p = new float[pts.length];
+		for (int i = 0; i < pts.length; i++) {
+			p[i] = pts[i] * s;
+		}
+		for (int i = 0; i < n; i++) {
+			minY = Math.min(minY, p[i * 2 + 1]);
+			maxY = Math.max(maxY, p[i * 2 + 1]);
+		}
+		float[] xs = new float[n];
+		for (int py = (int) Math.floor(minY); py < (int) Math.ceil(maxY); py++) {
+			float cy = py + 0.5f;
+			int count = 0;
+			for (int i = 0; i < n; i++) {
+				float x1 = p[i * 2], y1 = p[i * 2 + 1];
+				float x2 = p[((i + 1) % n) * 2], y2 = p[((i + 1) % n) * 2 + 1];
+				if ((y1 <= cy && y2 > cy) || (y2 <= cy && y1 > cy)) {
+					xs[count++] = x1 + (cy - y1) / (y2 - y1) * (x2 - x1);
+				}
+			}
+			java.util.Arrays.sort(xs, 0, count);
+			for (int k = 0; k + 1 < count; k += 2) {
+				fillSpan(ctx, xs[k], xs[k + 1], py, argb);
+			}
+		}
+		m.popMatrix();
+	}
+
+	/** Thick line segment as a polygon. */
+	public static void line(DrawContext ctx, float x1, float y1, float x2, float y2, float width, int argb) {
+		float dx = x2 - x1, dy = y2 - y1;
+		float len = (float) Math.sqrt(dx * dx + dy * dy);
+		if (len < 1.0e-4f) {
+			return;
+		}
+		float nx = -dy / len * width / 2f, ny = dx / len * width / 2f;
+		polygon(ctx, new float[]{x1 + nx, y1 + ny, x2 + nx, y2 + ny, x2 - nx, y2 - ny, x1 - nx, y1 - ny}, argb);
+	}
+
+	/** Horizontal gradient (left colour -> right colour) made of thin vertical strips. */
+	public static void hGradient(DrawContext ctx, float x, float y, float w, float h, int left, int right) {
+		int steps = Math.max(2, Math.min(64, (int) w));
+		for (int i = 0; i < steps; i++) {
+			float x0 = x + w * i / steps;
+			float x1 = x + w * (i + 1) / steps;
+			int c = Colors.mixArgb(left, right, (i + 0.5f) / steps);
+			ctx.fill(Math.round(x0), Math.round(y), Math.round(x1), Math.round(y + h), c);
+		}
+	}
+
 	/** Rounded rectangle with a 1px border (border drawn behind the fill). */
 	public static void roundRectBordered(DrawContext ctx, float x, float y, float w, float h, float radius, int fill, int border) {
 		roundRect(ctx, x - 1, y - 1, w + 2, h + 2, radius + 1, border);

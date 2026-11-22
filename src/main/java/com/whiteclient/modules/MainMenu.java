@@ -10,6 +10,8 @@ public class MainMenu extends Module {
 	public final ModeSetting background = add(new ModeSetting("Background", "Energy", "Energy", "Panorama"));
 	public final BoolSetting account = add(new BoolSetting("Show Account", true));
 	public final BoolSetting music = add(new BoolSetting("Show Now Playing", true));
+	public final BoolSetting player = add(new BoolSetting("Walking Player", true));
+	public final ModeSetting playerSide = add(new ModeSetting("Player Side", "Right", "Right", "Left"));
 
 	public MainMenu() {
 		super("Main Menu", "WHITECLIENT title screen", Category.MENU, true);

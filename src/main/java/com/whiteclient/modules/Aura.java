@@ -23,7 +23,7 @@ public class Aura extends Module {
 	public final BoolSetting others = add(new BoolSetting("Show On Others", false));
 
 	public Aura() {
-		super("Aura", "Soft glow around your player", Category.VISUALS, true);
+		super("Aura", "Soft glow around your player", Category.COSMETICS, true);
 	}
 
 	@Override

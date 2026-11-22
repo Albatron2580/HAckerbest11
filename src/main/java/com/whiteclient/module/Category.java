@@ -1,11 +1,13 @@
 package com.whiteclient.module;
 
 public enum Category {
-	VISUALS("Visuals", "Cosmetics on your player"),
-	WORLD("World", "Sky, particles, 3D text"),
+	COSMETICS("Cosmetics", "Halo, wings, pets & trails"),
+	PVP("PvP", "Effects around your target"),
+	WORLD("World", "Sky, weather & particles"),
 	MUSIC("Music", "Spotify, lyrics & 3D text"),
 	HUD("HUD", "On-screen overlays"),
-	MENU("Menu", "Menus & backgrounds");
+	MENU("Menu", "Menus & backgrounds"),
+	CLIENT("Client", "Theme & wardrobe");
 
 	public final String title;
 	public final String subtitle;
@@ -13,5 +15,10 @@ public enum Category {
 	Category(String title, String subtitle) {
 		this.title = title;
 		this.subtitle = subtitle;
+	}
+
+	/** Categories shown as cards / in the sidebar. */
+	public boolean listed() {
+		return this != CLIENT;
 	}
 }

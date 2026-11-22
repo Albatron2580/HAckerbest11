@@ -80,4 +80,121 @@ public final class Icons {
 		Render2D.roundRect(ctx, cx - s * 0.0f, cy - s * 0.38f, s * 0.08f, s * 0.64f, s * 0.04f, c);
 		Render2D.roundRect(ctx, cx - s * 0.0f, cy - s * 0.38f, s * 0.3f, s * 0.12f, s * 0.06f, c);
 	}
+
+	public static void shield(DrawContext ctx, float cx, float cy, float s, int c, int cut) {
+		float w = s * 0.42f, top = cy - s * 0.46f, mid = cy + s * 0.08f, bot = cy + s * 0.5f;
+		float[] pts = new float[2 * 14];
+		int i = 0;
+		pts[i++] = cx; pts[i++] = top;
+		pts[i++] = cx + w; pts[i++] = top + s * 0.12f;
+		pts[i++] = cx + w; pts[i++] = mid;
+		for (int k = 1; k <= 4; k++) {
+			double a = Math.PI / 2 * k / 5.0;
+			pts[i++] = cx + (float) Math.cos(a) * w; pts[i++] = mid + (float) Math.sin(a) * (bot - mid);
+		}
+		pts[i++] = cx; pts[i++] = bot;
+		for (int k = 4; k >= 1; k--) {
+			double a = Math.PI / 2 * k / 5.0;
+			pts[i++] = cx - (float) Math.cos(a) * w; pts[i++] = mid + (float) Math.sin(a) * (bot - mid);
+		}
+		pts[i++] = cx - w; pts[i++] = mid;
+		pts[i++] = cx - w; pts[i++] = top + s * 0.12f;
+		Render2D.polygon(ctx, java.util.Arrays.copyOf(pts, i), c);
+		// check mark cut out in the card colour
+		float t = Math.max(0.7f, s * 0.09f);
+		Render2D.line(ctx, cx - s * 0.17f, cy + s * 0.0f, cx - s * 0.04f, cy + s * 0.13f, t, cut);
+		Render2D.line(ctx, cx - s * 0.04f, cy + s * 0.13f, cx + s * 0.2f, cy - s * 0.14f, t, cut);
+	}
+
+	public static void sparkle(DrawContext ctx, float cx, float cy, float s, int c) {
+		star4(ctx, cx - s * 0.08f, cy + s * 0.05f, s * 0.78f, c);
+		star4(ctx, cx + s * 0.3f, cy - s * 0.3f, s * 0.34f, c);
+	}
+
+	public static void star4(DrawContext ctx, float cx, float cy, float s, int c) {
+		float r = s * 0.5f, k = s * 0.11f;
+		Render2D.polygon(ctx, new float[]{cx, cy - r, cx + k, cy - k, cx + r, cy, cx + k, cy + k, cx, cy + r, cx - k, cy + k, cx - r, cy, cx - k, cy - k}, c);
+	}
+
+	public static void hud(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.7f, s * 0.09f);
+		Render2D.roundRectOutline(ctx, cx - s * 0.42f, cy - s * 0.36f, s * 0.84f, s * 0.72f, s * 0.14f, t, c);
+		Render2D.roundRect(ctx, cx - s * 0.26f, cy - s * 0.2f, s * 0.24f, s * 0.18f, s * 0.04f, c);
+		Render2D.roundRect(ctx, cx - s * 0.26f, cy + s * 0.08f, s * 0.52f, t, t / 2, c);
+		Render2D.roundRect(ctx, cx + s * 0.06f, cy - s * 0.17f, s * 0.2f, t, t / 2, c);
+	}
+
+	public static void search(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.7f, s * 0.1f);
+		float r = s * 0.27f;
+		Render2D.roundRectOutline(ctx, cx - s * 0.1f - r, cy - s * 0.1f - r, r * 2, r * 2, r, t, c);
+		Render2D.line(ctx, cx + s * 0.1f, cy + s * 0.1f, cx + s * 0.36f, cy + s * 0.36f, t * 1.2f, c);
+	}
+
+	public static void palette(DrawContext ctx, float cx, float cy, float s, int c, int cut) {
+		Render2D.circle(ctx, cx, cy, s * 0.42f, c);
+		Render2D.circle(ctx, cx + s * 0.16f, cy + s * 0.16f, s * 0.1f, cut);
+		Render2D.circle(ctx, cx - s * 0.18f, cy - s * 0.08f, s * 0.07f, cut);
+		Render2D.circle(ctx, cx - s * 0.02f, cy - s * 0.22f, s * 0.07f, cut);
+		Render2D.circle(ctx, cx + s * 0.2f, cy - s * 0.1f, s * 0.07f, cut);
+	}
+
+	public static void shirt(DrawContext ctx, float cx, float cy, float s, int c) {
+		Render2D.polygon(ctx, new float[]{
+				cx - s * 0.14f, cy - s * 0.4f, cx - s * 0.46f, cy - s * 0.24f, cx - s * 0.34f, cy - s * 0.02f, cx - s * 0.24f, cy - s * 0.08f,
+				cx - s * 0.24f, cy + s * 0.42f, cx + s * 0.24f, cy + s * 0.42f, cx + s * 0.24f, cy - s * 0.08f, cx + s * 0.34f, cy - s * 0.02f,
+				cx + s * 0.46f, cy - s * 0.24f, cx + s * 0.14f, cy - s * 0.4f, cx, cy - s * 0.28f}, c);
+	}
+
+	public static void heart(DrawContext ctx, float cx, float cy, float s, int c) {
+		float r = s * 0.22f;
+		Render2D.circle(ctx, cx - r * 0.95f, cy - s * 0.1f, r, c);
+		Render2D.circle(ctx, cx + r * 0.95f, cy - s * 0.1f, r, c);
+		Render2D.polygon(ctx, new float[]{cx - r * 1.93f, cy - s * 0.04f, cx + r * 1.93f, cy - s * 0.04f, cx, cy + s * 0.42f}, c);
+	}
+
+	public static void sword(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.8f, s * 0.12f);
+		Render2D.line(ctx, cx - s * 0.3f, cy + s * 0.3f, cx + s * 0.36f, cy - s * 0.36f, t, c);
+		Render2D.line(ctx, cx - s * 0.36f, cy + s * 0.06f, cx - s * 0.06f, cy + s * 0.36f, t, c);
+	}
+
+	public static void close(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.7f, s * 0.1f);
+		Render2D.line(ctx, cx - s * 0.3f, cy - s * 0.3f, cx + s * 0.3f, cy + s * 0.3f, t, c);
+		Render2D.line(ctx, cx - s * 0.3f, cy + s * 0.3f, cx + s * 0.3f, cy - s * 0.3f, t, c);
+	}
+
+	public static void back(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.7f, s * 0.1f);
+		Render2D.line(ctx, cx + s * 0.12f, cy - s * 0.3f, cx - s * 0.18f, cy, t, c);
+		Render2D.line(ctx, cx - s * 0.18f, cy, cx + s * 0.12f, cy + s * 0.3f, t, c);
+	}
+
+	public static void paw(DrawContext ctx, float cx, float cy, float s, int c) {
+		Render2D.roundRect(ctx, cx - s * 0.22f, cy - s * 0.02f, s * 0.44f, s * 0.36f, s * 0.16f, c);
+		Render2D.circle(ctx, cx - s * 0.3f, cy - s * 0.12f, s * 0.1f, c);
+		Render2D.circle(ctx, cx - s * 0.11f, cy - s * 0.3f, s * 0.1f, c);
+		Render2D.circle(ctx, cx + s * 0.11f, cy - s * 0.3f, s * 0.1f, c);
+		Render2D.circle(ctx, cx + s * 0.3f, cy - s * 0.12f, s * 0.1f, c);
+	}
+
+	public static void drop(DrawContext ctx, float cx, float cy, float s, int c) {
+		Render2D.circle(ctx, cx, cy + s * 0.12f, s * 0.26f, c);
+		Render2D.polygon(ctx, new float[]{cx, cy - s * 0.44f, cx + s * 0.25f, cy + s * 0.06f, cx - s * 0.25f, cy + s * 0.06f}, c);
+	}
+
+	public static void drag(DrawContext ctx, float cx, float cy, float s, int c) {
+		for (int x = -1; x <= 1; x += 2) {
+			for (int y = -1; y <= 1; y++) {
+				Render2D.circle(ctx, cx + x * s * 0.14f, cy + y * s * 0.26f, s * 0.08f, c);
+			}
+		}
+	}
+
+	public static void resize(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.6f, s * 0.09f);
+		Render2D.line(ctx, cx - s * 0.32f, cy + s * 0.32f, cx + s * 0.32f, cy - s * 0.32f, t, c);
+		Render2D.line(ctx, cx + s * 0.02f, cy + s * 0.32f, cx + s * 0.32f, cy + s * 0.02f, t, c);
+	}
 }

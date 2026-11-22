@@ -27,7 +27,7 @@ public class Halo extends Module {
 	public final NumberSetting range = add(new NumberSetting("Others Range", 48, 8, 128, 4));
 
 	public Halo() {
-		super("Halo", "Glowing halo with spikes above your head", Category.VISUALS, true);
+		super("Halo", "Glowing halo with spikes above your head", Category.COSMETICS, true);
 	}
 
 	@Override

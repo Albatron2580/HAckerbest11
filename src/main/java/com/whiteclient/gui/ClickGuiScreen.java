@@ -3,96 +3,157 @@ package com.whiteclient.gui;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
-import com.whiteclient.modules.MenuBackground;
+import com.whiteclient.modules.Theme;
 import com.whiteclient.render.Colors;
 import com.whiteclient.setting.ActionSetting;
 import com.whiteclient.setting.BoolSetting;
-import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.setting.ColorSetting;
+import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.Setting;
 import com.whiteclient.setting.TextSetting;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.CharInput;
 import net.minecraft.client.input.KeyInput;
+import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.function.Supplier;
 
-/** The WHITECLIENT menu (Right Shift): white/black, sidebar categories, module cards with settings. */
+/**
+ * The WHITECLIENT menu (Right Shift).
+ * Home: big category cards. Window: draggable / resizable panel with sidebar, module list and settings.
+ */
 public class ClickGuiScreen extends Screen {
-	private static final int PANEL = 0xF20B0B0F;
-	private static final int SIDEBAR = 0xFF101015;
-	private static final int CARD = 0xFF16161C;
-	private static final int CARD_HOVER = 0xFF1C1C24;
-	private static final int TEXT = 0xFFF4F4F6;
-	private static final int SUB = 0xFF8C8C98;
-	private static final int DIM = 0xFF5A5A66;
-	private static final int LINE = 0x18FFFFFF;
-	private static final int SIDEBAR_W = 112;
-	private static final int HEADER_H = 34;
+	private enum View { HOME, WINDOW }
 
-	private static Category lastCategory = Category.VISUALS;
+	private static final int SIDEBAR = 104;
+	private static final int HEADER = 28;
+	private static final int FOOTER = 18;
+	private static final int ROW = 22;
+
+	// window geometry survives reopening
+	private static float winX = Float.NaN, winY, winW = 470, winH = 290;
+	private static Category lastCategory = Category.COSMETICS;
 
 	private final Screen parent;
-	private Category selected = lastCategory;
-	private final Set<Module> expanded = new HashSet<>();
+	private View view = View.HOME;
+	private Category category = lastCategory;
+	private Module selected;
+	private boolean themePage;
+	private boolean searching;
+	private String search = "";
+
 	private final Map<Object, Float> anims = new HashMap<>();
 	private final List<Hit> hits = new ArrayList<>();
-
-	private float scroll;
-	private float scrollTarget;
-	private float maxScroll;
-	private float open;
+	private final Set<ColorSetting> openPickers = new HashSet<>();
+	private final Map<ColorSetting, Float> hues = new HashMap<>();
+	private final float[] stars = new float[160 * 3];
+	private long opened = System.nanoTime();
 	private long lastFrame = System.nanoTime();
+	private float viewSwitch = 1f;
 
-	private NumberSetting dragging;
-	private float dragX;
-	private float dragW;
+	// scrolling (0 = list / home results, 1 = settings column)
+	private final float[] scroll = new float[2];
+	private final float[] scrollTarget = new float[2];
+	private final float[] maxScroll = new float[2];
+	private final float[][] scrollArea = new float[2][4];
+
+	// interactions
+	private int dragMode; // 1 move window, 2 resize window
+	private double dragDx, dragDy;
+	private NumberSetting slider;
+	private float sliderX, sliderW;
+	private ColorSetting picking;
+	private int pickChannel;
+	private float pickX, pickW;
 	private TextSetting editing;
 	private String editBuffer = "";
+	private Supplier<SkinTextures> skin;
 
-	private int px, py, pw, ph;
-	private float clipX1, clipY1, clipX2, clipY2;
-
-	private record Hit(float x1, float y1, float x2, float y2, boolean clipped, Object owner, Action action) {
+	private record Hit(float x1, float y1, float x2, float y2, Object owner, Action action, float[] clip) {
 	}
 
 	@FunctionalInterface
 	private interface Action {
-		void run(double mouseX, double mouseY, int button);
+		void run(double mx, double my, int button);
 	}
 
 	public ClickGuiScreen(Screen parent) {
 		super(Text.literal("WHITECLIENT"));
 		this.parent = parent;
+		Random r = new Random(7);
+		for (int i = 0; i < 160; i++) {
+			stars[i * 3] = r.nextFloat();
+			stars[i * 3 + 1] = r.nextFloat() * r.nextFloat();
+			stars[i * 3 + 2] = r.nextFloat() * 100;
+		}
 	}
 
-	/** Opens on a given category with one module already expanded. */
+	/** Opens straight into the window on a category with one module selected. */
 	public ClickGuiScreen(Screen parent, Category category, Module expand) {
 		this(parent);
-		this.selected = category;
-		if (expand != null) {
-			expanded.add(expand);
+		this.view = View.WINDOW;
+		this.category = category;
+		this.selected = expand;
+	}
+
+	/** Opens the Theme page (optionally with the accent colour picker open). */
+	public ClickGuiScreen openTheme(boolean picker) {
+		view = View.WINDOW;
+		themePage = true;
+		selected = null;
+		if (picker) {
+			openPickers.add(Theme.get().accent);
 		}
+		return this;
+	}
+
+	/** Opens the home page in search mode with a query. */
+	public ClickGuiScreen openSearch(String query) {
+		view = View.HOME;
+		searching = true;
+		search = query;
+		return this;
 	}
 
 	@Override
 	protected void init() {
-		pw = Math.min(470, width - 24);
-		ph = Math.min(290, height - 24);
-		px = (width - pw) / 2;
-		py = (height - ph) / 2;
+		if (Float.isNaN(winX)) {
+			winW = Math.min(470, width - 20);
+			winH = Math.min(290, height - 20);
+			winX = (width - winW) / 2f;
+			winY = (height - winH) / 2f;
+		}
+		clampWindow();
+		try {
+			skin = client.getSkinProvider().supplySkinTextures(client.getGameProfile(), false);
+		} catch (Throwable t) {
+			skin = null;
+		}
+	}
+
+	private void clampWindow() {
+		winW = Math.max(300, Math.min(winW, width - 8));
+		winH = Math.max(190, Math.min(winH, height - 8));
+		winX = Math.max(4, Math.min(winX, width - winW - 4));
+		winY = Math.max(4, Math.min(winY, height - winH - 4));
 	}
 
 	@Override
@@ -104,13 +165,13 @@ public class ClickGuiScreen extends Screen {
 	public void close() {
 		commitEdit();
 		WhiteClient.get().config().save();
-		lastCategory = selected;
+		lastCategory = category;
 		if (client != null) {
 			client.setScreen(parent);
 		}
 	}
 
-	// ------------------------------------------------------------------ animation helpers
+	// ------------------------------------------------------------------ helpers
 
 	private float anim(Object key, float target, float dt, float speed) {
 		float v = anims.getOrDefault(key, target);
@@ -122,321 +183,707 @@ public class ClickGuiScreen extends Screen {
 		return v;
 	}
 
-	private void hit(float x1, float y1, float x2, float y2, boolean clipped, Action action) {
-		hits.add(new Hit(x1, y1, x2, y2, clipped, null, action));
+	private static boolean in(double mx, double my, float x, float y, float w, float h) {
+		return mx >= x && mx < x + w && my >= y && my < y + h;
 	}
 
-	private void hit(float x1, float y1, float x2, float y2, Object owner, Action action) {
-		hits.add(new Hit(x1, y1, x2, y2, true, owner, action));
+	private void hit(float x, float y, float w, float h, Object owner, float[] clip, Action a) {
+		hits.add(new Hit(x, y, x + w, y + h, owner, a, clip));
 	}
 
-	private static boolean inside(double mx, double my, float x1, float y1, float x2, float y2) {
-		return mx >= x1 && mx < x2 && my >= y1 && my < y2;
+	private void go(View v) {
+		commitEdit();
+		view = v;
+		viewSwitch = 0f;
+		scroll[0] = scroll[1] = scrollTarget[0] = scrollTarget[1] = 0;
+	}
+
+	private static void openLink(String url) {
+		try {
+			if (url != null && !url.isBlank()) {
+				Util.getOperatingSystem().open(URI.create(url.trim()));
+			}
+		} catch (Throwable ignored) {
+		}
+	}
+
+	private List<Module> modules(Category c) {
+		return WhiteClient.get().modules().byCategory(c);
 	}
 
 	// ------------------------------------------------------------------ rendering
 
 	@Override
-	public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-		MenuBackground bg = WhiteClient.get().modules().get(MenuBackground.class);
-		if (bg != null && bg.isEnabled() && bg.clickGui.isOn()) {
-			MenuBackgroundRenderer.draw(context, width, height, 0.9f * open);
+	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+		Theme th = Theme.get();
+		float open = Math.min(1f, (System.nanoTime() - opened) / 2.5e8f);
+		if (view == View.HOME) {
+			ctx.fillGradient(0, 0, width, height, th.bg(0.86f * open), Colors.argb(Colors.shade(th.background.rgb(), 1.6f), 0.93f * open));
+			if (th.stars.isOn()) {
+				drawNightSky(ctx, open);
+			}
 		} else {
-			context.fillGradient(0, 0, width, height, Colors.withAlpha(0x000000, (int) (120 * open)), Colors.withAlpha(0x000000, (int) (190 * open)));
+			ctx.fillGradient(0, 0, width, height, Colors.argb(0, 0.35f * open), Colors.argb(0, 0.55f * open));
+		}
+	}
+
+	private void drawNightSky(DrawContext ctx, float alpha) {
+		float t = WhiteClient.get().time();
+		// aurora wisps: soft horizontal bands that wave slowly
+		for (int band = 0; band < 3; band++) {
+			int slices = 48;
+			float baseY = height * (0.18f + band * 0.09f);
+			for (int i = 0; i < slices; i++) {
+				float x0 = width * i / (float) slices;
+				float x1 = width * (i + 1) / (float) slices;
+				float u = i / (float) slices;
+				float y = baseY + (float) Math.sin(u * 6.0 + t * 0.35 + band * 1.7) * height * 0.04f;
+				float hgt = height * (0.10f + 0.05f * (float) Math.sin(u * 4.0 - t * 0.25 + band));
+				float a = 0.05f * alpha * (0.6f + 0.4f * (float) Math.sin(u * 9 + t * 0.5 + band * 2));
+				ctx.fillGradient(Math.round(x0), Math.round(y - hgt), Math.round(x1), Math.round(y), Colors.argb(0xFFFFFF, 0), Colors.argb(0xDDE6FF, a));
+				ctx.fillGradient(Math.round(x0), Math.round(y), Math.round(x1), Math.round(y + hgt * 0.4f), Colors.argb(0xDDE6FF, a), Colors.argb(0xFFFFFF, 0));
+			}
+		}
+		for (int i = 0; i < 160; i++) {
+			float x = stars[i * 3] * width;
+			float y = stars[i * 3 + 1] * height;
+			float tw = 0.4f + 0.6f * (0.5f + 0.5f * (float) Math.sin(t * 1.5 + stars[i * 3 + 2]));
+			ctx.fill(Math.round(x), Math.round(y), Math.round(x) + 1, Math.round(y) + 1, Colors.argb(0xFFFFFF, tw * alpha * 0.8f));
+		}
+		// two mountain layers
+		for (int layer = 0; layer < 2; layer++) {
+			int cols = 120;
+			int color = layer == 0 ? Colors.argb(0x15151B, alpha) : Colors.argb(0x0B0B10, alpha);
+			for (int i = 0; i < cols; i++) {
+				float x0 = width * i / (float) cols, x1 = width * (i + 1) / (float) cols;
+				float u = i / (float) cols;
+				float hgt = height * (layer == 0 ? 0.22f : 0.14f) * (0.55f + 0.25f * (float) Math.sin(u * (layer == 0 ? 7 : 11) + layer)
+						+ 0.2f * (float) Math.sin(u * (layer == 0 ? 17 : 23) + 2 * layer));
+				ctx.fill(Math.round(x0), Math.round(height - hgt), Math.round(x1), height, color);
+			}
 		}
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+	public void render(DrawContext ctx, int mouseX, int mouseY, float deltaTicks) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
-		open = Math.min(1f, open + dt * 6f);
-		float ease = 1f - (float) Math.pow(1f - open, 3);
-		float time = WhiteClient.get().time();
-
-		scroll += (scrollTarget - scroll) * Math.min(1f, dt * 14f);
+		viewSwitch = Math.min(1f, viewSwitch + dt * 5f);
+		for (int i = 0; i < 2; i++) {
+			scroll[i] += (scrollTarget[i] - scroll[i]) * Math.min(1f, dt * 14f);
+		}
 		hits.clear();
-
-		Matrix3x2fStack m = context.getMatrices();
-		m.pushMatrix();
-		float s = 0.94f + 0.06f * ease;
-		m.translate(width / 2f, height / 2f);
-		m.scale(s, s);
-		m.translate(-width / 2f, -height / 2f);
-
-		Render2D.shadow(context, px, py, pw, ph, 10, 8, 120);
-		Render2D.roundRectBordered(context, px, py, pw, ph, 10, PANEL, 0x26FFFFFF);
-
-		drawSidebar(context, mouseX, mouseY, dt, time);
-		drawContent(context, mouseX, mouseY, dt);
-
-		m.popMatrix();
-		super.render(context, mouseX, mouseY, deltaTicks);
+		scrollArea[0] = new float[4];
+		scrollArea[1] = new float[4];
+		if (view == View.HOME) {
+			drawHome(ctx, mouseX, mouseY, dt);
+		} else {
+			drawWindow(ctx, mouseX, mouseY, dt);
+		}
+		super.render(ctx, mouseX, mouseY, deltaTicks);
 	}
 
-	private void drawSidebar(DrawContext ctx, int mx, int my, float dt, float time) {
-		Render2D.roundRect(ctx, px, py, SIDEBAR_W, ph, 10, SIDEBAR);
-		ctx.fill(px + SIDEBAR_W - 10, py, px + SIDEBAR_W, py + ph, SIDEBAR);
-		ctx.fill(px + SIDEBAR_W, py + 8, px + SIDEBAR_W + 1, py + ph - 8, LINE);
+	// ------------------------------------------------------------------ HOME
 
-		// logo
-		Render2D.logo(ctx, px + 20, py + 19, 9, time);
-		Render2D.text(ctx, textRenderer, "WHITE", px + 34, py + 11, TEXT);
-		Render2D.text(ctx, textRenderer, "CLIENT", px + 34 + textRenderer.getWidth("WHITE"), py + 11, SUB);
-		Render2D.textScaled(ctx, textRenderer, "visuals · 1.21.11", px + 34, py + 22, 0.75f, DIM);
+	private void categoryIcon(DrawContext ctx, Category c, float cx, float cy, float s, int col, int cut) {
+		switch (c) {
+			case COSMETICS -> Icons.sparkle(ctx, cx, cy, s, col);
+			case PVP -> Icons.shield(ctx, cx, cy, s, col, cut);
+			case WORLD -> Icons.globe(ctx, cx, cy, s, col);
+			case MUSIC -> Icons.note(ctx, cx, cy, s, col);
+			case HUD -> Icons.hud(ctx, cx, cy, s, col);
+			case MENU -> Icons.list(ctx, cx, cy, s, col);
+			default -> Icons.gear(ctx, cx, cy, s, col);
+		}
+	}
 
-		float y = py + 46;
+	private void drawHome(DrawContext ctx, int mx, int my, float dt) {
+		Theme th = Theme.get();
+		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
+		float t = WhiteClient.get().time();
+		float cx = width / 2f;
+
+		// title
+		String title = "WHITECLIENT";
+		float titleY = Math.max(22, height * 0.17f);
+		float tw = textRenderer.getWidth(UiFont.title(title));
+		Matrix3x2fStack m = ctx.getMatrices();
+		m.pushMatrix();
+		m.translate(0, (1 - k) * -8);
+		Render2D.planetLogo(ctx, cx - tw / 2f - 16, titleY + 10, 6.5f, t, (int) (255 * k));
+		ctx.drawText(textRenderer, UiFont.title(title), Math.round(cx - tw / 2f + 2), Math.round(titleY), Colors.argb(th.text.rgb(), k), false);
+		m.popMatrix();
+
+		if (searching) {
+			drawSearch(ctx, mx, my, dt, titleY + 34);
+			return;
+		}
+
+		// category cards
+		List<Category> cats = new ArrayList<>();
 		for (Category c : Category.values()) {
-			boolean sel = c == selected;
-			boolean hover = inside(mx, my, px + 8, y, px + SIDEBAR_W - 8, y + 22);
-			float a = anim("cat" + c.name(), sel ? 1f : 0f, dt, 14f);
-			if (a > 0.01f) {
-				Render2D.roundRect(ctx, px + 8, y, SIDEBAR_W - 16, 22, 6, Colors.argb(0xFFFFFF, 0.95f * a));
-			} else if (hover) {
-				Render2D.roundRect(ctx, px + 8, y, SIDEBAR_W - 16, 22, 6, 0x12FFFFFF);
+			if (c.listed()) {
+				cats.add(c);
 			}
-			int color = Colors.mixArgb(hover ? TEXT : SUB, 0xFF0B0B0F, a);
-			Render2D.text(ctx, textRenderer, c.title, px + 18, y + 7, color);
-			int count = 0;
-			for (Module mod : WhiteClient.get().modules().byCategory(c)) {
+		}
+		float gap = 9;
+		float cs = Math.min(64, (width - 40 - gap * (cats.size() - 1)) / cats.size());
+		float rowW = cats.size() * cs + (cats.size() - 1) * gap;
+		float x0 = cx - rowW / 2f;
+		float y0 = titleY + 40;
+		float r = th.roundness.getFloat();
+		for (int i = 0; i < cats.size(); i++) {
+			Category c = cats.get(i);
+			float ci = Math.max(0f, Math.min(1f, (k - i * 0.06f) / 0.7f));
+			float x = x0 + i * (cs + gap);
+			float y = y0 + (1 - ci) * 14;
+			boolean hover = in(mx, my, x, y, cs, cs);
+			float h = anim("card" + c, hover ? 1f : 0f, dt, 12f);
+			float grow = h * 4;
+			float bx = x - grow / 2, by = y - grow / 2 - h * 2, bs = cs + grow;
+			Render2D.roundRect(ctx, bx, by, bs, bs, r, Colors.mulAlpha(Colors.mixArgb(th.card(0.55f), Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.12f), 0.75f), h), ci));
+			Render2D.roundRectOutline(ctx, bx, by, bs, bs, r, 1, Colors.argb(th.accent.rgb(), (0.16f + 0.5f * h) * ci));
+			int iconC = Colors.argb(Colors.mix(th.subtext.rgb(), th.text.rgb(), 0.6f + 0.4f * h), ci);
+			categoryIcon(ctx, c, bx + bs / 2f, by + bs * 0.4f, bs * 0.26f, iconC, Colors.argb(th.card.rgb(), ci));
+			UiFont.drawCentered(ctx, textRenderer, c.title, bx + bs / 2f, by + bs * 0.64f, Colors.argb(th.text.rgb(), ci));
+			float ul = 8 + 6 * h;
+			Render2D.roundRect(ctx, bx + bs / 2f - ul / 2f, by + bs * 0.64f + 11, ul, 1.2f, 0.6f, Colors.argb(th.accent.rgb(), (0.35f + 0.6f * h) * ci));
+			int on = 0;
+			for (Module mod : modules(c)) {
 				if (mod.isEnabled()) {
-					count++;
+					on++;
 				}
 			}
-			String cnt = Integer.toString(count);
-			Render2D.text(ctx, textRenderer, cnt, px + SIDEBAR_W - 18 - textRenderer.getWidth(cnt), y + 7, Colors.mixArgb(DIM, 0xFF6A6A74, a));
+			UiFont.drawScaled(ctx, textRenderer, on + "/" + modules(c).size(), bx + bs - 18, by + 5, 0.7f, Colors.argb(th.subtext.rgb(), ci));
 			final Category cat = c;
-			hit(px + 8, y, px + SIDEBAR_W - 8, y + 22, false, (x, yy, b) -> {
-				if (selected != cat) {
-					commitEdit();
-					selected = cat;
-					scroll = scrollTarget = 0;
+			hit(x, y, cs, cs, null, null, (a, b, btn) -> {
+				category = cat;
+				selected = null;
+				themePage = false;
+				go(View.WINDOW);
+			});
+		}
+
+		// small buttons
+		String[] labels = {"Wardrobe", "Search", "Theme", "Support"};
+		float sw = 48, sh = 32, sg = 8;
+		float sx0 = cx - (labels.length * sw + (labels.length - 1) * sg) / 2f;
+		float sy = y0 + cs + 22;
+		for (int i = 0; i < labels.length; i++) {
+			float si = Math.max(0f, Math.min(1f, (k - 0.3f - i * 0.05f) / 0.6f));
+			float x = sx0 + i * (sw + sg);
+			float y = sy + (1 - si) * 10;
+			boolean hover = in(mx, my, x, y, sw, sh);
+			float h = anim("small" + i, hover ? 1f : 0f, dt, 12f);
+			Render2D.roundRect(ctx, x, y - h, sw, sh, r * 0.75f, Colors.mulAlpha(Colors.mixArgb(th.card(0.5f), Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.12f), 0.7f), h), si));
+			Render2D.roundRectOutline(ctx, x, y - h, sw, sh, r * 0.75f, 1, Colors.argb(th.accent.rgb(), (0.12f + 0.45f * h) * si));
+			int ic = Colors.argb(Colors.mix(th.subtext.rgb(), th.text.rgb(), 0.5f + 0.5f * h), si);
+			float icx = x + sw / 2f, icy = y - h + 11;
+			switch (i) {
+				case 0 -> Icons.shirt(ctx, icx, icy, 9, ic);
+				case 1 -> Icons.search(ctx, icx, icy, 9, ic);
+				case 2 -> Icons.palette(ctx, icx, icy, 9, ic, Colors.argb(th.card.rgb(), si));
+				default -> Icons.heart(ctx, icx, icy, 9, ic);
+			}
+			UiFont.drawScaled(ctx, textRenderer, labels[i], icx - UiFont.width(textRenderer, labels[i]) * 0.36f, y - h + 20, 0.72f, Colors.argb(th.text.rgb(), si));
+			final int idx = i;
+			hit(x, y, sw, sh, null, null, (a, b, btn) -> {
+				switch (idx) {
+					case 0 -> client.setScreen(new WardrobeScreen(this));
+					case 1 -> {
+						searching = true;
+						search = "";
+					}
+					case 2 -> {
+						themePage = true;
+						selected = null;
+						go(View.WINDOW);
+					}
+					default -> openLink(th.supportLink.get());
 				}
 			});
-			y += 26;
 		}
-
-		Render2D.textScaled(ctx, textRenderer, "RSHIFT  close", px + 14, py + ph - 26, 0.75f, DIM);
-		Render2D.textScaled(ctx, textRenderer, "/whiteclient text", px + 14, py + ph - 16, 0.75f, DIM);
+		UiFont.drawCentered(ctx, textRenderer, "Right Shift to close  ·  everything is free", cx, height - 16, Colors.argb(th.subtext.rgb(), 0.7f * k));
 	}
 
-	private void drawContent(DrawContext ctx, int mx, int my, float dt) {
-		float cx = px + SIDEBAR_W + 12;
-		float cw = pw - SIDEBAR_W - 24;
-		Render2D.text(ctx, textRenderer, selected.title, cx, py + 12, TEXT);
-		Render2D.textScaled(ctx, textRenderer, selected.subtitle, cx + textRenderer.getWidth(selected.title) + 6, py + 13.5f, 0.75f, SUB);
+	private void drawSearch(DrawContext ctx, int mx, int my, float dt, float y) {
+		Theme th = Theme.get();
+		float w = Math.min(260, width - 40);
+		float x = (width - w) / 2f;
+		Render2D.roundRect(ctx, x, y, w, 20, 10, th.card(0.8f));
+		Render2D.roundRectOutline(ctx, x, y, w, 20, 10, 1, th.accent(0.6f));
+		Icons.search(ctx, x + 12, y + 10, 9, th.sub());
+		boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
+		UiFont.draw(ctx, textRenderer, search.isEmpty() ? "Search modules..." : search + (blink ? "_" : ""), x + 22, y + 6, search.isEmpty() ? th.sub() : th.text());
+		hit(x + w - 18, y, 18, 20, null, null, (a, b, btn) -> searching = false);
+		Icons.close(ctx, x + w - 10, y + 10, 7, th.sub());
 
-		// close button
-		float bx = px + pw - 24;
-		float by = py + 8;
-		boolean hoverClose = inside(mx, my, bx, by, bx + 16, by + 16);
-		Render2D.circle(ctx, bx + 8, by + 8, 8, hoverClose ? 0x30FFFFFF : 0x14FFFFFF);
-		Render2D.textCentered(ctx, textRenderer, "×", bx + 8, by + 4, hoverClose ? TEXT : SUB);
-		hit(bx, by, bx + 16, by + 16, false, (x, y, b) -> close());
-
-		clipX1 = cx - 2;
-		clipY1 = py + HEADER_H;
-		clipX2 = cx + cw + 2;
-		clipY2 = py + ph - 8;
-		ctx.fill((int) cx, (int) clipY1 - 1, (int) (cx + cw), (int) clipY1, LINE);
-		ctx.enableScissor((int) clipX1, (int) clipY1, (int) clipX2, (int) clipY2);
-
-		float y = clipY1 + 8 - scroll;
-		float start = y;
-		for (Module module : WhiteClient.get().modules().byCategory(selected)) {
-			y += drawModule(ctx, module, cx, y, cw, mx, my, dt) + 6;
+		String q = search.toLowerCase(Locale.ROOT).trim();
+		float ry = y + 28;
+		int shown = 0;
+		for (Module mod : WhiteClient.get().modules().all()) {
+			if (!q.isEmpty() && !mod.getName().toLowerCase(Locale.ROOT).contains(q) && !mod.getDescription().toLowerCase(Locale.ROOT).contains(q)) {
+				continue;
+			}
+			if (ry + ROW > height - 24) {
+				break;
+			}
+			boolean hover = in(mx, my, x, ry, w, ROW - 2);
+			Render2D.roundRect(ctx, x, ry, w, ROW - 2, 6, hover ? th.card(0.95f) : th.card(0.6f));
+			UiFont.draw(ctx, textRenderer, mod.getName(), x + 10, ry + 6, th.text());
+			String cat = mod.getCategory().title;
+			UiFont.drawScaled(ctx, textRenderer, cat, x + w - 10 - UiFont.width(textRenderer, cat) * 0.72f, ry + 7, 0.72f, th.sub());
+			final Module target = mod;
+			hit(x, ry, w, ROW - 2, null, null, (a, b, btn) -> {
+				searching = false;
+				category = target.getCategory();
+				themePage = target.getCategory() == Category.CLIENT;
+				selected = themePage ? null : target;
+				go(View.WINDOW);
+			});
+			ry += ROW;
+			shown++;
 		}
-		float contentHeight = y - start + 4;
-		maxScroll = Math.max(0, contentHeight - (clipY2 - clipY1 - 8));
-		scrollTarget = Math.max(0, Math.min(maxScroll, scrollTarget));
-		ctx.disableScissor();
-
-		// scrollbar
-		if (maxScroll > 0) {
-			float trackH = clipY2 - clipY1 - 8;
-			float barH = Math.max(18, trackH * trackH / (trackH + maxScroll));
-			float barY = clipY1 + 4 + (trackH - barH) * (scroll / maxScroll);
-			Render2D.roundRect(ctx, px + pw - 9, barY, 3, barH, 1.5f, 0x40FFFFFF);
+		if (shown == 0) {
+			UiFont.drawCentered(ctx, textRenderer, "No modules found", width / 2f, ry + 4, th.sub());
 		}
 	}
 
-	private float settingsHeight(Module module) {
-		float h = 4;
-		for (Setting<?> s : module.getSettings()) {
-			if (s.isVisible()) {
-				h += rowHeight(s);
+	// ------------------------------------------------------------------ WINDOW
+
+	private void drawWindow(DrawContext ctx, int mx, int my, float dt) {
+		Theme th = Theme.get();
+		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
+		float r = th.roundness.getFloat();
+		Matrix3x2fStack m = ctx.getMatrices();
+		m.pushMatrix();
+		float s = 0.95f + 0.05f * k;
+		m.translate(winX + winW / 2f, winY + winH / 2f);
+		m.scale(s, s);
+		m.translate(-(winX + winW / 2f), -(winY + winH / 2f));
+
+		float x = winX, y = winY, w = winW, h = winH;
+		Render2D.shadow(ctx, x, y, w, h, r, 8, 110);
+		Render2D.roundRect(ctx, x, y, w, h, r, th.panel());
+		Render2D.roundRectOutline(ctx, x, y, w, h, r, 1, th.accent(0.14f));
+
+		// ---- sidebar
+		Render2D.roundRect(ctx, x, y, SIDEBAR, h, r, Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), th.opacity.getFloat()));
+		ctx.fill((int) (x + SIDEBAR - r), (int) y, (int) (x + SIDEBAR), (int) (y + h), Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), th.opacity.getFloat()));
+		ctx.fill((int) (x + SIDEBAR), (int) (y + 8), (int) (x + SIDEBAR) + 1, (int) (y + h - 8), th.accent(0.08f));
+		Render2D.logo(ctx, x + 15, y + 15, 6, WhiteClient.get().time());
+		UiFont.draw(ctx, textRenderer, "WHITECLIENT", x + 26, y + 10, th.text());
+		UiFont.drawScaled(ctx, textRenderer, "Modules", x + 12, y + 30, 0.72f, th.sub());
+		float sy = y + 40;
+		for (Category c : Category.values()) {
+			if (!c.listed()) {
+				continue;
+			}
+			boolean sel = c == category && !themePage;
+			boolean hover = in(mx, my, x + 6, sy, SIDEBAR - 12, 17);
+			float a = anim("side" + c, sel ? 1f : 0f, dt, 14f);
+			if (a > 0.01f) {
+				Render2D.roundRect(ctx, x + 6, sy, SIDEBAR - 12, 17, 5, th.accent(0.12f * a));
+				Render2D.roundRect(ctx, x + 6, sy + 4, 2, 9, 1, th.accent(a));
+			} else if (hover) {
+				Render2D.roundRect(ctx, x + 6, sy, SIDEBAR - 12, 17, 5, th.accent(0.05f));
+			}
+			int col = Colors.mixArgb(th.sub(), th.text(), Math.max(a, hover ? 0.6f : 0f));
+			categoryIcon(ctx, c, x + 18, sy + 8.5f, 8, col, Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), 1f));
+			UiFont.draw(ctx, textRenderer, c.title, x + 28, sy + 4, col);
+			final Category cat = c;
+			hit(x + 6, sy, SIDEBAR - 12, 17, null, null, (aa, b, btn) -> {
+				if (category != cat || themePage) {
+					category = cat;
+					selected = null;
+					themePage = false;
+					go(View.WINDOW);
+				}
+			});
+			sy += 19;
+		}
+		UiFont.drawScaled(ctx, textRenderer, "Client", x + 12, sy + 6, 0.72f, th.sub());
+		sy += 16;
+		String[] clientItems = {"Theme", "Wardrobe", "Home"};
+		for (int i = 0; i < clientItems.length; i++) {
+			boolean sel = i == 0 && themePage;
+			boolean hover = in(mx, my, x + 6, sy, SIDEBAR - 12, 17);
+			float a = anim("client" + i, sel ? 1f : 0f, dt, 14f);
+			if (a > 0.01f) {
+				Render2D.roundRect(ctx, x + 6, sy, SIDEBAR - 12, 17, 5, th.accent(0.12f * a));
+				Render2D.roundRect(ctx, x + 6, sy + 4, 2, 9, 1, th.accent(a));
+			} else if (hover) {
+				Render2D.roundRect(ctx, x + 6, sy, SIDEBAR - 12, 17, 5, th.accent(0.05f));
+			}
+			int col = Colors.mixArgb(th.sub(), th.text(), Math.max(a, hover ? 0.6f : 0f));
+			int bgc = Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), 1f);
+			switch (i) {
+				case 0 -> Icons.palette(ctx, x + 18, sy + 8.5f, 8, col, bgc);
+				case 1 -> Icons.shirt(ctx, x + 18, sy + 8.5f, 8, col);
+				default -> Icons.back(ctx, x + 18, sy + 8.5f, 8, col);
+			}
+			UiFont.draw(ctx, textRenderer, clientItems[i], x + 28, sy + 4, col);
+			final int idx = i;
+			hit(x + 6, sy, SIDEBAR - 12, 17, null, null, (aa, b, btn) -> {
+				if (idx == 0) {
+					themePage = true;
+					selected = null;
+					go(View.WINDOW);
+				} else if (idx == 1) {
+					client.setScreen(new WardrobeScreen(this));
+				} else {
+					go(View.HOME);
+				}
+			});
+			sy += 19;
+		}
+		// account
+		if (h > 230) {
+			String name = client.getSession().getUsername();
+			Render2D.roundRect(ctx, x + 6, y + h - FOOTER - 24, SIDEBAR - 12, 20, 6, th.card(0.7f));
+			if (skin != null) {
+				try {
+					PlayerSkinDrawer.draw(ctx, skin.get(), (int) (x + 10), (int) (y + h - FOOTER - 20), 12);
+				} catch (Throwable ignored) {
+				}
+			}
+			String shown = name;
+			while (UiFont.width(textRenderer, shown) > SIDEBAR - 38 && shown.length() > 2) {
+				shown = shown.substring(0, shown.length() - 1);
+			}
+			UiFont.draw(ctx, textRenderer, shown, x + 26, y + h - FOOTER - 18, th.text());
+		}
+
+		// ---- header
+		float cx0 = x + SIDEBAR + 10;
+		float cw = w - SIDEBAR - 20;
+		String crumb = themePage ? "Client" : "Modules";
+		String page = themePage ? "Theme" : category.title;
+		UiFont.draw(ctx, textRenderer, crumb + "  /  ", cx0, y + 10, th.sub());
+		UiFont.draw(ctx, textRenderer, page, cx0 + UiFont.width(textRenderer, crumb + "  /  "), y + 10, th.text());
+		hit(x + SIDEBAR, y, w - SIDEBAR - 48, HEADER - 4, "drag", null, (a, b, btn) -> startMove(a, b));
+		float bx = x + w - 22;
+		boolean hc = in(mx, my, bx, y + 6, 16, 16);
+		Render2D.circle(ctx, bx + 8, y + 14, 8, th.accent(hc ? 0.2f : 0.07f));
+		Icons.close(ctx, bx + 8, y + 14, 6, hc ? th.text() : th.sub());
+		hit(bx, y + 6, 16, 16, null, null, (a, b, btn) -> close());
+		float hb = bx - 20;
+		boolean hh = in(mx, my, hb, y + 6, 16, 16);
+		Render2D.circle(ctx, hb + 8, y + 14, 8, th.accent(hh ? 0.2f : 0.07f));
+		Icons.back(ctx, hb + 8, y + 14, 6, hh ? th.text() : th.sub());
+		hit(hb, y + 6, 16, 16, null, null, (a, b, btn) -> go(View.HOME));
+		ctx.fill((int) cx0, (int) (y + HEADER), (int) (cx0 + cw), (int) (y + HEADER) + 1, th.accent(0.08f));
+
+		// ---- content
+		float top = y + HEADER + 6;
+		float bottom = y + h - FOOTER - 4;
+		float ka = k;
+		if (themePage) {
+			drawSettingsColumn(ctx, Theme.get(), cx0, top, cw, bottom - top, mx, my, dt, ka, true);
+		} else if (selected != null && selected.getCategory() == category) {
+			float leftW = cw * 0.56f;
+			drawSettingsColumn(ctx, selected, cx0, top, leftW - 6, bottom - top, mx, my, dt, ka, false);
+			drawModuleList(ctx, cx0 + leftW + 4, top, cw - leftW - 4, bottom - top, mx, my, dt, 1);
+		} else {
+			drawModuleList(ctx, cx0, top, cw, bottom - top, mx, my, dt, 2);
+		}
+
+		// ---- footer: drag & resize handles (like a floating window)
+		float fy = y + h - FOOTER;
+		ctx.fill((int) (x + SIDEBAR), (int) fy, (int) (x + w - 6), (int) fy + 1, th.accent(0.06f));
+		boolean hd = in(mx, my, x + SIDEBAR + 4, fy, 60, FOOTER);
+		Icons.drag(ctx, x + SIDEBAR + 12, fy + FOOTER / 2f, 8, hd ? th.text() : th.sub());
+		UiFont.drawScaled(ctx, textRenderer, "drag", x + SIDEBAR + 20, fy + 6, 0.72f, hd ? th.text() : th.sub());
+		hit(x + SIDEBAR + 4, fy, 60, FOOTER, "drag", null, (a, b, btn) -> startMove(a, b));
+		String ver = "WHITECLIENT " + WhiteClient.VERSION;
+		UiFont.drawScaled(ctx, textRenderer, ver, x + SIDEBAR + (w - SIDEBAR) / 2f - UiFont.width(textRenderer, ver) * 0.36f, fy + 6, 0.72f, Colors.mulAlpha(th.sub(), 0.6f));
+		boolean hr = in(mx, my, x + w - 64, fy, 62, FOOTER);
+		UiFont.drawScaled(ctx, textRenderer, "resize", x + w - 50, fy + 6, 0.72f, hr ? th.text() : th.sub());
+		Icons.resize(ctx, x + w - 12, fy + FOOTER / 2f, 8, hr ? th.text() : th.sub());
+		hit(x + w - 64, fy, 62, FOOTER, "resize", null, (a, b, btn) -> {
+			dragMode = 2;
+			dragDx = winX + winW - a;
+			dragDy = winY + winH - b;
+		});
+		m.popMatrix();
+	}
+
+	private void startMove(double mx, double my) {
+		dragMode = 1;
+		dragDx = mx - winX;
+		dragDy = my - winY;
+	}
+
+	private void drawModuleList(DrawContext ctx, float x, float y, float w, float h, int mx, int my, float dt, int columns) {
+		Theme th = Theme.get();
+		int col = 0;
+		scrollArea[0] = new float[]{x, y, w, h};
+		float[] clip = {x - 2, y, x + w + 2, y + h};
+		ctx.enableScissor((int) clip[0], (int) clip[1], (int) clip[2], (int) clip[3]);
+		List<Module> list = modules(category);
+		float colW = (w - (columns - 1) * 6) / columns;
+		float ry = y - scroll[0];
+		float start = ry;
+		for (int i = 0; i < list.size(); i++) {
+			Module mod = list.get(i);
+			float rx = x + col * (colW + 6);
+			boolean sel = mod == selected;
+			boolean hover = in(mx, my, rx, ry, colW, ROW - 3) && in(mx, my, clip[0], clip[1], clip[2] - clip[0], clip[3] - clip[1]);
+			float hv = anim(mod.getName() + "#row", hover ? 1f : 0f, dt, 14f);
+			Render2D.roundRect(ctx, rx, ry, colW, ROW - 3, 6, Colors.mixArgb(th.card(0.75f), th.card(1f), hv));
+			if (sel) {
+				Render2D.roundRectOutline(ctx, rx, ry, colW, ROW - 3, 6, 1, th.accent(0.7f));
+			}
+			UiFont.draw(ctx, textRenderer, mod.getName(), rx + 9, ry + 5, mod.isEnabled() ? th.text() : Colors.mixArgb(th.sub(), th.text(), 0.4f));
+			float t = anim(mod.getName() + "#on", mod.isEnabled() ? 1f : 0f, dt, 14f);
+			float tx = rx + colW - 27;
+			drawToggle(ctx, tx, ry + 4, t);
+			hit(tx - 2, ry, colW - (tx - 2 - rx), ROW - 3, null, clip, (a, b, btn) -> mod.toggle());
+			hit(rx, ry, tx - 2 - rx, ROW - 3, null, clip, (a, b, btn) -> {
+				commitEdit();
+				selected = selected == mod ? null : mod;
+				scroll[1] = scrollTarget[1] = 0;
+			});
+			col++;
+			if (col >= columns) {
+				col = 0;
+				ry += ROW;
 			}
 		}
-		return h + 4;
+		if (col != 0) {
+			ry += ROW;
+		}
+		maxScroll[0] = Math.max(0, (ry - start) - h);
+		ctx.disableScissor();
 	}
 
-	private static float rowHeight(Setting<?> s) {
+	private void drawToggle(DrawContext ctx, float x, float y, float t) {
+		Theme th = Theme.get();
+		float w = 20, h = 11;
+		int track = Colors.mixArgb(Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.08f), 1f), th.toggleOn.argb(), t);
+		Render2D.roundRect(ctx, x, y, w, h, h / 2f, track);
+		float knobX = x + 5.5f + (w - 11f) * t;
+		int onKnob = Theme.lum(th.toggleOn.rgb()) > 0.6f ? 0xFF0E0E12 : 0xFFFFFFFF;
+		Render2D.circle(ctx, knobX, y + h / 2f, 3.6f, Colors.mixArgb(0xFF8C8C98, onKnob, t));
+	}
+
+	// ------------------------------------------------------------------ settings
+
+	private float settingHeight(Setting<?> s) {
 		if (s instanceof NumberSetting) {
 			return 24;
 		}
-		if (s instanceof ColorSetting) {
-			return 22;
+		if (s instanceof ColorSetting c) {
+			return openPickers.contains(c) ? 70 : 20;
+		}
+		if (s instanceof ModeSetting mode && mode.getModes().size() > 3) {
+			int rows = (mode.getModes().size() + 2) / 3;
+			return 16 + rows * 16;
 		}
 		if (s instanceof TextSetting) {
 			return 22;
 		}
-		return 18;
+		return 19;
 	}
 
-	private float drawModule(DrawContext ctx, Module module, float x, float y, float w, int mx, int my, float dt) {
-		float head = 34;
-		boolean isOpen = expanded.contains(module);
-		float e = anim(module.getName() + "#open", isOpen ? 1f : 0f, dt, 12f);
-		float total = head + (module.getSettings().isEmpty() ? 0 : settingsHeight(module) * e);
-		boolean hover = inside(mx, my, x, y, x + w, y + head) && inside(mx, my, clipX1, clipY1, clipX2, clipY2);
-
-		Render2D.roundRect(ctx, x, y, w, total, 7, hover ? CARD_HOVER : CARD);
-		if (module.isEnabled()) {
-			Render2D.roundRect(ctx, x, y + 9, 2, head - 18, 1, 0xFFFFFFFF);
+	private void drawSettingsColumn(DrawContext ctx, Module mod, float x, float y, float w, float h, int mx, int my, float dt, float k, boolean theme) {
+		Theme th = Theme.get();
+		scrollArea[1] = new float[]{x, y, w, h};
+		Render2D.roundRect(ctx, x, y, w, h, 7, th.card(0.45f));
+		float[] clip = {x, y + 1, x + w, y + h - 1};
+		ctx.enableScissor((int) clip[0], (int) clip[1], (int) clip[2], (int) clip[3]);
+		float sy = y + 8 - scroll[1];
+		float start = sy;
+		UiFont.draw(ctx, textRenderer, mod.getName(), x + 10, sy, th.text());
+		UiFont.drawScaled(ctx, textRenderer, mod.getDescription(), x + 10, sy + 11, 0.72f, th.sub());
+		if (!theme) {
+			float t = anim(mod.getName() + "#on", mod.isEnabled() ? 1f : 0f, dt, 14f);
+			drawToggle(ctx, x + w - 30, sy + 2, t);
+			hit(x + w - 32, sy, 26, 14, null, clip, (a, b, btn) -> mod.toggle());
 		}
-		Render2D.text(ctx, textRenderer, module.getName(), x + 11, y + 8, module.isEnabled() ? TEXT : 0xFFB4B4BE);
-		Render2D.textScaled(ctx, textRenderer, module.getDescription(), x + 11, y + 20, 0.75f, SUB);
-
-		float t = anim(module.getName() + "#on", module.isEnabled() ? 1f : 0f, dt, 14f);
-		float tx = x + w - 30;
-		float ty = y + (head - 11) / 2f;
-		Render2D.toggle(ctx, tx, ty, t);
-		hit(tx - 4, y, x + w, y + head, true, (mxx, myy, b) -> module.toggle());
-
-		if (!module.getSettings().isEmpty()) {
-			String chevron = isOpen ? "−" : "+";
-			Render2D.textCentered(ctx, textRenderer, chevron, tx - 12, y + 13, hover ? TEXT : DIM);
-			hit(x, y, tx - 4, y + head, true, (mxx, myy, b) -> {
-				if (!expanded.remove(module)) {
-					expanded.add(module);
-				}
-			});
-		} else {
-			hit(x, y, tx - 4, y + head, true, (mxx, myy, b) -> module.toggle());
-		}
-
-		if (e > 0.01f && !module.getSettings().isEmpty()) {
-			ctx.enableScissor((int) x, (int) (y + head), (int) (x + w), (int) (y + total));
-			ctx.fill((int) x + 10, (int) (y + head), (int) (x + w - 10), (int) (y + head) + 1, LINE);
-			float ry = y + head + 4;
-			for (Setting<?> s : module.getSettings()) {
-				if (!s.isVisible()) {
-					continue;
-				}
-				drawSetting(ctx, s, x + 11, ry, w - 22, mx, my, dt, e > 0.95f);
-				ry += rowHeight(s);
+		sy += 26;
+		for (Setting<?> s : mod.getSettings()) {
+			if (!s.isVisible()) {
+				continue;
 			}
-			ctx.disableScissor();
+			drawSetting(ctx, s, x + 10, sy, w - 20, mx, my, dt, clip);
+			sy += settingHeight(s);
 		}
-		return total;
+		maxScroll[1] = Math.max(0, (sy - start + 8) - h);
+		scrollTarget[1] = Math.max(0, Math.min(maxScroll[1], scrollTarget[1]));
+		ctx.disableScissor();
 	}
 
-	private void drawSetting(DrawContext ctx, Setting<?> s, float x, float y, float w, int mx, int my, float dt, boolean interactive) {
-		int label = 0xFFD2D2DA;
+	private void drawSetting(DrawContext ctx, Setting<?> s, float x, float y, float w, int mx, int my, float dt, float[] clip) {
+		Theme th = Theme.get();
+		int label = Colors.mixArgb(th.sub(), th.text(), 0.75f);
 		if (s instanceof BoolSetting b) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 5, label);
-			float t = anim(b, b.isOn() ? 1f : 0f, dt, 14f);
-			Matrix3x2fStack m = ctx.getMatrices();
-			m.pushMatrix();
-			m.translate(x + w - 16, y + 4);
-			m.scale(0.8f, 0.8f);
-			Render2D.toggle(ctx, 0, 0, t);
-			m.popMatrix();
-			if (interactive) {
-				hit(x, y, x + w, y + 16, true, (a, c, btn) -> b.toggle());
-			}
+			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+			drawToggle(ctx, x + w - 20, y + 3, anim(b, b.isOn() ? 1f : 0f, dt, 14f));
+			hit(x, y, w, 16, null, clip, (a, c, btn) -> b.toggle());
 		} else if (s instanceof NumberSetting n) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 3, label);
+			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 2, label);
 			String v = n.format();
-			Render2D.text(ctx, textRenderer, v, x + w - textRenderer.getWidth(v), y + 3, SUB);
+			UiFont.draw(ctx, textRenderer, v, x + w - UiFont.width(textRenderer, v), y + 2, th.sub());
 			float barY = y + 15;
 			float f = anim(n, (float) n.getFraction(), dt, 18f);
-			Render2D.roundRect(ctx, x, barY, w, 3, 1.5f, 0xFF2A2A33);
-			Render2D.roundRect(ctx, x, barY, Math.max(3, w * f), 3, 1.5f, 0xFFF2F2F5);
-			Render2D.circle(ctx, x + w * f, barY + 1.5f, dragging == n ? 4.2f : 3.6f, 0xFFFFFFFF);
-			if (interactive) {
-				hit(x - 3, y + 10, x + w + 3, y + 22, true, (a, c, btn) -> {
-					dragging = n;
-					dragX = x;
-					dragW = w;
-					n.setFraction((a - x) / w);
-				});
-			}
+			Render2D.roundRect(ctx, x, barY, w, 3, 1.5f, Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.1f), 1f));
+			Render2D.roundRect(ctx, x, barY, Math.max(3, w * f), 3, 1.5f, th.accent(1f));
+			Render2D.circle(ctx, x + w * f, barY + 1.5f, slider == n ? 4.2f : 3.6f, th.accent(1f));
+			hit(x - 3, y + 9, w + 6, 13, null, clip, (a, c, btn) -> {
+				slider = n;
+				sliderX = x;
+				sliderW = w;
+				n.setFraction((a - x) / w);
+			});
 		} else if (s instanceof ColorSetting c) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 6, label);
-			int count = ColorSetting.PRESETS.length;
-			float size = 9;
-			float gap = 3;
-			float sx = x + w - count * (size + gap) + gap;
-			for (int i = 0; i < count; i++) {
-				int preset = ColorSetting.PRESETS[i];
-				float bx = sx + i * (size + gap);
-				boolean sel = (preset & 0xFFFFFF) == c.rgb();
-				if (sel) {
-					Render2D.roundRect(ctx, bx - 1.5f, y + 3.5f, size + 3, size + 3, 3.5f, 0xFFFFFFFF);
-					Render2D.roundRect(ctx, bx - 0.5f, y + 4.5f, size + 1, size + 1, 2.5f, 0xFF0B0B0F);
+			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+			String hex = String.format("#%06X", c.rgb());
+			float hw = UiFont.width(textRenderer, hex) * 0.8f;
+			UiFont.drawScaled(ctx, textRenderer, hex, x + w - 24 - hw, y + 5, 0.8f, th.sub());
+			Render2D.roundRect(ctx, x + w - 18, y + 2, 18, 12, 4, c.argb());
+			Render2D.roundRectOutline(ctx, x + w - 18, y + 2, 18, 12, 4, 1, th.accent(0.3f));
+			hit(x, y, w, 16, c, clip, (a, b2, btn) -> {
+				if (!openPickers.remove(c)) {
+					openPickers.add(c);
 				}
-				Render2D.roundRect(ctx, bx, y + 5, size, size, 2.5f, preset);
-				if (interactive) {
-					hit(bx - 1, y + 3, bx + size + 1, y + 17, true, (a, b2, btn) -> c.set(preset));
-				}
+			});
+			if (openPickers.contains(c)) {
+				drawPicker(ctx, c, x, y + 19, w, clip);
 			}
-			// current colour preview (custom colours from the config file show here)
-			Render2D.roundRect(ctx, sx - 16, y + 5, 9, 9, 4.5f, c.argb());
 		} else if (s instanceof ModeSetting mode) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 5, label);
-			String v = "‹ " + mode.get() + " ›";
-			float vw = textRenderer.getWidth(v);
-			boolean hover = inside(mx, my, x + w - vw - 6, y + 1, x + w, y + 16);
-			Render2D.roundRect(ctx, x + w - vw - 8, y + 1, vw + 8, 14, 4, hover ? 0x22FFFFFF : 0x12FFFFFF);
-			Render2D.text(ctx, textRenderer, v, x + w - vw - 4, y + 4, TEXT);
-			if (interactive) {
-				hit(x, y, x + w, y + 16, true, (a, b2, btn) -> mode.cycle(btn == 1 ? -1 : 1));
+			if (mode.getModes().size() > 3) {
+				UiFont.draw(ctx, textRenderer, s.getName(), x, y + 2, label);
+				List<String> modes = mode.getModes();
+				float cw = (w - 8) / 3f;
+				for (int i = 0; i < modes.size(); i++) {
+					float px = x + (i % 3) * (cw + 4);
+					float py = y + 14 + (i / 3) * 16;
+					boolean sel = mode.is(modes.get(i));
+					boolean hover = in(mx, my, px, py, cw, 14);
+					Render2D.roundRect(ctx, px, py, cw, 14, 5, sel ? th.accent(0.95f) : (hover ? th.card(1f) : th.card(0.65f)));
+					String name = modes.get(i);
+					UiFont.drawScaled(ctx, textRenderer, name, px + cw / 2f - UiFont.width(textRenderer, name) * 0.4f, py + 3.5f, 0.8f, sel ? th.onAccent() : th.text());
+					final String pick = name;
+					hit(px, py, cw, 14, null, clip, (a, b2, btn) -> mode.set(pick));
+				}
+			} else {
+				UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+				String v = mode.get();
+				float vw = UiFont.width(textRenderer, v) + 18;
+				boolean hover = in(mx, my, x + w - vw, y + 1, vw, 14);
+				Render2D.roundRect(ctx, x + w - vw, y + 1, vw, 14, 5, hover ? th.card(1f) : th.card(0.65f));
+				UiFont.draw(ctx, textRenderer, v, x + w - vw + 9, y + 4, th.text());
+				hit(x, y, w, 16, null, clip, (a, b2, btn) -> mode.cycle(btn == 1 ? -1 : 1));
 			}
 		} else if (s instanceof ActionSetting action) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 5, label);
+			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
 			String bt = action.buttonText();
-			float bw = textRenderer.getWidth(bt) + 16;
-			boolean hover = inside(mx, my, x + w - bw, y, x + w, y + 16);
-			Render2D.roundRect(ctx, x + w - bw, y + 1, bw, 14, 7, hover ? 0xFFFFFFFF : 0xFFE6E6EA);
-			Render2D.text(ctx, textRenderer, bt, x + w - bw + 8, y + 4, 0xFF0B0B0F);
-			if (interactive) {
-				hit(x + w - bw, y, x + w, y + 16, true, (a, b2, btn) -> action.run());
-			}
+			float bw = UiFont.width(textRenderer, bt) + 16;
+			boolean hover = in(mx, my, x + w - bw, y, bw, 16);
+			Render2D.roundRect(ctx, x + w - bw, y + 1, bw, 14, 7, th.accent(hover ? 1f : 0.88f));
+			UiFont.draw(ctx, textRenderer, bt, x + w - bw + 8, y + 4, th.onAccent());
+			hit(x + w - bw, y, bw, 16, null, clip, (a, b2, btn) -> action.run());
 		} else if (s instanceof InfoSetting info) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 5, label);
+			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
 			String v = info.text();
-			float maxW = w - textRenderer.getWidth(s.getName()) - 12;
-			if (textRenderer.getWidth(v) > maxW) {
-				while (textRenderer.getWidth(v + "\u2026") > maxW && v.length() > 1) {
+			float maxW = w - UiFont.width(textRenderer, s.getName()) - 12;
+			if (UiFont.width(textRenderer, v) > maxW) {
+				while (UiFont.width(textRenderer, v + "…") > maxW && v.length() > 1) {
 					v = v.substring(0, v.length() - 1);
 				}
-				v = v + "\u2026";
+				v = v + "…";
 			}
-			Render2D.text(ctx, textRenderer, v, x + w - textRenderer.getWidth(v), y + 5, SUB);
+			UiFont.draw(ctx, textRenderer, v, x + w - UiFont.width(textRenderer, v), y + 4, th.sub());
 		} else if (s instanceof TextSetting text) {
-			Render2D.text(ctx, textRenderer, s.getName(), x, y + 6, label);
-			float bw = Math.min(170, w * 0.6f);
+			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 6, label);
+			float bw = Math.min(160, w * 0.58f);
 			float bx = x + w - bw;
 			boolean active = editing == text;
-			Render2D.roundRectBordered(ctx, bx, y + 2, bw, 15, 4, 0xFF0E0E13, active ? 0xCCFFFFFF : 0x30FFFFFF);
+			Render2D.roundRect(ctx, bx, y + 2, bw, 15, 5, th.bg(0.9f));
+			Render2D.roundRectOutline(ctx, bx, y + 2, bw, 15, 5, 1, th.accent(active ? 0.8f : 0.18f));
 			String value = active ? editBuffer : text.get();
-			String shown = value;
-			while (textRenderer.getWidth(shown) > bw - 12 && shown.length() > 1) {
-				shown = shown.substring(1);
+			String shownText = value;
+			while (UiFont.width(textRenderer, shownText) > bw - 12 && shownText.length() > 1) {
+				shownText = shownText.substring(1);
 			}
 			boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
-			Render2D.text(ctx, textRenderer, shown + (active && blink ? "_" : ""), bx + 5, y + 6, active ? TEXT : 0xFFC8C8D0);
-			if (interactive) {
-				hit(bx, y, x + w, y + 18, text, (a, b2, btn) -> {
-					if (editing != text) {
-						editing = text;
-						editBuffer = text.get();
-					}
-				});
-			}
+			UiFont.draw(ctx, textRenderer, shownText + (active && blink ? "_" : ""), bx + 6, y + 5, active ? th.text() : Colors.mixArgb(th.sub(), th.text(), 0.6f));
+			hit(bx, y, x + w - bx, 18, text, clip, (a, b2, btn) -> {
+				if (editing != text) {
+					editing = text;
+					editBuffer = text.get();
+				}
+			});
 		}
+	}
+
+	/** HSV of a colour; keeps the last hue for greys so dragging saturation doesn't jump to red. */
+	private float[] hsvOf(ColorSetting c) {
+		float[] hsv = Colors.toHsv(c.rgb());
+		if (hsv[1] < 0.01f || hsv[2] < 0.01f) {
+			hsv[0] = hues.getOrDefault(c, 0.62f);
+		} else {
+			hues.put(c, hsv[0]);
+		}
+		return hsv;
+	}
+
+	private void drawPicker(DrawContext ctx, ColorSetting c, float x, float y, float w, float[] clip) {
+		Theme th = Theme.get();
+		float[] hsv = hsvOf(c);
+		String[] names = {"H", "S", "B"};
+		for (int ch = 0; ch < 3; ch++) {
+			float by = y + ch * 12;
+			UiFont.drawScaled(ctx, textRenderer, names[ch], x, by + 1, 0.75f, th.sub());
+			float bx = x + 10, bw = w - 10;
+			int steps = 32;
+			for (int i = 0; i < steps; i++) {
+				float u0 = i / (float) steps, u1 = (i + 1) / (float) steps;
+				float u = (u0 + u1) / 2f;
+				int col = switch (ch) {
+					case 0 -> Colors.hsv(u, 1f, 1f);
+					case 1 -> Colors.hsv(hsv[0], u, Math.max(0.25f, hsv[2]));
+					default -> Colors.hsv(hsv[0], hsv[1], u);
+				};
+				ctx.fill(Math.round(bx + bw * u0), Math.round(by + 1), Math.round(bx + bw * u1), Math.round(by + 8), 0xFF000000 | col);
+			}
+			float knob = bx + bw * hsv[ch];
+			Render2D.roundRect(ctx, knob - 1.5f, by - 0.5f, 3, 10, 1.5f, 0xFFFFFFFF);
+			Render2D.roundRectOutline(ctx, knob - 1.5f, by - 0.5f, 3, 10, 1.5f, 0.6f, 0xFF000000);
+			final int channel = ch;
+			hit(bx - 2, by - 1, bw + 4, 11, c, clip, (a, b, btn) -> {
+				picking = c;
+				pickChannel = channel;
+				pickX = bx;
+				pickW = bw;
+				applyPick(a);
+			});
+		}
+		float py = y + 37;
+		int count = ColorSetting.PRESETS.length;
+		float size = Math.min(11, (w - (count - 1) * 3) / count);
+		for (int i = 0; i < count; i++) {
+			int preset = ColorSetting.PRESETS[i];
+			float px = x + i * (size + 3);
+			Render2D.roundRect(ctx, px, py, size, size, 3, preset);
+			if ((preset & 0xFFFFFF) == c.rgb()) {
+				Render2D.roundRectOutline(ctx, px - 1.5f, py - 1.5f, size + 3, size + 3, 4, 1, th.accent(1f));
+			}
+			hit(px, py, size, size, c, clip, (a, b, btn) -> c.set(preset));
+		}
+	}
+
+	private void applyPick(double mx) {
+		if (picking == null) {
+			return;
+		}
+		float f = (float) Math.max(0, Math.min(1, (mx - pickX) / pickW));
+		float[] hsv = hsvOf(picking);
+		hsv[pickChannel] = pickChannel == 0 ? Math.min(0.999f, f) : f;
+		hues.put(picking, hsv[0]);
+		picking.set(Colors.hsv(hsv[0], hsv[1], hsv[2]));
 	}
 
 	// ------------------------------------------------------------------ input
@@ -448,34 +895,38 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
+	private double[] local(double mx, double my) {
+		if (view != View.WINDOW) {
+			return new double[]{mx, my};
+		}
+		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
+		float s = 0.95f + 0.05f * k;
+		float cx = winX + winW / 2f, cy = winY + winH / 2f;
+		return new double[]{cx + (mx - cx) / s, cy + (my - cy) / s};
+	}
+
 	@Override
 	public boolean mouseClicked(Click click, boolean doubled) {
-		double mx = click.x();
-		double my = click.y();
+		double[] p = local(click.x(), click.y());
+		double mx = p[0], my = p[1];
 		int button = click.button();
-		// undo the open-animation scale for hit testing
-		float ease = 1f - (float) Math.pow(1f - open, 3);
-		float s = 0.94f + 0.06f * ease;
-		mx = width / 2f + (mx - width / 2f) / s;
-		my = height / 2f + (my - height / 2f) / s;
-
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit h = hits.get(i);
-			if (!inside(mx, my, h.x1(), h.y1(), h.x2(), h.y2())) {
+			if (mx < h.x1() || mx >= h.x2() || my < h.y1() || my >= h.y2()) {
 				continue;
 			}
-			if (h.clipped() && !inside(mx, my, clipX1, clipY1, clipX2, clipY2)) {
+			if (h.clip() != null && (mx < h.clip()[0] || mx >= h.clip()[2] || my < h.clip()[1] || my >= h.clip()[3])) {
 				continue;
 			}
 			if (editing != null && h.owner() != editing) {
-				commitEdit(); // clicking anything else confirms the text field
+				commitEdit();
 			}
 			h.action().run(mx, my, button);
 			return true;
 		}
 		commitEdit();
-		if (!inside(mx, my, px, py, px + pw, py + ph)) {
-			close();
+		if (view == View.WINDOW && !in(mx, my, winX, winY, winW, winH)) {
+			go(View.HOME);
 			return true;
 		}
 		return super.mouseClicked(click, doubled);
@@ -483,20 +934,34 @@ public class ClickGuiScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(Click click) {
-		if (dragging != null) {
-			dragging = null;
-			return true;
-		}
-		return super.mouseReleased(click);
+		boolean was = slider != null || picking != null || dragMode != 0;
+		slider = null;
+		picking = null;
+		dragMode = 0;
+		return was || super.mouseReleased(click);
 	}
 
 	@Override
 	public boolean mouseDragged(Click click, double offsetX, double offsetY) {
-		if (dragging != null) {
-			float ease = 1f - (float) Math.pow(1f - open, 3);
-			float s = 0.94f + 0.06f * ease;
-			double mx = width / 2f + (click.x() - width / 2f) / s;
-			dragging.setFraction((mx - dragX) / dragW);
+		if (dragMode == 1) {
+			winX = (float) (click.x() - dragDx);
+			winY = (float) (click.y() - dragDy);
+			clampWindow();
+			return true;
+		}
+		if (dragMode == 2) {
+			winW = (float) (click.x() + dragDx - winX);
+			winH = (float) (click.y() + dragDy - winY);
+			clampWindow();
+			return true;
+		}
+		double[] p = local(click.x(), click.y());
+		if (slider != null) {
+			slider.setFraction((p[0] - sliderX) / sliderW);
+			return true;
+		}
+		if (picking != null) {
+			applyPick(p[0]);
 			return true;
 		}
 		return super.mouseDragged(click, offsetX, offsetY);
@@ -504,7 +969,14 @@ public class ClickGuiScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-		scrollTarget = (float) Math.max(0, Math.min(maxScroll, scrollTarget - verticalAmount * 28));
+		double[] p = local(mouseX, mouseY);
+		for (int i = 1; i >= 0; i--) {
+			float[] a = scrollArea[i];
+			if (view == View.WINDOW && in(p[0], p[1], a[0], a[1], a[2], a[3])) {
+				scrollTarget[i] = (float) Math.max(0, Math.min(maxScroll[i], scrollTarget[i] - verticalAmount * 24));
+				return true;
+			}
+		}
 		return true;
 	}
 
@@ -532,8 +1004,24 @@ public class ClickGuiScreen extends Screen {
 			}
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_RIGHT_SHIFT || key == GLFW.GLFW_KEY_ESCAPE) {
+		if (searching) {
+			if (key == GLFW.GLFW_KEY_ESCAPE) {
+				searching = false;
+			} else if (key == GLFW.GLFW_KEY_BACKSPACE && !search.isEmpty()) {
+				search = search.substring(0, search.length() - 1);
+			}
+			return true;
+		}
+		if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
 			close();
+			return true;
+		}
+		if (key == GLFW.GLFW_KEY_ESCAPE) {
+			if (view == View.WINDOW) {
+				go(View.HOME);
+			} else {
+				close();
+			}
 			return true;
 		}
 		return super.keyPressed(input);
@@ -541,11 +1029,23 @@ public class ClickGuiScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharInput input) {
+		String s = input.asString();
 		if (editing != null) {
-			String s = input.asString();
 			if (s != null && !s.isEmpty() && editBuffer.length() < editing.getMaxLength()) {
 				editBuffer += s;
 			}
+			return true;
+		}
+		if (searching) {
+			if (s != null && search.length() < 32) {
+				search += s;
+			}
+			return true;
+		}
+		if (view == View.HOME && s != null && !s.isBlank()) {
+			// start typing on the home page = search
+			searching = true;
+			search = s;
 			return true;
 		}
 		return super.charTyped(input);

@@ -59,4 +59,26 @@ public final class Colors {
 		}
 		return ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
 	}
+
+	/** RGB -> {hue 0..1, saturation 0..1, value 0..1}. */
+	public static float[] toHsv(int rgb) {
+		float r = ((rgb >> 16) & 0xFF) / 255f, g = ((rgb >> 8) & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
+		float max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+		float d = max - min;
+		float h;
+		if (d == 0) {
+			h = 0;
+		} else if (max == r) {
+			h = ((g - b) / d) % 6f;
+		} else if (max == g) {
+			h = (b - r) / d + 2f;
+		} else {
+			h = (r - g) / d + 4f;
+		}
+		h /= 6f;
+		if (h < 0) {
+			h += 1;
+		}
+		return new float[]{h, max == 0 ? 0 : d / max, max};
+	}
 }

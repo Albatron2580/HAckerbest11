@@ -2,6 +2,7 @@ package com.whiteclient.gui;
 
 import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.MainMenu;
+import com.whiteclient.modules.Wardrobe;
 import com.whiteclient.music.NowPlaying;
 import com.whiteclient.render.Colors;
 import net.fabricmc.loader.api.FabricLoader;
@@ -15,6 +16,7 @@ import net.minecraft.client.gui.screen.option.LanguageOptionsScreen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
 import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
+import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.text.Text;
 import org.joml.Matrix3x2fStack;
@@ -37,6 +39,12 @@ public class WhiteTitleScreen extends Screen {
 	private long opened = System.nanoTime();
 	private long lastFrame = System.nanoTime();
 	private Supplier<SkinTextures> skin;
+	private SkinPreview walker;
+	private int walkerW, walkerH;
+	/** Screenshot tests: fixed seconds into the walk-in animation (NaN = real time). */
+	public static float debugWalkTime = Float.NaN;
+	/** Direction the model faces while walking in (degrees for the skin widget). */
+	public static float walkYaw = 90f;
 
 	private record Hit(float x1, float y1, float x2, float y2, Runnable action) {
 	}
@@ -56,6 +64,65 @@ public class WhiteTitleScreen extends Screen {
 			skin = client.getSkinProvider().supplySkinTextures(client.getGameProfile(), false);
 		} catch (Throwable t) {
 			skin = null;
+		}
+		walkerH = (int) Math.min(190, height * 0.56f);
+		walkerW = (int) (walkerH * 0.6f);
+		try {
+			walker = new SkinPreview(walkerW, walkerH, () -> {
+				SkinTextures base = null;
+				try {
+					base = skin != null ? skin.get() : null;
+				} catch (Throwable ignored) {
+				}
+				if (base == null) {
+					base = DefaultSkinHelper.getSteve();
+				}
+				return Wardrobe.apply(base);
+			});
+		} catch (Throwable t) {
+			walker = null;
+		}
+	}
+
+	/** The player model walks in from the side, turns to you and idles (photo 1). */
+	private void drawWalker(DrawContext ctx, int mouseX, int mouseY, float delta, float time, MainMenu settings) {
+		if (walker == null || (settings != null && !settings.player.isOn()) || width < 470) {
+			return;
+		}
+		boolean left = settings != null && settings.playerSide.is("Left");
+		float t = Float.isNaN(debugWalkTime) ? (System.nanoTime() - opened) / 1.0e9f - 0.35f : debugWalkTime;
+		float walkDur = 2.1f;
+		float targetCx = left ? width * 0.15f : width * 0.85f;
+		float startCx = left ? -walkerW : width + walkerW;
+		float u = Math.max(0f, Math.min(1f, t / walkDur));
+		float ease = 1f - (1f - u) * (1f - u);
+		float cxp = startCx + (targetCx - startCx) * ease;
+		float walk = u < 1f ? Math.min(1f, (1f - u) * 4f + 0.25f) : 0f;
+		float turn = Math.max(0f, Math.min(1f, (t - walkDur + 0.15f) / 0.55f));
+		turn = turn * turn * (3 - 2 * turn);
+		float faceYaw = left ? 22f : -22f;
+		float mouseLook = ((mouseX - cxp) / (float) width) * 26f * turn;
+		float yaw = (left ? -walkYaw : walkYaw) * (1f - turn) + (faceYaw + mouseLook) * turn;
+		float distance = (startCx - cxp);
+		float phase = Math.abs(distance) / 7.5f;
+		walker.setRotation(-4f * turn, yaw);
+		walker.pose(phase, walk, time);
+		int x = Math.round(cxp - walkerW / 2f);
+		int y = Math.round(height - walkerH - 34 + (float) Math.abs(Math.sin(phase)) * -1.5f * walk);
+		// soft floor shadow + glow
+		float sa = Math.min(1f, Math.max(0f, t / 0.6f));
+		for (int i = 4; i >= 1; i--) {
+			Render2D.roundRect(ctx, cxp - walkerW * 0.18f * i, y + walkerH - 6 - i, walkerW * 0.36f * i, 3 + 2 * i, 4 + i, Colors.argb(0x000000, 0.08f * sa));
+		}
+		walker.render(ctx, x, y, mouseX, mouseY, delta);
+		// name tag above the head
+		if (turn > 0.01f) {
+			String name = client.getSession().getUsername();
+			float nw = UiFont.width(textRenderer, name) + 14;
+			float ny = y - 4 - 6 * (1 - turn);
+			Render2D.roundRect(ctx, cxp - nw / 2f, ny, nw, 14, 7, Colors.mulAlpha(BTN, turn));
+			Render2D.roundRectOutline(ctx, cxp - nw / 2f, ny, nw, 14, 7, 1, Colors.withAlpha(0xFFFFFF, (int) (50 * turn)));
+			UiFont.drawCentered(ctx, textRenderer, name, cxp, ny + 3, Colors.withAlpha(TEXT, (int) (255 * turn)));
 		}
 	}
 
@@ -227,6 +294,13 @@ public class WhiteTitleScreen extends Screen {
 				Render2D.roundRect(ctx, px + 8 + b * 3.2f, 19 - hgt / 2f, 2, hgt, 1, Colors.withAlpha(0xFFFFFF, (int) (255 * pi)));
 			}
 			UiFont.draw(ctx, textRenderer, s, px + 22, 14, Colors.withAlpha(TEXT, (int) (255 * pi)));
+		}
+
+		// ---- walking player
+		try {
+			drawWalker(ctx, mouseX, mouseY, delta, time, settings);
+		} catch (Throwable t) {
+			walker = null;
 		}
 
 		// ---- footer

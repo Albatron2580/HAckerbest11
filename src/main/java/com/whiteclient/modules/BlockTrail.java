@@ -30,7 +30,7 @@ public class BlockTrail extends Module {
 	private final ArrayDeque<Step> steps = new ArrayDeque<>();
 
 	public BlockTrail() {
-		super("Block Trail", "Glowing squares where you walk", Category.VISUALS, true);
+		super("Block Trail", "Glowing squares where you walk", Category.COSMETICS, true);
 	}
 
 	@Override

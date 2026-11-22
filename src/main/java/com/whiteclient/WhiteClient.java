@@ -9,6 +9,11 @@ import com.whiteclient.modules.Aura;
 import com.whiteclient.modules.BlockTrail;
 import com.whiteclient.modules.GalaxySky;
 import com.whiteclient.modules.Halo;
+import com.whiteclient.modules.Wardrobe;
+import com.whiteclient.modules.Theme;
+import com.whiteclient.modules.RainFX;
+import com.whiteclient.modules.TargetESP;
+import com.whiteclient.modules.Pets;
 import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.modules.ModsButton;
 import com.whiteclient.modules.Snow;
@@ -50,7 +55,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.3.0";
+	public static final String VERSION = "1.4.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -95,9 +100,13 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Wings());
 		modules.register(new Aura());
 		modules.register(new BlockTrail());
+		modules.register(new Pets());
+
+		modules.register(new TargetESP());
 		// World
 		modules.register(new GalaxySky());
 		modules.register(new Snow());
+		modules.register(new RainFX());
 		// Music
 		modules.register(new Spotify());
 		modules.register(new Text3D());
@@ -108,6 +117,9 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new ModsButton());
 		modules.register(new MenuButtons());
 		modules.register(new MainMenu());
+
+		modules.register(new Theme());
+		modules.register(new Wardrobe());
 
 		config = new ConfigManager(modules);
 		config.load();

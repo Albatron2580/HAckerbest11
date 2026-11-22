@@ -42,7 +42,7 @@ public class Wings extends Module {
 	private static final int[] TIPS = {4, 6, 8, 10, 12, 14};
 
 	public Wings() {
-		super("Wings", "Spiky glowing wings on your back", Category.VISUALS, true);
+		super("Wings", "Spiky glowing wings on your back", Category.COSMETICS, true);
 	}
 
 	@Override
