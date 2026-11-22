@@ -388,8 +388,8 @@ public class WhiteTitleScreen extends Screen {
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.2) * 1.2f);
-		for (int g = 5; g >= 1; g--) {
-			Render2D.circle(ctx, colX, logoY, r * (1.3f + g * 0.55f), Colors.withAlpha(0xFFFFFF, (int) (7 * li)));
+		for (int g = 14; g >= 1; g--) {
+			Render2D.circle(ctx, colX, logoY, r * (1.2f + g * 0.22f), Colors.withAlpha(0xFFFFFF, (int) (3 * li)));
 		}
 		Render2D.planetLogo(ctx, colX, logoY, r, time, (int) (255 * li));
 		String word = "WHITECLIENT";

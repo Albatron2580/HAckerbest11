@@ -41,14 +41,15 @@ public final class BackgroundShader {
 					double warp = 0.16 * Math.sin(v * 2.4 + time * 0.22 + u * 0.6)
 							+ 0.08 * Math.sin(v * 5.3 - time * 0.31 + u * 2.1)
 							+ 0.10 * Noise.noise(u * 0.7, v * 0.7, time * 0.05);
-					double fx = (u + warp) * (6.5 + 1.5 * mask);
+					double fx = (u + warp) * (4.0 + 1.2 * mask);
 					float fold = (float) (0.5 + 0.5 * Math.sin(fx * Math.PI + time * 0.12));
-					float shade = (float) Math.pow(fold, 1.7);
-					float crest = (float) Math.pow(fold, 9);
+					float ripple = (float) (0.5 + 0.5 * Math.sin(fx * 2.3 * Math.PI + 1.7 - time * 0.09));
+					float shade = (float) Math.pow(fold, 1.3);
+					float crest = (float) Math.pow(fold, 5);
 					float base = 0.13f + 0.07f * (float) (1 - v) + 0.03f * (float) (u / aspect);
-					float silk = 0.17f + 0.46f * shade + 0.27f * crest;
-					float far = smooth(0.75 * aspect, 1.35 * aspect, u);
-					silk *= 0.78f + 0.3f * far;
+					float silk = 0.15f + 0.42f * shade + 0.2f * crest + 0.07f * ripple * shade;
+					float far = smooth(0.7 * aspect, 1.4 * aspect, u);
+					silk *= 0.8f + 0.38f * far;
 					float l = lerp(base, silk, (float) mask * 0.9f);
 					float vig = 1f - 0.5f * (float) ((v - 0.45) * (v - 0.45));
 					l *= vig * (0.85f + 0.15f * intensity);
