@@ -367,6 +367,11 @@ public class WhiteTitleScreen extends Screen {
 				float r = 2.2f + 3.4f * frac(seed * 0.91f);
 				float edge = Math.min(1f, Math.min(fy * 6f, (1f - fy) * 6f));
 				float a = (0.22f + 0.4f * frac(seed * 0.23f)) * edge * pa;
+				// don't float through the player model (it is drawn on its own layer)
+				float dxm = Math.abs(px - showcaseModelX()) / (walkerW * 0.55f + r * 2f);
+				if (walker != null && dxm < 1f && py > height * 0.12f) {
+					a *= Math.max(0f, (dxm - 0.75f) * 4f);
+				}
 				if (a > 0.02f) {
 					Render2D.planetLogo(ctx, px, py, r, time * (0.6f + frac(seed) * 0.8f) + seed, (int) (255 * a));
 				}
