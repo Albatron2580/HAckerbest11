@@ -24,7 +24,7 @@ public final class ConfigManager {
 	private final Path file = FabricLoader.getInstance().getConfigDir().resolve("whiteclient.json");
 	private final ModuleManager modules;
 	private int loadedVersion = CURRENT_VERSION;
-	public static final int CURRENT_VERSION = 2;
+	public static final int CURRENT_VERSION = 3;
 
 	/** Config version found on disk (CURRENT_VERSION when there was no file). */
 	public int loadedVersion() {

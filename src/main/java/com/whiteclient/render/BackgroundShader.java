@@ -8,6 +8,8 @@ public final class BackgroundShader {
 	public static final int ENERGY = 0;
 	public static final int AURORA = 1;
 	public static final int MONO = 2;
+	/** Soft grey silk curtains folding on the right side (WHITECLIENT showcase menu). */
+	public static final int SILK = 3;
 
 	private BackgroundShader() {
 	}
@@ -33,7 +35,27 @@ public final class BackgroundShader {
 			for (int x = 0; x < w; x++) {
 				double u = x * inv;
 				float r, g, b;
-				if (mode == AURORA) {
+				if (mode == SILK) {
+					double aspect = (double) w / h;
+					double mask = smooth(0.42 * aspect, 1.02 * aspect, u);
+					double warp = 0.16 * Math.sin(v * 2.4 + time * 0.22 + u * 0.6)
+							+ 0.08 * Math.sin(v * 5.3 - time * 0.31 + u * 2.1)
+							+ 0.10 * Noise.noise(u * 0.7, v * 0.7, time * 0.05);
+					double fx = (u + warp) * (6.5 + 1.5 * mask);
+					float fold = (float) (0.5 + 0.5 * Math.sin(fx * Math.PI + time * 0.12));
+					float shade = (float) Math.pow(fold, 1.7);
+					float crest = (float) Math.pow(fold, 9);
+					float base = 0.13f + 0.07f * (float) (1 - v) + 0.03f * (float) (u / aspect);
+					float silk = 0.17f + 0.46f * shade + 0.27f * crest;
+					float far = smooth(0.75 * aspect, 1.35 * aspect, u);
+					silk *= 0.78f + 0.3f * far;
+					float l = lerp(base, silk, (float) mask * 0.9f);
+					float vig = 1f - 0.5f * (float) ((v - 0.45) * (v - 0.45));
+					l *= vig * (0.85f + 0.15f * intensity);
+					r = l * (0.93f + 0.07f * cr);
+					g = l * (0.93f + 0.07f * cg);
+					b = l * (0.93f + 0.07f * cb);
+				} else if (mode == AURORA) {
 					double n = Noise.noise(u * 1.1, v * 1.1 - time * 0.04, time * 0.06);
 					double m = Noise.noise(u * 2.1 + 7.3, v * 1.6, time * 0.09);
 					double k = Noise.noise(u * 0.6 - time * 0.02, v * 0.9 + 3.3, time * 0.03);

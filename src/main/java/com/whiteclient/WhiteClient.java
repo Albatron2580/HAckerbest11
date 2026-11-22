@@ -55,7 +55,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.4.0";
+	public static final String VERSION = "1.5.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -123,6 +123,13 @@ public final class WhiteClient implements ClientModInitializer {
 
 		config = new ConfigManager(modules);
 		config.load();
+		if (config.loadedVersion() < 3) {
+			// 1.5: new showcase main menu with silk background
+			MainMenu mm = modules.get(MainMenu.class);
+			mm.layout.reset();
+			mm.background.reset();
+			config.save();
+		}
 		if (config.loadedVersion() < 2) {
 			// 1.2: everything switched to the white theme
 			modules.get(MenuBackground.class).color.reset();

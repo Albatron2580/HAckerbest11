@@ -4,6 +4,7 @@ import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.MainMenu;
 import com.whiteclient.modules.Wardrobe;
 import com.whiteclient.music.NowPlaying;
+import com.whiteclient.render.BackgroundShader;
 import com.whiteclient.render.Colors;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.Click;
@@ -40,6 +41,7 @@ public class WhiteTitleScreen extends Screen {
 	private long lastFrame = System.nanoTime();
 	private Supplier<SkinTextures> skin;
 	private SkinPreview walker;
+	private boolean showcase = true;
 	private int walkerW, walkerH;
 	/** Screenshot tests: fixed seconds into the walk-in animation (NaN = real time). */
 	public static float debugWalkTime = Float.NaN;
@@ -65,7 +67,9 @@ public class WhiteTitleScreen extends Screen {
 		} catch (Throwable t) {
 			skin = null;
 		}
-		walkerH = (int) Math.min(200, height * 0.6f);
+		MainMenu mm = WhiteClient.get().modules().get(MainMenu.class);
+		showcase = mm == null || mm.layout.is("Showcase");
+		walkerH = showcase ? (int) Math.min(360, height * 0.74f) : (int) Math.min(200, height * 0.6f);
 		walkerW = (int) (walkerH * 0.6f);
 		try {
 			walker = new SkinPreview(walkerW, walkerH, () -> {
@@ -89,16 +93,16 @@ public class WhiteTitleScreen extends Screen {
 		if (walker == null || (settings != null && !settings.player.isOn())) {
 			return;
 		}
-		boolean left = settings != null && settings.playerSide.is("Left");
+		boolean left = !showcase && settings != null && settings.playerSide.is("Left");
 		// stand in the free space next to the buttons
 		float buttonsHalf = Math.min(214, width - 40) / 2f;
 		float free = width / 2f - buttonsHalf;
-		if (free < walkerW * 0.8f + 8) {
+		if (!showcase && free < walkerW * 0.8f + 8) {
 			return;
 		}
 		float t = Float.isNaN(debugWalkTime) ? (System.nanoTime() - opened) / 1.0e9f - 0.35f : debugWalkTime;
 		float walkDur = 2.1f;
-		float targetCx = left ? free / 2f : width - free / 2f;
+		float targetCx = showcase ? showcaseModelX() : (left ? free / 2f : width - free / 2f);
 		float startCx = left ? -walkerW : width + walkerW;
 		float u = Math.max(0f, Math.min(1f, t / walkDur));
 		float ease = 1f - (1f - u) * (1f - u);
@@ -114,7 +118,8 @@ public class WhiteTitleScreen extends Screen {
 		walker.setRotation(-4f * turn, yaw);
 		walker.pose(phase, walk, time);
 		int x = Math.round(cxp - walkerW / 2f);
-		int y = Math.round(height - walkerH - 34 + (float) Math.abs(Math.sin(phase)) * -1.5f * walk);
+		float footY = showcase ? height - Math.max(26, height * 0.1f) : height - 34;
+		int y = Math.round(footY - walkerH + (float) Math.abs(Math.sin(phase)) * -1.5f * walk);
 		// soft floor shadow + glow
 		float sa = Math.min(1f, Math.max(0f, t / 0.6f));
 		for (int i = 4; i >= 1; i--) {
@@ -122,7 +127,15 @@ public class WhiteTitleScreen extends Screen {
 		}
 		walker.render(ctx, x, y, mouseX, mouseY, delta);
 		// name tag above the head
-		if (turn > 0.01f) {
+		if (turn > 0.01f && showcase) {
+			// name with a thin underline above the head (like a profile tag)
+			String name = client.getSession().getUsername();
+			float ny = y - 8 - 6 * (1 - turn);
+			float nw = UiFont.width(textRenderer, name) * 1.1f;
+			UiFont.drawScaled(ctx, textRenderer, name, cxp - nw / 2f, ny, 1.1f, Colors.withAlpha(TEXT, (int) (255 * turn)));
+			float ul = (nw + 6) * turn;
+			Render2D.roundRect(ctx, cxp - ul / 2f, ny + 12, ul, 1.2f, 0.6f, Colors.withAlpha(0xFFFFFF, (int) (170 * turn)));
+		} else if (turn > 0.01f) {
 			String name = client.getSession().getUsername();
 			float nw = UiFont.width(textRenderer, name) + 14;
 			float ny = y - 4 - 6 * (1 - turn);
@@ -163,13 +176,22 @@ public class WhiteTitleScreen extends Screen {
 	@Override
 	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
+		boolean silk = settings == null || settings.background.is("Silk");
 		if (settings != null && settings.background.is("Panorama")) {
 			renderPanoramaBackground(ctx, delta);
 			applyBlur(ctx);
+		} else if (silk) {
+			MenuBackgroundRenderer.draw(ctx, width, height, 1f, BackgroundShader.SILK);
 		} else {
 			MenuBackgroundRenderer.draw(ctx, width, height, 1f);
 		}
-		ctx.fillGradient(0, 0, width, height, 0x55000000, 0xAA000000);
+		if (silk) {
+			// keep the left side calm so the menu text reads well
+			Render2D.hGradient(ctx, 0, 0, width * 0.55f, height, 0x50000000, 0x00000000);
+			ctx.fillGradient(0, height / 2, width, height, 0x00000000, 0x40000000);
+		} else {
+			ctx.fillGradient(0, 0, width, height, 0x55000000, 0xAA000000);
+		}
 	}
 
 	@Override
@@ -183,6 +205,11 @@ public class WhiteTitleScreen extends Screen {
 		float fade = intro(0f);
 		if (fade < 1f) {
 			ctx.fill(0, 0, width, height, Colors.argb(0x000000, 1f - fade));
+		}
+		if (showcase) {
+			renderShowcase(ctx, mouseX, mouseY, delta, dt, time);
+			super.render(ctx, mouseX, mouseY, delta);
+			return;
 		}
 
 		float cx = width / 2f;
@@ -317,6 +344,184 @@ public class WhiteTitleScreen extends Screen {
 		UiFont.draw(ctx, textRenderer, copy, width - 10 - UiFont.width(textRenderer, copy), height - 14, Colors.withAlpha(SUB, (int) (160 * fi)));
 
 		super.render(ctx, mouseX, mouseY, delta);
+	}
+
+	private float showcaseModelX() {
+		return width * 0.70f;
+	}
+
+	/** Left: big planet logo + text menu. Right: your player on silk curtains with little planets floating by. */
+	private void renderShowcase(DrawContext ctx, int mouseX, int mouseY, float delta, float dt, float time) {
+		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
+
+		// ---- floating planets (behind everything)
+		if (settings == null || settings.planets.isOn()) {
+			float pa = intro(0.2f);
+			for (int i = 0; i < 11; i++) {
+				float seed = i * 12.9898f;
+				float fx = frac(seed * 0.37f);
+				float sp = 0.010f + 0.012f * frac(seed * 0.13f);
+				float fy = frac(seed * 0.61f + time * sp);
+				float px = width * (0.5f + 0.48f * fx) + (float) Math.sin(time * 0.25f + seed) * 10;
+				float py = height * (1.12f - fy * 1.24f);
+				float r = 2.2f + 3.4f * frac(seed * 0.91f);
+				float edge = Math.min(1f, Math.min(fy * 6f, (1f - fy) * 6f));
+				float a = (0.22f + 0.4f * frac(seed * 0.23f)) * edge * pa;
+				if (a > 0.02f) {
+					Render2D.planetLogo(ctx, px, py, r, time * (0.6f + frac(seed) * 0.8f) + seed, (int) (255 * a));
+				}
+			}
+		}
+
+		// ---- player model on the right
+		try {
+			drawWalker(ctx, mouseX, mouseY, delta, time, settings);
+		} catch (Throwable t) {
+			walker = null;
+		}
+
+		// ---- logo + name (left)
+		float colX = Math.max(96, Math.min(260, width * 0.25f));
+		float r = Math.max(11, Math.min(22, height * 0.062f));
+		float logoY = height * 0.3f;
+		float li = intro(0.1f);
+		Matrix3x2fStack m = ctx.getMatrices();
+		m.pushMatrix();
+		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.2) * 1.2f);
+		for (int g = 5; g >= 1; g--) {
+			Render2D.circle(ctx, colX, logoY, r * (1.3f + g * 0.55f), Colors.withAlpha(0xFFFFFF, (int) (7 * li)));
+		}
+		Render2D.planetLogo(ctx, colX, logoY, r, time, (int) (255 * li));
+		String word = "WHITECLIENT";
+		float tw = textRenderer.getWidth(UiFont.title(word));
+		float titleY = logoY + r * 1.55f + 6;
+		ctx.drawText(textRenderer, UiFont.title(word), Math.round(colX - tw / 2f), Math.round(titleY), Colors.withAlpha(0xFFFFFF, (int) (255 * li)), false);
+		m.popMatrix();
+
+		// ---- text menu
+		boolean mp = client.isMultiplayerEnabled();
+		String[] labels = {"Singleplayer", "Multiplayer", "Minecraft Settings", "Client", "Quit Game"};
+		Runnable[] actions = {
+				() -> client.setScreen(new SelectWorldScreen(this)),
+				() -> {
+					if (mp) {
+						client.setScreen(client.options.skipMultiplayerWarning ? new MultiplayerScreen(this) : new MultiplayerWarningScreen(this));
+					}
+				},
+				() -> client.setScreen(new OptionsScreen(this, client.options)),
+				() -> client.setScreen(new ClickGuiScreen(this)),
+				() -> client.scheduleStop()
+		};
+		float itemY = titleY + 34;
+		float step = Math.max(17, Math.min(22, height * 0.06f));
+		float scale = 1.12f;
+		for (int i = 0; i < labels.length; i++) {
+			float k = intro(0.22f + i * 0.06f);
+			float y = itemY + i * step + (i == 2 ? 4 : 0) + (i >= 3 ? 4 : 0);
+			float w = UiFont.width(textRenderer, labels[i]) * scale;
+			boolean disabled = i == 1 && !mp;
+			boolean hover = !disabled && in(mouseX, mouseY, colX - w / 2f - 12, y - 4, w + 24, 10 * scale + 8);
+			float h = anim("item" + i, hover ? 1f : 0f, dt);
+			float s2 = scale + 0.08f * h;
+			float w2 = UiFont.width(textRenderer, labels[i]) * s2;
+			float x = colX - w2 / 2f - (1 - k) * 16;
+			if (h > 0.01f) {
+				Render2D.roundRect(ctx, colX - w2 / 2f - 12, y - 4, w2 + 24, 10 * s2 + 8, 7, Colors.withAlpha(0xFFFFFF, (int) (16 * h * k)));
+			}
+			int base = disabled ? 0x6A6A74 : Colors.mix(0xC9C9D1, 0xFFFFFF, h);
+			UiFont.drawScaled(ctx, textRenderer, labels[i], x, y - (s2 - scale) * 4, s2, Colors.withAlpha(base, (int) (255 * k)));
+			float ul = w2 * h;
+			if (ul > 0.5f) {
+				Render2D.roundRect(ctx, colX - ul / 2f, y + 10 * s2 + 1, ul, 1f, 0.5f, Colors.withAlpha(0xFFFFFF, (int) (200 * h)));
+			}
+			if (!disabled) {
+				hits.add(new Hit(colX - w / 2f - 12, y - 4, colX + w / 2f + 12, y + 10 * scale + 4, actions[i]));
+			}
+		}
+
+		// ---- small icon buttons (top right)
+		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
+		List<Object[]> icons = new ArrayList<>();
+		icons.add(new Object[]{"Wardrobe", (IconPainter) Icons::shirt, (Runnable) () -> client.setScreen(new WardrobeScreen(this))});
+		icons.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager()))});
+		icons.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> client.setScreen(new RealmsMainScreen(this))});
+		if (modMenu) {
+			icons.add(new Object[]{"Mods", (IconPainter) Icons::list, (Runnable) this::openModMenu});
+		}
+		float is = 20, ig = 5;
+		float ix0 = width - 10 - icons.size() * is - (icons.size() - 1) * ig;
+		float ii = intro(0.45f);
+		String tip = null;
+		float tipX = 0;
+		for (int i = 0; i < icons.size(); i++) {
+			Object[] d = icons.get(i);
+			float x = ix0 + i * (is + ig);
+			float y = 10 - (1 - ii) * 8;
+			boolean hover = in(mouseX, mouseY, x, y, is, is);
+			float h = anim("icon" + i, hover ? 1f : 0f, dt);
+			Render2D.roundRect(ctx, x, y, is, is, 6, Colors.mulAlpha(Colors.mixArgb(BTN, BTN_HOVER, h), ii));
+			Render2D.roundRectOutline(ctx, x, y, is, is, 6, 1, Colors.withAlpha(0xFFFFFF, (int) (255 * ii * (0.08f + 0.35f * h))));
+			((IconPainter) d[1]).paint(ctx, x + is / 2f, y + is / 2f, 9, Colors.withAlpha(Colors.mix(0xA6A6B2, 0xFFFFFF, h), (int) (255 * ii)));
+			hits.add(new Hit(x, y, x + is, y + is, (Runnable) d[2]));
+			if (hover) {
+				tip = (String) d[0];
+				tipX = x + is / 2f;
+			}
+		}
+		if (tip != null) {
+			float tw2 = UiFont.width(textRenderer, tip) + 10;
+			float tx = Math.min(width - 4 - tw2, tipX - tw2 / 2f);
+			Render2D.roundRect(ctx, tx, 34, tw2, 13, 4, 0xE6101016);
+			UiFont.draw(ctx, textRenderer, tip, tx + 5, 36, TEXT);
+		}
+
+		// ---- account chip (top left)
+		float ci = intro(0.45f);
+		if (settings == null || settings.account.isOn()) {
+			String name = client.getSession().getUsername();
+			float cw = UiFont.width(textRenderer, name) + 28;
+			float cxp = 10 - (1 - ci) * 12;
+			Render2D.roundRect(ctx, cxp, 10, cw, 20, 6, Colors.mulAlpha(BTN, ci));
+			Render2D.roundRectOutline(ctx, cxp, 10, cw, 20, 6, 1, Colors.withAlpha(0xFFFFFF, (int) (30 * ci)));
+			if (skin != null) {
+				try {
+					PlayerSkinDrawer.draw(ctx, Wardrobe.apply(skin.get()), (int) cxp + 4, 14, 12);
+				} catch (Throwable ignored) {
+				}
+			}
+			UiFont.draw(ctx, textRenderer, name, cxp + 21, 15, Colors.withAlpha(TEXT, (int) (255 * ci)));
+		}
+
+		// ---- now playing (top centre)
+		NowPlaying np = WhiteClient.get().music().current();
+		float pi = anim("music", np != null && (settings == null || settings.music.isOn()) ? 1f : 0f, dt * 0.6f);
+		if (np != null && pi > 0.02f) {
+			String s = np.title() + "  —  " + np.artist();
+			int maxW = (int) Math.min(200, width * 0.3f);
+			while (UiFont.width(textRenderer, s) > maxW && s.length() > 3) {
+				s = s.substring(0, s.length() - 2);
+			}
+			float pw = UiFont.width(textRenderer, s) + 30;
+			float px = width / 2f - pw / 2f;
+			float py = 10 - (1 - pi) * 10;
+			Render2D.roundRect(ctx, px, py, pw, 20, 10, Colors.mulAlpha(BTN, pi));
+			Render2D.roundRectOutline(ctx, px, py, pw, 20, 10, 1, Colors.withAlpha(0xFFFFFF, (int) (40 * pi)));
+			for (int b = 0; b < 3; b++) {
+				float hgt = np.playing() ? 3 + 5 * (0.5f + 0.5f * (float) Math.sin(time * (6 + b * 1.7) + b)) : 3;
+				Render2D.roundRect(ctx, px + 9 + b * 3.2f, py + 10 - hgt / 2f, 2, hgt, 1, Colors.withAlpha(0xFFFFFF, (int) (255 * pi)));
+			}
+			UiFont.draw(ctx, textRenderer, s, px + 22, py + 5, Colors.withAlpha(TEXT, (int) (255 * pi)));
+		}
+
+		// ---- footer
+		float fi = intro(0.5f);
+		UiFont.draw(ctx, textRenderer, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(SUB, (int) (220 * fi)));
+		String copy = "Copyright Mojang AB. Do not distribute!";
+		UiFont.drawScaled(ctx, textRenderer, copy, width - 10 - UiFont.width(textRenderer, copy) * 0.8f, height - 12, 0.8f, Colors.withAlpha(SUB, (int) (150 * fi)));
+	}
+
+	private static float frac(float v) {
+		return v - (float) Math.floor(v);
 	}
 
 	private void mainButton(DrawContext ctx, String key, String label, IconPainter icon, float x, float y, float w, float h,

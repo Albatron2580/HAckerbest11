@@ -32,6 +32,8 @@ public final class MenuBackgroundRenderer {
 	private static boolean fresh;
 	private static boolean hasFrame;
 	private static volatile long lastRequestMs;
+	/** Shader mode wanted by the screen currently drawing (-1 = Menu Background setting). */
+	private static volatile int requestedMode = -1;
 	private static Thread worker;
 	private static SmoothTexture texture;
 
@@ -82,7 +84,8 @@ public final class MenuBackgroundRenderer {
 					continue;
 				}
 				MenuBackground settings = WhiteClient.get().modules().get(MenuBackground.class);
-				int mode = settings.shaderMode();
+				int forced = requestedMode;
+				int mode = forced >= 0 ? forced : settings.shaderMode();
 				int color = settings.color.rgb();
 				float speed = settings.speed.getFloat();
 				float intensity = settings.intensity.getFloat();
@@ -138,6 +141,12 @@ public final class MenuBackgroundRenderer {
 
 	/** Draws the animated background over the whole screen. Never throws. */
 	public static void draw(DrawContext ctx, int width, int height, float alpha) {
+		draw(ctx, width, height, alpha, -1);
+	}
+
+	/** Same, with a specific {@link com.whiteclient.render.BackgroundShader} mode (-1 = setting). */
+	public static void draw(DrawContext ctx, int width, int height, float alpha, int mode) {
+		requestedMode = mode;
 		try {
 			drawUnsafe(ctx, width, height, alpha);
 		} catch (Throwable t) {

@@ -10,7 +10,7 @@ import com.whiteclient.setting.NumberSetting;
 
 /** Animated backgrounds for the title screen, pause menu and the WHITECLIENT menu. */
 public class MenuBackground extends Module {
-	public final ModeSetting style = add(new ModeSetting("Style", "Energy", "Energy", "Aurora", "Mono"));
+	public final ModeSetting style = add(new ModeSetting("Style", "Energy", "Energy", "Silk", "Aurora", "Mono"));
 	public final ColorSetting color = add(new ColorSetting("Energy Color", 0xEEF2FF));
 	public final NumberSetting speed = add(new NumberSetting("Speed", 1.0, 0.1, 3.0, 0.1, "x"));
 	public final NumberSetting intensity = add(new NumberSetting("Intensity", 1.0, 0.3, 2.0, 0.1, "x"));
@@ -29,6 +29,9 @@ public class MenuBackground extends Module {
 		}
 		if (style.is("Mono")) {
 			return BackgroundShader.MONO;
+		}
+		if (style.is("Silk")) {
+			return BackgroundShader.SILK;
 		}
 		return BackgroundShader.ENERGY;
 	}
