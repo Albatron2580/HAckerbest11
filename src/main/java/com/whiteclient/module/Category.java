@@ -1,11 +1,11 @@
 package com.whiteclient.module;
 
 public enum Category {
-	COSMETICS("Cosmetics", "Halo, wings, pets & trails"),
-	PVP("PvP", "Effects around your target"),
-	WORLD("World", "Sky, weather & particles"),
+	COSMETICS("Cosmetics", "Halo, wings, capes, pets & trails"),
+	PVP("PvP", "Target ESP, hit & kill effects"),
+	WORLD("World", "Sky, weather, zoom & particles"),
 	MUSIC("Music", "Spotify, lyrics & 3D text"),
-	HUD("HUD", "On-screen overlays"),
+	HUD("HUD", "Keystrokes, crosshair & info"),
 	MENU("Menu", "Menus & backgrounds"),
 	CLIENT("Client", "Theme & wardrobe");
 

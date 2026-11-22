@@ -158,20 +158,34 @@ public class Wardrobe extends Module {
 		return img;
 	}
 
-	/** Swaps the body texture for the chosen custom skin (keeps cape / elytra). */
+	/** Swaps the body texture for the chosen custom skin and adds the chosen WHITECLIENT cape. */
 	public static SkinTextures apply(SkinTextures original) {
-		Wardrobe w = get();
-		if (w == null || !w.isEnabled() || original == null) {
-			return original;
+		if (original == null) {
+			return null;
 		}
-		Identifier id = texture(w.skin.get());
-		if (id == null) {
+		Identifier body = null;
+		Wardrobe w = get();
+		if (w != null && w.isEnabled()) {
+			body = texture(w.skin.get());
+		}
+		Identifier cape = null;
+		Capes capes = Capes.get();
+		if (capes != null && capes.isEnabled()) {
+			try {
+				cape = capes.texture();
+			} catch (Throwable ignored) {
+			}
+		}
+		if (body == null && cape == null) {
 			return original;
 		}
 		try {
-			PlayerSkinType type = PlayerSkinType.byModelMetadata(w.slim.isOn() ? "slim" : "default");
+			boolean slim = w != null && w.slim.isOn();
 			return original.withOverride(SkinTextures.SkinOverride.create(
-					Optional.of(new AssetInfo.TextureAssetInfo(id)), Optional.empty(), Optional.empty(), Optional.of(type)));
+					body != null ? Optional.of(new AssetInfo.TextureAssetInfo(body)) : Optional.empty(),
+					cape != null ? Optional.of(new AssetInfo.TextureAssetInfo(cape)) : Optional.empty(),
+					Optional.empty(),
+					body != null ? Optional.of(PlayerSkinType.byModelMetadata(slim ? "slim" : "default")) : Optional.empty()));
 		} catch (Throwable t) {
 			return original;
 		}

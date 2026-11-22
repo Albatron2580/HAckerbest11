@@ -60,8 +60,17 @@ public abstract class Module {
 		}
 	}
 
+	/** Called after a module is toggled from the menus (used for notifications). */
+	public static java.util.function.Consumer<Module> toggleListener;
+
 	public void toggle() {
 		setEnabled(!enabled);
+		if (toggleListener != null) {
+			try {
+				toggleListener.accept(this);
+			} catch (Throwable ignored) {
+			}
+		}
 	}
 
 	protected void onEnable() {

@@ -1,6 +1,6 @@
-# WHITECLIENT 1.5.0 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.6.0 (Fabric, Minecraft 1.21.11)
 
-Client-side visuals mod in a white/black style. Works on any server, no cheats.
+Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
 ## Features
 | Category | Module | What it does |
@@ -10,13 +10,34 @@ Client-side visuals mod in a white/black style. Works on any server, no cheats.
 | Cosmetics | **Aura** | Soft white glow over your player + sparkles |
 | Cosmetics | **Block Trail** | Glowing squares on the blocks you walk over |
 | Cosmetics | **Pets** | A pet floating next to you: glowing Jellyfish (kwal), Wisp, Butterfly or a Dog, Cat, Fox, Parrot, Bee, Allay, Axolotl, Frog, Rabbit, Panda, Chicken, Bat, Vex. Only you see it; it can't be hit or push you |
+| Cosmetics | **China Hat** | Glowing cone hat on your head (also on others) |
+| Cosmetics | **Trail** | Glowing light ribbon / sparkles behind you |
+| Cosmetics | **Jump Circles** | Glowing rings on the ground when you jump and land |
+| Cosmetics | **Capes** | Free capes (White, Black, Galaxy, Silk, Sunset, Aurora or your own PNG from `config/whiteclient/capes`). Only you see them |
+| PvP | **Hit Effects** | Sparks / Ring / Stars / Hearts / Slash / Crimson burst where you hit (+ optional extra crit particles) |
+| PvP | **Kill Effects** | Soul / Lightning / Shockwave / Hearts / Confetti when you kill something |
+| PvP | **Damage Numbers** | Floating damage numbers (gold on crits, green heals). Hidden behind walls |
+| PvP | **Hitmarker** | X on the crosshair when you hit (red on a kill) |
+| PvP | **Target HUD** | Card with your target's head, name, health bar, distance, winning/losing |
+| PvP | **Combo Counter** / **Reach Display** | Hits in a row / distance of your last hit |
 | PvP | **Target ESP** | Effects that spin around the entity you hit / look at: Shackles (glowing chains), Orbit, Spiral, Cards, Ring, Ghosts, Constellation. Visual only |
 | World | **Galaxy Sky** | Twinkling stars + milky way |
 | World | **Snow** | Glowing snow / dust in the air |
+| World | **Ambience** | Fireflies, cherry petals, embers, hearts or bubbles floating around you |
+| World | **Block Outline** | Glowing outline + soft fill on the block you look at |
+| World | **Zoom** | Hold **C** to zoom smoothly (key changeable in Controls) |
+| World | **Hand View** | Move / turn / resize the item in your hand |
 | World | **Rain FX** | Glowing rain streaks, ripples on the ground, splash droplets + rainy colour mood |
 | Music | **Spotify** | Now-playing card (cover, title, artist, progress, current lyric) |
 | Music | **3D Text** | Big white 3D words that pop up in time with your Spotify lyrics (or your own text) |
 | HUD | **Watermark** | Logo / name / ping / FPS pill |
+| HUD | **Info HUD** | Coords, direction, speed, CPS, FPS, ping, clock, day |
+| HUD | **Keystrokes** | WASD + space + mouse buttons with CPS |
+| HUD | **Potion HUD** | Clean list of your effects with time left |
+| HUD | **Armor HUD** | Armour + held item durability next to the hotbar |
+| HUD | **Custom Crosshair** | 8 styles, colour, size, gap, outline, dynamic gap, cooldown bar |
+| HUD | **Low Health Glow** | Red pulsing glow around the screen when you're low |
+| HUD | **Notifications** | Little toast when you toggle a module |
 | Menu | **Main Menu** | WHITECLIENT title screen. **Showcase** layout (default): big planet logo + text menu on the left, your player on grey silk curtains on the right with little planets floating by. **Centered** layout: the older centred buttons |
 | Menu | **Menu Background** | Animated white energy (or silk / aurora / mono) on title + pause screen |
 | Menu | **Rounded Buttons** | Rounded see-through buttons on the title + pause screen |
@@ -54,12 +75,13 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 
 ## Controls
 - **Right Shift** – WHITECLIENT menu
+- **C** (hold) – Zoom
 - `/whiteclient text <message>` – show your own 3D text
 - `/whiteclient spotify login|logout|status`
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.5.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.6.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.

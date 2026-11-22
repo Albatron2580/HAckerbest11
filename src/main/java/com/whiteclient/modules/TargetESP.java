@@ -10,7 +10,6 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -18,7 +17,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -45,10 +43,6 @@ public class TargetESP extends Module {
 	/** Test hook: force a target (used by the screenshot tests). */
 	public static Entity forcedTarget;
 
-	private static Entity lastHit;
-	private static long lastHitAt;
-	private static boolean callbackRegistered;
-
 	private Entity shown;
 	private float alpha;
 	private Vec3d smoothPos;
@@ -57,24 +51,6 @@ public class TargetESP extends Module {
 
 	public TargetESP() {
 		super("Target ESP", "Effects that spin around your target", Category.PVP, true);
-		registerCallback();
-	}
-
-	private static void registerCallback() {
-		if (callbackRegistered) {
-			return;
-		}
-		callbackRegistered = true;
-		try {
-			AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-				if (world.isClient() && entity instanceof LivingEntity) {
-					lastHit = entity;
-					lastHitAt = System.currentTimeMillis();
-				}
-				return ActionResult.PASS;
-			});
-		} catch (Throwable ignored) {
-		}
 	}
 
 	private boolean valid(Entity e, MinecraftClient mc) {
@@ -95,10 +71,9 @@ public class TargetESP extends Module {
 		if (forcedTarget != null && forcedTarget.isAlive()) {
 			return forcedTarget;
 		}
-		Entity hit = null;
-		if (lastHit != null && System.currentTimeMillis() - lastHitAt < hold.get() * 1000 && lastHit.getId() != 0
-				&& mc.world != null && mc.world.getEntityById(lastHit.getId()) == lastHit && valid(lastHit, mc)) {
-			hit = lastHit;
+		Entity hit = com.whiteclient.combat.CombatTracker.lastHit((long) (hold.get() * 1000));
+		if (hit != null && (mc.world == null || mc.world.getEntityById(hit.getId()) != hit || !valid(hit, mc))) {
+			hit = null;
 		}
 		Entity look = valid(mc.targetedEntity, mc) ? mc.targetedEntity : null;
 		return switch (target.get()) {

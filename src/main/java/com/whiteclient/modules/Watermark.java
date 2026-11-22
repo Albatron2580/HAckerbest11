@@ -71,6 +71,9 @@ public class Watermark extends Module {
 		boundsX2 = (x + w + 1) * s;
 		boundsY2 = (y + h + 1) * s;
 		boundsFrameMs = System.currentTimeMillis();
+		if (!position.is("Top Center") && position.get().startsWith("Top")) {
+			com.whiteclient.hud.HudLayout.reserve(position.get(), boundsX1 > 0 ? 0 : 0, boundsY2);
+		}
 
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();

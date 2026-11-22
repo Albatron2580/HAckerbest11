@@ -5,7 +5,10 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"AbstractClientPlayerEntityMixin",
+		"GameRendererMixin",
+		"HeldItemRendererMixin",
 		"MinecraftClientMixin",
+		"MouseMixin",
 		"PetEntityMixin",
 		"PetLivingEntityMixin",
 		"PlayerSkinWidgetAccessor",

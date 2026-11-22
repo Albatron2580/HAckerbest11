@@ -5,7 +5,7 @@ import com.whiteclient.gui.ClickGuiScreen;
 import com.whiteclient.gui.WardrobeScreen;
 import com.whiteclient.gui.WhiteTitleScreen;
 import com.whiteclient.module.Category;
-import com.whiteclient.modules.Pets;
+import com.whiteclient.modules.*;
 import com.whiteclient.modules.RainFX;
 import com.whiteclient.modules.TargetESP;
 import com.whiteclient.modules.Wardrobe;
@@ -81,6 +81,16 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			ImageIO.write(img, "png", Wardrobe.folder().resolve("whiteclient_test.png").toFile());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	private static void attackHusk(net.minecraft.client.MinecraftClient client) {
+		for (Entity e : client.world.getEntities()) {
+			if (e instanceof HuskEntity h && h.isAlive()) {
+				client.interactionManager.attackEntity(client.player, h);
+				client.player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+				return;
+			}
 		}
 	}
 
@@ -200,6 +210,117 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.waitTicks(12);
 				context.takeScreenshot("esp_" + style.toLowerCase(Locale.ROOT));
 			}
+
+			// ---- 1.6 combat visuals: hit effects, damage numbers, target HUD, combo, reach + HUD modules
+			context.runOnClient(client -> {
+				TargetESP.forcedTarget = null;
+				var mm = WhiteClient.get().modules();
+				for (Class<? extends com.whiteclient.module.Module> c : List.of(ComboCounter.class, ReachDisplay.class, InfoHUD.class,
+						Keystrokes.class, PotionHUD.class, ArmorHUD.class, CustomCrosshair.class)) {
+					mm.get(c).setEnabled(true);
+				}
+			});
+			sp.getServer().runCommand("give @p diamond_sword");
+			sp.getServer().runCommand("item replace entity @p armor.head with diamond_helmet");
+			sp.getServer().runCommand("item replace entity @p armor.chest with diamond_chestplate");
+			sp.getServer().runCommand("item replace entity @p armor.legs with iron_leggings");
+			sp.getServer().runCommand("item replace entity @p armor.feet with diamond_boots");
+			sp.getServer().runCommand("effect give @p speed 120 1");
+			sp.getServer().runCommand("effect give @p strength 120 0");
+			sp.getServer().runCommand("effect give @p regeneration 9 0");
+			for (int i = 0; i < 3; i++) {
+				context.runOnClient(WhiteClientGameTest::attackHusk);
+				context.waitTicks(13);
+			}
+			context.runOnClient(client -> {
+				Keystrokes.debugHeld = 0b10001;
+				LowHealth.debugHealth = 5;
+				WhiteClient.get().modules().get(Trail.class).toggle(); // shows a notification
+				attackHusk(client);
+			});
+			context.waitTicks(4);
+			context.takeScreenshot("combat_hits_hud");
+			context.runOnClient(client -> {
+				Keystrokes.debugHeld = 0;
+				LowHealth.debugHealth = -1;
+			});
+
+			for (String kill : new String[]{"Lightning", "Shockwave"}) {
+				sp.getServer().runCommand("kill @e[type=husk]");
+				sp.getServer().runCommand("execute as @p at @s run summon husk ^ ^ ^2.6 {NoAI:1b,Silent:1b,Health:1f,Rotation:[210f,0f]}");
+				context.waitTicks(15);
+				context.runOnClient(client -> {
+					WhiteClient.get().modules().get(KillEffects.class).style.set(kill);
+					attackHusk(client);
+				});
+				context.waitTicks(kill.equals("Lightning") ? 6 : 12);
+				context.takeScreenshot("kill_" + kill.toLowerCase(Locale.ROOT));
+			}
+			sp.getServer().runCommand("kill @e[type=husk]");
+
+			// ---- 1.6 cosmetics: china hat, trail, jump circles, cape
+			context.runOnClient(client -> {
+				var mm = WhiteClient.get().modules();
+				mm.get(ChinaHat.class).setEnabled(true);
+				mm.get(JumpCircles.class).setEnabled(true);
+				mm.get(Capes.class).setEnabled(true);
+				mm.get(Capes.class).design.set("Galaxy");
+				client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+			});
+			for (int i = 0; i < 8; i++) {
+				sp.getServer().runCommand("tp @p ~0.4 ~ ~0.25");
+				context.waitTicks(2);
+			}
+			context.runOnClient(client -> WhiteClient.get().modules().get(JumpCircles.class)
+					.spawn(client.player.getX(), client.player.getY() + 0.02, client.player.getZ(), WhiteClient.get().time() - 0.25f, 1.2f));
+			context.waitTicks(3);
+			context.takeScreenshot("cosmetics_back_cape_hat_trail");
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(Capes.class).design.set("White");
+				client.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+			});
+			context.waitTicks(10);
+			context.takeScreenshot("cosmetics_front_hat");
+
+			// ---- 1.6 world: block outline + hand view, zoom, ambience
+			sp.getServer().runCommand("tp @p ~ ~ ~ 30 50");
+			context.runOnClient(client -> {
+				var mm = WhiteClient.get().modules();
+				mm.get(ChinaHat.class).setEnabled(false);
+				mm.get(Trail.class).setEnabled(false);
+				mm.get(BlockOutline.class).setEnabled(true);
+				HandView hv = mm.get(HandView.class);
+				hv.setEnabled(true);
+				hv.x.set(0.08);
+				hv.y.set(-0.04);
+				hv.scale.set(0.85);
+				hv.rotY.set(12.0);
+				client.options.setPerspective(Perspective.FIRST_PERSON);
+			});
+			context.waitTicks(10);
+			context.takeScreenshot("block_outline_hand_view");
+			sp.getServer().runCommand("tp @p ~ ~ ~ 30 5");
+			context.runOnClient(client -> Zoom.debugHeld = true);
+			context.waitTicks(15);
+			context.takeScreenshot("zoom");
+			context.runOnClient(client -> Zoom.debugHeld = false);
+			sp.getServer().runCommand("time set 18000");
+			context.runOnClient(client -> WhiteClient.get().modules().get(Ambience.class).setEnabled(true));
+			context.waitTicks(40);
+			context.takeScreenshot("ambience_fireflies");
+			sp.getServer().runCommand("time set 6000");
+			context.runOnClient(client -> WhiteClient.get().modules().get(Ambience.class).mode.set("Petals"));
+			context.waitTicks(40);
+			context.takeScreenshot("ambience_petals");
+			context.runOnClient(client -> {
+				var mm = WhiteClient.get().modules();
+				for (Class<? extends com.whiteclient.module.Module> c : List.of(Ambience.class, BlockOutline.class, HandView.class, InfoHUD.class,
+						Keystrokes.class, PotionHUD.class, ArmorHUD.class, CustomCrosshair.class, Capes.class, JumpCircles.class)) {
+					mm.get(c).setEnabled(false);
+				}
+			});
+			sp.getServer().runCommand("execute as @p at @s run summon husk ^ ^ ^3.2 {NoAI:1b,Silent:1b,PersistenceRequired:1b,Rotation:[210f,0f]}");
+			context.waitTicks(10);
 
 			// ---- menus over the world
 			context.setScreen(() -> new ClickGuiScreen(null, Category.PVP, WhiteClient.get().modules().get(TargetESP.class)));

@@ -175,6 +175,7 @@ public class Spotify extends Module {
 				y = Watermark.boundsY2 / sc + 4;
 			}
 		}
+		com.whiteclient.hud.HudLayout.reserve(cardPosition.get(), y * sc, (y + h) * sc);
 		float slide = (1 - shown) * 20 * (right ? 1 : -1);
 
 		var m = ctx.getMatrices();

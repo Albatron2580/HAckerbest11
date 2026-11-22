@@ -5,7 +5,10 @@ import com.whiteclient.gui.ClickGuiScreen;
 import com.whiteclient.gui.MenuIntegration;
 import com.whiteclient.module.Module;
 import com.whiteclient.module.ModuleManager;
-import com.whiteclient.modules.Aura;
+import com.whiteclient.modules.*;
+import com.whiteclient.combat.CombatTracker;
+import com.whiteclient.hud.HudLayout;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import com.whiteclient.modules.BlockTrail;
 import com.whiteclient.modules.GalaxySky;
 import com.whiteclient.modules.Halo;
@@ -55,7 +58,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.5.0";
+	public static final String VERSION = "1.6.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -66,6 +69,8 @@ public final class WhiteClient implements ClientModInitializer {
 	private final Set<Module> crashed = new HashSet<>();
 	private ConfigManager config;
 	private KeyBinding menuKey;
+	private KeyBinding zoomKey;
+	public static final KeyBinding.Category KEY_CATEGORY = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
 	private boolean openMenuNextTick;
 	private final long startNanos = System.nanoTime();
 	private long lastFrameNanos = System.nanoTime();
@@ -101,17 +106,39 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Aura());
 		modules.register(new BlockTrail());
 		modules.register(new Pets());
+		modules.register(new ChinaHat());
+		modules.register(new Trail());
+		modules.register(new JumpCircles());
+		modules.register(new Capes());
 
 		modules.register(new TargetESP());
+		modules.register(new HitEffects());
+		modules.register(new KillEffects());
+		modules.register(new DamageNumbers());
+		modules.register(new Hitmarker());
+		modules.register(new TargetHUD());
+		modules.register(new ComboCounter());
+		modules.register(new ReachDisplay());
 		// World
 		modules.register(new GalaxySky());
 		modules.register(new Snow());
 		modules.register(new RainFX());
+		modules.register(new Ambience());
+		modules.register(new BlockOutline());
+		modules.register(new Zoom());
+		modules.register(new HandView());
 		// Music
 		modules.register(new Spotify());
 		modules.register(new Text3D());
 		// HUD
 		modules.register(new Watermark());
+		modules.register(new InfoHUD());
+		modules.register(new Keystrokes());
+		modules.register(new PotionHUD());
+		modules.register(new ArmorHUD());
+		modules.register(new CustomCrosshair());
+		modules.register(new LowHealth());
+		modules.register(new Notifications());
 		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
@@ -149,7 +176,36 @@ public final class WhiteClient implements ClientModInitializer {
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.whiteclient.menu",
 				GLFW.GLFW_KEY_RIGHT_SHIFT,
-				KeyBinding.Category.create(Identifier.of(MOD_ID, "main"))));
+				KEY_CATEGORY));
+		zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+				"key.whiteclient.zoom",
+				GLFW.GLFW_KEY_C,
+				KEY_CATEGORY));
+		CombatTracker.init();
+		// custom crosshair / potion HUD replace the vanilla ones only while they are on
+		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (ctx, tickCounter) -> {
+			CustomCrosshair ch = modules.get(CustomCrosshair.class);
+			if (ch != null && ch.isEnabled() && !crashed.contains(ch)) {
+				try {
+					ch.draw(ctx);
+					return;
+				} catch (Throwable t) {
+					fail(ch, t);
+				}
+			}
+			vanilla.render(ctx, tickCounter);
+		});
+		HudElementRegistry.replaceElement(VanillaHudElements.STATUS_EFFECTS, vanilla -> (ctx, tickCounter) -> {
+			PotionHUD ph = modules.get(PotionHUD.class);
+			if (ph != null && ph.hidesVanilla() && !crashed.contains(ph)) {
+				return;
+			}
+			vanilla.render(ctx, tickCounter);
+		});
+		WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outline) -> {
+			BlockOutline bo = modules.get(BlockOutline.class);
+			return bo == null || !bo.isEnabled() || crashed.contains(bo);
+		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		HudElementRegistry.addLast(Identifier.of(MOD_ID, "hud"), this::renderHud);
@@ -161,7 +217,16 @@ public final class WhiteClient implements ClientModInitializer {
 		LOGGER.info("[WHITECLIENT] {} loaded with {} modules. Press Right Shift to open the menu.", VERSION, modules.all().size());
 	}
 
+	public KeyBinding zoomKey() {
+		return zoomKey;
+	}
+
 	private void onTick(MinecraftClient client) {
+		try {
+			CombatTracker.tick(client);
+		} catch (Throwable t) {
+			LOGGER.debug("[WHITECLIENT] combat tick", t);
+		}
 		while (menuKey.wasPressed()) {
 			if (client.currentScreen == null) {
 				client.setScreen(new ClickGuiScreen(null));
@@ -191,6 +256,7 @@ public final class WhiteClient implements ClientModInitializer {
 			return;
 		}
 		float tickDelta = tickCounter.getTickProgress(false);
+		HudLayout.begin(context.getScaledWindowWidth(), context.getScaledWindowHeight());
 		for (Module module : modules.all()) {
 			if (module.isEnabled() && !crashed.contains(module)) {
 				try {

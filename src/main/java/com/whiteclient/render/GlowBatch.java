@@ -171,6 +171,41 @@ public final class GlowBatch {
 		}
 	}
 
+	/** A soft horizontal ring lying flat (not camera facing), e.g. on the ground. */
+	public void flatRing(float cx, float cy, float cz, float radius, float width, int rgb, float alpha) {
+		if (alpha <= 0.004f || radius <= 0) {
+			return;
+		}
+		int seg = Math.max(16, Math.min(48, (int) (radius * 40)));
+		int core = Colors.argb(rgb, Math.min(1f, alpha));
+		int edge = rgb & 0xFFFFFF;
+		float inner = Math.max(0, radius - width), outer = radius + width;
+		for (int i = 0; i < seg; i++) {
+			double a0 = Math.PI * 2 * i / seg, a1 = Math.PI * 2 * (i + 1) / seg;
+			float c0 = (float) Math.cos(a0), s0 = (float) Math.sin(a0), c1 = (float) Math.cos(a1), s1 = (float) Math.sin(a1);
+			quad(cx + c0 * outer, cy, cz + s0 * outer, edge, cx + c1 * outer, cy, cz + s1 * outer, edge,
+					cx + c1 * radius, cy, cz + s1 * radius, core, cx + c0 * radius, cy, cz + s0 * radius, core);
+			quad(cx + c0 * radius, cy, cz + s0 * radius, core, cx + c1 * radius, cy, cz + s1 * radius, core,
+					cx + c1 * inner, cy, cz + s1 * inner, edge, cx + c0 * inner, cy, cz + s0 * inner, edge);
+		}
+	}
+
+	/** A flat filled glow disc lying on the ground (bright centre fading out). */
+	public void flatDisc(float cx, float cy, float cz, float radius, int rgb, float alpha) {
+		if (alpha <= 0.004f || radius <= 0) {
+			return;
+		}
+		int seg = 24;
+		int center = Colors.argb(rgb, Math.min(1f, alpha));
+		int edge = rgb & 0xFFFFFF;
+		for (int i = 0; i < seg; i++) {
+			double a0 = Math.PI * 2 * i / seg, a1 = Math.PI * 2 * (i + 1) / seg;
+			quad(cx, cy, cz, center, cx, cy, cz, center,
+					cx + (float) Math.cos(a0) * radius, cy, cz + (float) Math.sin(a0) * radius, edge,
+					cx + (float) Math.cos(a1) * radius, cy, cz + (float) Math.sin(a1) * radius, edge);
+		}
+	}
+
 	// ------------------------------------------------------------------ drawing
 
 	private static void resolveLayer() {
