@@ -69,7 +69,7 @@ public class WhiteTitleScreen extends Screen {
 		}
 		MainMenu mm = WhiteClient.get().modules().get(MainMenu.class);
 		showcase = mm == null || mm.layout.is("Showcase");
-		walkerH = showcase ? (int) Math.min(360, height * 0.74f) : (int) Math.min(200, height * 0.6f);
+		walkerH = showcase ? (int) Math.min(320, height * 0.66f) : (int) Math.min(200, height * 0.6f);
 		walkerW = (int) (walkerH * 0.6f);
 		try {
 			walker = new SkinPreview(walkerW, walkerH, () -> {
@@ -346,8 +346,15 @@ public class WhiteTitleScreen extends Screen {
 		super.render(ctx, mouseX, mouseY, delta);
 	}
 
+	/** Right edge of the centred logo + menu column. */
+	private float menuRight() {
+		return width / 2f + textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
+	}
+
+	/** The model stands in the middle of the free space right of the menu. */
 	private float showcaseModelX() {
-		return width * 0.70f;
+		float right = menuRight();
+		return Math.max(right + walkerW * 0.5f, (right + width) / 2f);
 	}
 
 	/** Left: big planet logo + text menu. Right: your player on silk curtains with little planets floating by. */
@@ -362,7 +369,9 @@ public class WhiteTitleScreen extends Screen {
 				float fx = frac(seed * 0.37f);
 				float sp = 0.010f + 0.012f * frac(seed * 0.13f);
 				float fy = frac(seed * 0.61f + time * sp);
-				float px = width * (0.5f + 0.48f * fx) + (float) Math.sin(time * 0.25f + seed) * 10;
+				// half of them float on the left, half on the right of the centred menu
+				float sideW = width / 2f - (menuRight() - width / 2f);
+				float px = (i % 2 == 0 ? sideW * fx : width - sideW * fx) + (float) Math.sin(time * 0.25f + seed) * 10;
 				float py = height * (1.12f - fy * 1.24f);
 				float r = 2.2f + 3.4f * frac(seed * 0.91f);
 				float edge = Math.min(1f, Math.min(fy * 6f, (1f - fy) * 6f));
@@ -386,7 +395,7 @@ public class WhiteTitleScreen extends Screen {
 		}
 
 		// ---- logo + name (left)
-		float colX = Math.max(96, Math.min(260, width * 0.25f));
+		float colX = width / 2f;
 		float r = Math.max(11, Math.min(22, height * 0.062f));
 		float logoY = height * 0.3f;
 		float li = intro(0.1f);
