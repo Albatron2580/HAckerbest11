@@ -37,33 +37,43 @@ import java.util.Locale;
 public class WhiteClientGameTest implements FabricClientGameTest {
 	private static boolean fakeOtherClient;
 
-	/** A simple white/black test skin so the custom-skin feature shows up in screenshots. */
+	/** A white hoodie test skin so the custom-skin feature shows up in screenshots. */
 	private static void writeTestSkin() {
 		try {
+			final int skin = 0xFFE8C4A8, hair = 0xFF1C1C22, white = 0xFFF4F4F7, black = 0xFF15151A, eye = 0xFF2A5BD7;
 			BufferedImage img = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
 			for (int y = 0; y < 64; y++) {
 				for (int x = 0; x < 64; x++) {
-					int c = 0xFFF2F2F6;
-					if (y >= 16 && y < 32 && x >= 16 && x < 40) {
-						c = 0xFF15151B; // dark jacket
-					}
-					if (y >= 20 && y < 32 && x >= 20 && x < 28) {
-						c = 0xFFF2F2F6; // white shirt stripe
-					}
-					if ((y >= 48 && x >= 16 && x < 32) || (y >= 20 && y < 32 && x < 16)) {
-						c = 0xFF22222C; // legs
-					}
+					int c = 0; // overlays stay transparent
 					if (y < 16 && x < 32) {
-						c = 0xFFE9C9B0; // face skin
-						if (y < 10 && x >= 8 && x < 16) {
-							c = y < 10 && y >= 8 ? 0xFFE9C9B0 : 0xFFE9C9B0;
+						c = skin;
+						boolean top = y < 8 && x >= 8 && x < 16;
+						if (top || (y >= 8 && y < 10) || (y >= 8 && x >= 24)) {
+							c = hair;
 						}
-						if (y < 9) {
-							c = 0xFF1A1A1F; // hair
+						if (y == 12 && (x == 9 || x == 14)) {
+							c = white;
 						}
 						if (y == 12 && (x == 10 || x == 13)) {
-							c = 0xFF2B6BFF; // eyes
+							c = eye;
 						}
+						if (y == 14 && (x == 11 || x == 12)) {
+							c = 0xFFB0806A;
+						}
+					} else if (y >= 16 && y < 32 && x >= 16 && x < 40) {
+						c = white;
+						if (x >= 20 && x < 28 && y >= 20 && (x == 23 || x == 24)) {
+							c = black; // zipper
+						}
+						if (y >= 30) {
+							c = black;
+						}
+					} else if (y >= 16 && y < 32 && x >= 40 && x < 56) {
+						c = y >= 29 ? skin : white;
+					} else if ((y >= 16 && y < 32 && x < 16) || (y >= 48 && x >= 16 && x < 32)) {
+						c = (y % 16) >= 14 ? white : black;
+					} else if (y >= 48 && x >= 32 && x < 48) {
+						c = y >= 61 ? skin : white;
 					}
 					img.setRGB(x, y, c);
 				}
@@ -241,7 +251,18 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> null);
 			context.waitTicks(5);
 
-			context.runOnClient(client -> WhiteClient.get().modules().get(Wardrobe.class).skin.set(""));
 		}
+
+		// main menu again: the custom skin walks in
+		context.runOnClient(client -> WhiteTitleScreen.debugWalkTime = 1.5f);
+		context.setScreen(WhiteTitleScreen::new);
+		context.waitTicks(30);
+		context.takeScreenshot("main_menu_custom_skin_walking");
+		context.runOnClient(client -> {
+			WhiteTitleScreen.debugWalkTime = Float.NaN;
+			WhiteClient.get().modules().get(Wardrobe.class).skin.set("");
+		});
+		context.setScreen(TitleScreen::new);
+		context.waitTicks(5);
 	}
 }

@@ -173,8 +173,8 @@ public class RainFX extends Module {
 			}
 			float len = 0.55f;
 			float x = ctx.rx(sx[i]), y = ctx.ry(sy[i]), z = ctx.rz(sz[i]);
-			float a = 0.32f * bright * strength;
-			g.ribbon(x, y + len, z, x, y, z, 0.022f, Colors.argb(rgb, a));
+			float a = 0.45f * bright * strength;
+			g.ribbon(x, y + len, z, x, y, z, 0.026f, Colors.argb(rgb, a));
 		}
 
 		// ---- extra ripples (rain hitting the ground everywhere, not only under the streaks)
@@ -224,8 +224,8 @@ public class RainFX extends Module {
 			}
 			float x = ctx.rx(dx[i]), y = ctx.ry(dy[i]), z = ctx.rz(dz[i]);
 			float a = 0.75f * bright * Math.max(0f, 1f - dAge[i] / 1.0f);
-			g.ribbon(x, y, z, x - dvx[i] * 0.03f, y - dvy[i] * 0.03f, z - dvz[i] * 0.03f, 0.018f, Colors.argb(Colors.mix(rgb, 0xFFFFFF, 0.5f), a));
-			g.disc(x, y, z, 0.03f, rgb, a * 0.45f, 6);
+			g.ribbon(x, y, z, x - dvx[i] * 0.04f, y - dvy[i] * 0.04f, z - dvz[i] * 0.04f, 0.024f, Colors.argb(Colors.mix(rgb, 0xFFFFFF, 0.5f), a));
+			g.disc(x, y, z, 0.045f, rgb, a * 0.55f, 6);
 		}
 	}
 

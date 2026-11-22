@@ -178,21 +178,21 @@ public class TargetESP extends Module {
 			float y = h * (0.25f + 0.25f * i) + (float) Math.sin(spin * 1.7 + i * 2.1) * 0.12f;
 			int col = i % 2 == 0 ? c1 : c2;
 			// tail
-			int tail = 16;
+			int tail = 26;
 			V3 prev = null;
 			for (int k = 0; k <= tail; k++) {
-				double ang = spin * speedMul + phase - k * 0.07;
+				double ang = spin * speedMul + phase - k * 0.06;
 				float yy = y + (float) Math.sin((spin - k * 0.03) * 1.7 + i * 2.1) * 0.12f - (float) Math.sin(spin * 1.7 + i * 2.1) * 0.12f;
 				V3 pt = circle(base.add(V3.UP, yy), r, ang);
 				if (prev != null) {
 					float f = 1f - k / (float) tail;
-					g.glowLine(prev.x(), prev.y(), prev.z(), pt.x(), pt.y(), pt.z(), 0.09f * (0.4f + 0.6f * f), col, a * f * 0.9f);
+					g.glowLine(prev.x(), prev.y(), prev.z(), pt.x(), pt.y(), pt.z(), 0.13f * (0.35f + 0.65f * f), col, a * f);
 				}
 				prev = pt;
 			}
 			V3 head = circle(base.add(V3.UP, y), r, spin * speedMul + phase);
-			g.disc(head.x(), head.y(), head.z(), 0.22f, col, 0.55f * a, 14);
-			g.disc(head.x(), head.y(), head.z(), 0.07f, Colors.mix(col, 0xFFFFFF, 0.7f), Math.min(1f, a), 10);
+			g.disc(head.x(), head.y(), head.z(), 0.34f, col, 0.6f * a, 16);
+			g.disc(head.x(), head.y(), head.z(), 0.1f, Colors.mix(col, 0xFFFFFF, 0.7f), Math.min(1f, a), 10);
 		}
 	}
 
@@ -227,41 +227,41 @@ public class TargetESP extends Module {
 	/** Glowing chain links wrapped around the target (two crossing chains). */
 	private void shackles(GlowBatch g, V3 base, float r, float h, int c1, int c2, float a) {
 		for (int chain = 0; chain < 2; chain++) {
-			float tilt = (chain == 0 ? 1 : -1) * 0.38f;
-			float cy = h * (chain == 0 ? 0.62f : 0.38f);
+			V3 axis = chain == 0 ? new V3(1, 0, 0) : new V3(0, 0, 1);
+			float tilt = (chain == 0 ? 0.34f : -0.34f);
+			float cy = h * (chain == 0 ? 0.64f : 0.36f);
 			V3 center = base.add(V3.UP, cy);
-			float rot = spin * (chain == 0 ? 0.9f : -0.9f);
-			int links = Math.max(10, Math.round(r * 22));
-			float rr = r * 1.05f;
+			float rot = spin * (chain == 0 ? 0.8f : -0.8f);
+			float rr = r * 1.02f;
+			float linkLen = 0.2f * size.getFloat();
+			int links = Math.max(12, Math.round((float) (Math.PI * 2 * rr) / (linkLen * 0.72f)));
 			int col = chain == 0 ? c1 : c2;
 			for (int i = 0; i < links; i++) {
 				double ang = Math.PI * 2 * i / links + rot;
-				// point on a tilted ring
-				V3 radial = new V3((float) Math.cos(ang), 0, (float) Math.sin(ang));
-				V3 tangent = new V3((float) -Math.sin(ang), 0, (float) Math.cos(ang));
-				V3 axis = new V3(1, 0, 0);
-				radial = radial.rotate(axis, tilt);
-				tangent = tangent.rotate(axis, tilt);
+				V3 radial = new V3((float) Math.cos(ang), 0, (float) Math.sin(ang)).rotate(axis, tilt);
+				V3 tangent = new V3((float) -Math.sin(ang), 0, (float) Math.cos(ang)).rotate(axis, tilt);
 				V3 normal = radial.cross(tangent).normalize();
 				V3 pos = center.add(radial, rr);
 				// alternate the plane of each link like a real chain
 				V3 side = i % 2 == 0 ? normal : radial;
-				float len = (float) (Math.PI * 2 * rr / links) * 0.78f;
-				float wid = len * 0.42f;
-				link(g, pos, tangent, side, len, wid, col, a * (i % 2 == 0 ? 1f : 0.8f));
+				float pulse = 0.75f + 0.25f * (float) Math.sin(spin * 4 - i * 0.6);
+				link(g, pos, tangent, side, linkLen, linkLen * 0.52f, col, a * (i % 2 == 0 ? 1f : 0.78f) * pulse);
 			}
-			g.disc(center.x(), center.y(), center.z(), rr * 1.6f, col, 0.05f * a, 16);
+			g.disc(center.x(), center.y(), center.z(), rr * 1.5f, col, 0.06f * a, 16);
 		}
 	}
 
 	private void link(GlowBatch g, V3 c, V3 along, V3 side, float len, float wid, int col, float a) {
-		int seg = 12;
+		int seg = 14;
 		V3 prev = null;
 		for (int i = 0; i <= seg; i++) {
 			double t = Math.PI * 2 * i / seg;
-			V3 pt = c.add(along, (float) Math.cos(t) * len * 0.5f).add(side, (float) Math.sin(t) * wid * 0.5f);
+			// a stadium-like loop: flatter on the long sides
+			float ca = (float) Math.cos(t), sa = (float) Math.sin(t);
+			float sx = Math.signum(ca) * (float) Math.pow(Math.abs(ca), 0.7);
+			V3 pt = c.add(along, sx * len * 0.5f).add(side, sa * wid * 0.5f);
 			if (prev != null) {
-				g.glowLine(prev.x(), prev.y(), prev.z(), pt.x(), pt.y(), pt.z(), 0.045f, col, a);
+				g.glowLine(prev.x(), prev.y(), prev.z(), pt.x(), pt.y(), pt.z(), 0.06f, col, a);
 			}
 			prev = pt;
 		}
@@ -290,8 +290,8 @@ public class TargetESP extends Module {
 			V3 p2 = center.add(tan, cw / 2).add(up, -ch / 2);
 			V3 p3 = center.add(tan, cw / 2).add(up, ch / 2);
 			V3 p4 = center.add(tan, -cw / 2).add(up, ch / 2);
-			int fill = Colors.argb(col, 0.16f * a);
-			int fillTop = Colors.argb(Colors.mix(col, 0xFFFFFF, 0.5f), 0.26f * a);
+			int fill = Colors.argb(col, 0.24f * a);
+			int fillTop = Colors.argb(Colors.mix(col, 0xFFFFFF, 0.5f), 0.4f * a);
 			g.quad(p1.x(), p1.y(), p1.z(), fill, p2.x(), p2.y(), p2.z(), fill, p3.x(), p3.y(), p3.z(), fillTop, p4.x(), p4.y(), p4.z(), fillTop);
 			p1.line(g, p2, 0.035f, col, a);
 			p2.line(g, p3, 0.035f, col, a);
@@ -306,11 +306,12 @@ public class TargetESP extends Module {
 				ms.translate(tp.x(), tp.y(), tp.z());
 				float yaw = (float) Math.atan2(out.x(), out.z());
 				ms.multiply(new Quaternionf().rotationY(yaw).rotateZ(-tilt));
-				float s = 0.028f * size.getFloat();
+				float s = 0.034f * size.getFloat();
 				ms.scale(s, -s, s);
 				Matrix4f m = ms.peek().getPositionMatrix();
 				String suit = suits[i % suits.length];
-				int tc = Colors.argb(Colors.mix(col, 0xFFFFFF, 0.4f), Math.min(1f, alpha));
+				boolean red = i % suits.length == 1 || i % suits.length == 2;
+				int tc = Colors.argb(red ? 0xFF4D6A : 0x15151B, Math.min(1f, alpha));
 				tr.draw(suit, -tr.getWidth(suit) / 2f, -4f, tc, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
 				ms.pop();
 			}
@@ -322,7 +323,7 @@ public class TargetESP extends Module {
 		float vel = (float) Math.cos(spin * 2.4);
 		float y = u * h;
 		int seg = 48;
-		float curtain = 0.45f * Math.abs(vel) + 0.1f;
+		float curtain = 0.55f * Math.abs(vel) + 0.18f;
 		float dir = vel > 0 ? -1 : 1; // trail behind the movement
 		V3 c = base.add(V3.UP, y);
 		V3 prev = null;
@@ -331,8 +332,8 @@ public class TargetESP extends Module {
 			V3 pt = circle(c, r, ang);
 			if (prev != null) {
 				int col = Colors.mix(c1, c2, 0.5f + 0.5f * (float) Math.sin(ang * 2));
-				g.glowLine(prev.x(), prev.y(), prev.z(), pt.x(), pt.y(), pt.z(), 0.07f, col, a);
-				int top = Colors.argb(col, 0.32f * a);
+				g.glowLine(prev.x(), prev.y(), prev.z(), pt.x(), pt.y(), pt.z(), 0.11f, col, a * 1.2f);
+				int top = Colors.argb(col, 0.5f * a);
 				int bottom = Colors.argb(col, 0f);
 				g.quad(prev.x(), prev.y(), prev.z(), top, pt.x(), pt.y(), pt.z(), top,
 						pt.x(), pt.y() + dir * curtain, pt.z(), bottom, prev.x(), prev.y() + dir * curtain, prev.z(), bottom);
@@ -353,7 +354,7 @@ public class TargetESP extends Module {
 				float rr = r * (0.9f + 0.25f * (float) Math.sin(t * 2.3 + i));
 				V3 pt = circle(base.add(V3.UP, y), rr, ang);
 				float f = 1f - k / (float) (trail + 1);
-				g.disc(pt.x(), pt.y(), pt.z(), 0.05f + 0.16f * f, col, a * 0.35f * f, 10);
+				g.disc(pt.x(), pt.y(), pt.z(), 0.06f + 0.22f * f, col, a * 0.42f * f, 12);
 				if (k == 0) {
 					g.disc(pt.x(), pt.y(), pt.z(), 0.06f, 0xFFFFFF, Math.min(1f, a), 8);
 				}
@@ -390,12 +391,12 @@ public class TargetESP extends Module {
 				float d = (p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]) + (p[2] - q[2]) * (p[2] - q[2]);
 				if (d < 0.62f) {
 					float tw = 0.45f + 0.55f * (0.5f + 0.5f * (float) Math.sin(spin * 2 + i + j));
-					g.ribbon(pts[i].x(), pts[i].y(), pts[i].z(), pts[j].x(), pts[j].y(), pts[j].z(), 0.025f, Colors.argb(Colors.mix(c1, c2, 0.5f), 0.55f * a * tw));
+					g.glowLine(pts[i].x(), pts[i].y(), pts[i].z(), pts[j].x(), pts[j].y(), pts[j].z(), 0.045f, Colors.mix(c1, c2, 0.5f), 0.6f * a * tw);
 				}
 			}
 			float tw = 0.5f + 0.5f * (float) Math.sin(spin * 3 + i * 1.7);
 			int col = i % 2 == 0 ? c1 : c2;
-			g.disc(pts[i].x(), pts[i].y(), pts[i].z(), 0.13f + 0.05f * tw, col, a * (0.35f + 0.3f * tw), 10);
+			g.disc(pts[i].x(), pts[i].y(), pts[i].z(), 0.18f + 0.06f * tw, col, a * (0.45f + 0.3f * tw), 12);
 			g.disc(pts[i].x(), pts[i].y(), pts[i].z(), 0.035f, 0xFFFFFF, Math.min(1f, a), 6);
 		}
 	}

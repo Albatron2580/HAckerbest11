@@ -137,7 +137,7 @@ public class WardrobeScreen extends Screen {
 	@Override
 	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
 		Theme th = Theme.get();
-		ctx.fillGradient(0, 0, width, height, th.bg(0.94f), Colors.argb(Colors.shade(th.background.rgb(), 1.7f), 0.96f));
+		ctx.fillGradient(0, 0, width, height, th.bg(0.985f), Colors.argb(Colors.shade(th.background.rgb(), 1.7f), 0.99f));
 		float t = WhiteClient.get().time();
 		// soft light behind the model
 		float cx = panelX() + panelW() / 2f, cy = height * 0.48f;
@@ -159,10 +159,10 @@ public class WardrobeScreen extends Screen {
 		float k = 1f - (1f - open) * (1f - open);
 
 		// ---- header
-		Icons.shirt(ctx, 24, 22, 10, th.text());
-		ctx.drawText(textRenderer, UiFont.title("Wardrobe"), 34, 12, th.text(), false);
-		String sub = "Everything is free  ·  no pay-to-win";
-		UiFont.drawScaled(ctx, textRenderer, sub, 36 + textRenderer.getWidth(UiFont.title("Wardrobe")), 19, 0.8f, th.sub());
+		Render2D.roundRect(ctx, 16, 10, 20, 20, 6, th.card(0.8f));
+		Icons.shirt(ctx, 26, 20, 10, th.text());
+		UiFont.drawScaled(ctx, textRenderer, "Wardrobe", 42, 10, 1.25f, th.text());
+		UiFont.drawScaled(ctx, textRenderer, "Everything is free  ·  no pay-to-win", 42, 23, 0.75f, th.sub());
 
 		// ---- preview card (model is drawn by the widget, after this)
 		float px = panelX(), pw = panelW(), py = 40, ph = height - 64;
@@ -337,9 +337,31 @@ public class WardrobeScreen extends Screen {
 			bx += bw + 6;
 		}
 		float ty = by + 26;
-		UiFont.drawScaled(ctx, textRenderer, "How to add a skin: drop a 64x64 skin .png into config/whiteclient/skins, then press Reload.", listX, ty, 0.78f, th.sub());
-		UiFont.drawScaled(ctx, textRenderer, "Tip: download any skin PNG from a skin site — it is free and stays on your PC.", listX, ty + 10, 0.78f, th.sub());
-		return by - y0 + 50;
+		String help = "How to add a skin: put a 64x64 skin .png in .minecraft/config/whiteclient/skins, then press Reload and click it. "
+				+ "Any skin PNG works (download one from a skin site). It is free and stays on your PC.";
+		ty = wrapped(ctx, help, listX, ty, listW, 0.78f, th.sub());
+		return ty - y0 + 10;
+	}
+
+	/** Word-wrapped small text; returns the y below the last line. */
+	private float wrapped(DrawContext ctx, String text, float x, float y, float maxW, float scale, int color) {
+		String[] words = text.split(" ");
+		StringBuilder line = new StringBuilder();
+		for (String w : words) {
+			String test = line.isEmpty() ? w : line + " " + w;
+			if (UiFont.width(textRenderer, test) * scale > maxW && !line.isEmpty()) {
+				UiFont.drawScaled(ctx, textRenderer, line.toString(), x, y, scale, color);
+				y += 10 * scale + 2;
+				line = new StringBuilder(w);
+			} else {
+				line = new StringBuilder(test);
+			}
+		}
+		if (!line.isEmpty()) {
+			UiFont.drawScaled(ctx, textRenderer, line.toString(), x, y, scale, color);
+			y += 10 * scale + 2;
+		}
+		return y;
 	}
 
 	private void drawToggle(DrawContext ctx, float x, float y, float t) {
@@ -457,8 +479,8 @@ public class WardrobeScreen extends Screen {
 		}
 		int rows = (types.length + cols - 1) / cols;
 		float end = gy + rows * (34 + gap);
-		UiFont.drawScaled(ctx, textRenderer, "Name, size, side & glow colours: Right Shift → Cosmetics → Pets.", listX, end + 2, 0.78f, th.sub());
-		return end - y0 + 16;
+		float after = wrapped(ctx, "Name, side, height & glow colours: Right Shift → Cosmetics → Pets.", listX, end + 2, listW, 0.78f, th.sub());
+		return after - y0 + 6;
 	}
 
 	private static void openLink(String url) {

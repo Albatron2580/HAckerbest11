@@ -65,7 +65,7 @@ public class WhiteTitleScreen extends Screen {
 		} catch (Throwable t) {
 			skin = null;
 		}
-		walkerH = (int) Math.min(190, height * 0.56f);
+		walkerH = (int) Math.min(200, height * 0.6f);
 		walkerW = (int) (walkerH * 0.6f);
 		try {
 			walker = new SkinPreview(walkerW, walkerH, () -> {
@@ -86,13 +86,19 @@ public class WhiteTitleScreen extends Screen {
 
 	/** The player model walks in from the side, turns to you and idles (photo 1). */
 	private void drawWalker(DrawContext ctx, int mouseX, int mouseY, float delta, float time, MainMenu settings) {
-		if (walker == null || (settings != null && !settings.player.isOn()) || width < 470) {
+		if (walker == null || (settings != null && !settings.player.isOn())) {
 			return;
 		}
 		boolean left = settings != null && settings.playerSide.is("Left");
+		// stand in the free space next to the buttons
+		float buttonsHalf = Math.min(214, width - 40) / 2f;
+		float free = width / 2f - buttonsHalf;
+		if (free < walkerW * 0.8f + 8) {
+			return;
+		}
 		float t = Float.isNaN(debugWalkTime) ? (System.nanoTime() - opened) / 1.0e9f - 0.35f : debugWalkTime;
 		float walkDur = 2.1f;
-		float targetCx = left ? width * 0.15f : width * 0.85f;
+		float targetCx = left ? free / 2f : width - free / 2f;
 		float startCx = left ? -walkerW : width + walkerW;
 		float u = Math.max(0f, Math.min(1f, t / walkDur));
 		float ease = 1f - (1f - u) * (1f - u);

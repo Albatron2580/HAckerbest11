@@ -311,8 +311,10 @@ public class ClickGuiScreen extends Screen {
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
 		m.translate(0, (1 - k) * -8);
-		Render2D.planetLogo(ctx, cx - tw / 2f - 16, titleY + 10, 6.5f, t, (int) (255 * k));
-		ctx.drawText(textRenderer, UiFont.title(title), Math.round(cx - tw / 2f + 2), Math.round(titleY), Colors.argb(th.text.rgb(), k), false);
+		float logoW = 30;
+		float lx = cx - (logoW + 6 + tw) / 2f;
+		Render2D.planetLogo(ctx, lx + logoW / 2f, titleY - 1, 7f, t, (int) (255 * k));
+		ctx.drawText(textRenderer, UiFont.title(title), Math.round(lx + logoW + 6), Math.round(titleY + 2), Colors.argb(th.text.rgb(), k), false);
 		m.popMatrix();
 
 		if (searching) {
@@ -335,7 +337,7 @@ public class ClickGuiScreen extends Screen {
 		float r = th.roundness.getFloat();
 		for (int i = 0; i < cats.size(); i++) {
 			Category c = cats.get(i);
-			float ci = Math.max(0f, Math.min(1f, (k - i * 0.06f) / 0.7f));
+			float ci = Math.max(0f, Math.min(1f, (k - i * 0.05f) / 0.6f));
 			float x = x0 + i * (cs + gap);
 			float y = y0 + (1 - ci) * 14;
 			boolean hover = in(mx, my, x, y, cs, cs);
@@ -371,7 +373,7 @@ public class ClickGuiScreen extends Screen {
 		float sx0 = cx - (labels.length * sw + (labels.length - 1) * sg) / 2f;
 		float sy = y0 + cs + 22;
 		for (int i = 0; i < labels.length; i++) {
-			float si = Math.max(0f, Math.min(1f, (k - 0.3f - i * 0.05f) / 0.6f));
+			float si = Math.max(0f, Math.min(1f, (k - 0.3f - i * 0.05f) / 0.5f));
 			float x = sx0 + i * (sw + sg);
 			float y = sy + (1 - si) * 10;
 			boolean hover = in(mx, my, x, y, sw, sh);
@@ -764,7 +766,8 @@ public class ClickGuiScreen extends Screen {
 					boolean hover = in(mx, my, px, py, cw, 14);
 					Render2D.roundRect(ctx, px, py, cw, 14, 5, sel ? th.accent(0.95f) : (hover ? th.card(1f) : th.card(0.65f)));
 					String name = modes.get(i);
-					UiFont.drawScaled(ctx, textRenderer, name, px + cw / 2f - UiFont.width(textRenderer, name) * 0.4f, py + 3.5f, 0.8f, sel ? th.onAccent() : th.text());
+					float ts = Math.min(0.8f, (cw - 6) / Math.max(1f, UiFont.width(textRenderer, name)));
+					UiFont.drawScaled(ctx, textRenderer, name, px + cw / 2f - UiFont.width(textRenderer, name) * ts / 2f, py + 7 - 4.5f * ts, ts, sel ? th.onAccent() : th.text());
 					final String pick = name;
 					hit(px, py, cw, 14, null, clip, (a, b2, btn) -> mode.set(pick));
 				}
@@ -838,7 +841,7 @@ public class ClickGuiScreen extends Screen {
 			float by = y + ch * 12;
 			UiFont.drawScaled(ctx, textRenderer, names[ch], x, by + 1, 0.75f, th.sub());
 			float bx = x + 10, bw = w - 10;
-			int steps = 32;
+			int steps = Math.max(32, (int) (bw / 2));
 			for (int i = 0; i < steps; i++) {
 				float u0 = i / (float) steps, u1 = (i + 1) / (float) steps;
 				float u = (u0 + u1) / 2f;

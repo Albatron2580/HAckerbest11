@@ -39,10 +39,10 @@ public class Pets extends Module {
 	public final BoolSetting baby = add(new BoolSetting("Baby", true));
 	public final ModeSetting side = add(new ModeSetting("Side", "Right", "Right", "Left"));
 	public final NumberSetting height = add(new NumberSetting("Height", 1.55, 0.3, 2.8, 0.05));
-	public final NumberSetting distance = add(new NumberSetting("Distance", 1.0, 0.5, 2.5, 0.05));
+	public final NumberSetting distance = add(new NumberSetting("Distance", 1.45, 0.5, 2.5, 0.05));
 	public final NumberSetting bob = add(new NumberSetting("Float", 1.0, 0.0, 2.0, 0.1, "x"));
-	public final ColorSetting color = add(new ColorSetting("Glow Color", 0xBFD8FF).visibleWhen(this::isGlowPet));
-	public final ColorSetting color2 = add(new ColorSetting("Second Color", 0xF2C6FF).visibleWhen(this::isGlowPet));
+	public final ColorSetting color = add(new ColorSetting("Glow Color", 0x7FB8FF).visibleWhen(this::isGlowPet));
+	public final ColorSetting color2 = add(new ColorSetting("Second Color", 0xE79BFF).visibleWhen(this::isGlowPet));
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.2, 2.0, 0.05, "x").visibleWhen(this::isGlowPet));
 
 	private Entity entity;
@@ -109,7 +109,7 @@ public class Pets extends Module {
 		float s = side.is("Left") ? -1f : 1f;
 		float d = distance.getFloat();
 		double bobY = Math.sin(ticks * 0.08) * 0.12 * bob.get();
-		return player.getEntityPos().add(right.x() * s * d + fwd.x() * 0.15, height.get() * player.getScale() + bobY, right.z() * s * d + fwd.z() * 0.15);
+		return player.getEntityPos().add(right.x() * s * d + fwd.x() * 0.4, height.get() * player.getScale() + bobY, right.z() * s * d + fwd.z() * 0.4);
 	}
 
 	@Override
@@ -242,8 +242,8 @@ public class Pets extends Module {
 	private void jellyfish(GlowBatch g, V3 c, float t, float a) {
 		int c1 = color.rgb(), c2 = color2.rgb();
 		float pulse = 0.5f + 0.5f * (float) Math.sin(t * 2.6);
-		float bellR = 0.22f + 0.03f * pulse;
-		float bellH = 0.2f - 0.03f * pulse;
+		float bellR = 0.27f + 0.035f * pulse;
+		float bellH = 0.24f - 0.035f * pulse;
 		V3 top = c.add(V3.UP, 0.12f);
 		int rings = 5, seg = 18;
 		// bell: stacked rings from the top down
@@ -275,7 +275,7 @@ public class Pets extends Module {
 			V3 start = rim[(k * seg / tentacles) % seg];
 			V3 prev = start;
 			int steps = 8;
-			float len = 0.55f + 0.12f * (k % 3);
+			float len = 0.6f + 0.14f * (k % 3);
 			for (int s = 1; s <= steps; s++) {
 				float u = s / (float) steps;
 				float sway = (float) Math.sin(t * 2.2 - u * 4 + k) * 0.06f * u;
@@ -299,14 +299,14 @@ public class Pets extends Module {
 	private void wisp(GlowBatch g, V3 c, float t, float a) {
 		int c1 = color.rgb(), c2 = color2.rgb();
 		float pulse = 0.5f + 0.5f * (float) Math.sin(t * 3);
-		g.disc(c.x(), c.y(), c.z(), 0.55f, c1, 0.22f * a, 16);
-		g.disc(c.x(), c.y(), c.z(), 0.22f + 0.04f * pulse, c2, 0.55f * a, 14);
-		g.disc(c.x(), c.y(), c.z(), 0.08f, 0xFFFFFF, Math.min(1f, a), 10);
+		g.disc(c.x(), c.y(), c.z(), 0.7f, c1, 0.3f * a, 16);
+		g.disc(c.x(), c.y(), c.z(), 0.3f + 0.05f * pulse, c2, 0.7f * a, 14);
+		g.disc(c.x(), c.y(), c.z(), 0.11f, 0xFFFFFF, Math.min(1f, a), 10);
 		for (int i = 0; i < 4; i++) {
 			double ang = t * 2.4 + i * Math.PI / 2;
-			float rr = 0.28f;
+			float rr = 0.36f;
 			V3 p = new V3(c.x() + (float) Math.cos(ang) * rr, c.y() + (float) Math.sin(t * 3 + i) * 0.1f, c.z() + (float) Math.sin(ang) * rr);
-			g.disc(p.x(), p.y(), p.z(), 0.06f, i % 2 == 0 ? c1 : c2, 0.7f * a, 8);
+			g.disc(p.x(), p.y(), p.z(), 0.09f, i % 2 == 0 ? c1 : c2, 0.85f * a, 8);
 		}
 	}
 
@@ -319,19 +319,19 @@ public class Pets extends Module {
 			V3 wingDir = right.mul(sideSign).rotate(fwd, -sideSign * flap * 0.6f);
 			// upper and lower wing as soft filled quads + glowing outline
 			for (int part = 0; part < 2; part++) {
-				float len = part == 0 ? 0.32f : 0.22f;
+				float len = part == 0 ? 0.44f : 0.3f;
 				float along = part == 0 ? 0.1f : -0.1f;
 				V3 root = c.add(fwd, along * 0.3f);
 				V3 tip = root.add(wingDir, len).add(fwd, along);
-				V3 mid1 = root.add(wingDir, len * 0.55f).add(fwd, along + 0.09f);
-				V3 mid2 = root.add(wingDir, len * 0.55f).add(fwd, along - 0.09f);
-				int fill = Colors.argb(part == 0 ? c1 : c2, 0.32f * a);
-				int fillRoot = Colors.argb(0xFFFFFF, 0.4f * a);
+				V3 mid1 = root.add(wingDir, len * 0.55f).add(fwd, along + 0.13f);
+				V3 mid2 = root.add(wingDir, len * 0.55f).add(fwd, along - 0.13f);
+				int fill = Colors.argb(part == 0 ? c1 : c2, 0.55f * a);
+				int fillRoot = Colors.argb(0xFFFFFF, 0.6f * a);
 				g.quad(root.x(), root.y(), root.z(), fillRoot, mid1.x(), mid1.y(), mid1.z(), fill, tip.x(), tip.y(), tip.z(), fill, mid2.x(), mid2.y(), mid2.z(), fill);
-				root.line(g, mid1, 0.03f, part == 0 ? c1 : c2, a * 0.8f);
-				mid1.line(g, tip, 0.03f, part == 0 ? c1 : c2, a * 0.8f);
-				tip.line(g, mid2, 0.03f, part == 0 ? c1 : c2, a * 0.8f);
-				mid2.line(g, root, 0.03f, part == 0 ? c1 : c2, a * 0.8f);
+				root.line(g, mid1, 0.05f, part == 0 ? c1 : c2, a * 0.8f);
+				mid1.line(g, tip, 0.05f, part == 0 ? c1 : c2, a * 0.8f);
+				tip.line(g, mid2, 0.05f, part == 0 ? c1 : c2, a * 0.8f);
+				mid2.line(g, root, 0.05f, part == 0 ? c1 : c2, a * 0.8f);
 			}
 		}
 		c.add(fwd, 0.12f).line(g, c.add(fwd, -0.12f), 0.04f, 0xFFFFFF, a);
