@@ -2,6 +2,7 @@ package com.whiteclient.test;
 
 import com.whiteclient.WhiteClient;
 import com.whiteclient.gui.ClickGuiScreen;
+import com.whiteclient.gui.WhiteTitleScreen;
 import com.whiteclient.module.Category;
 import com.whiteclient.modules.Spotify;
 import com.whiteclient.modules.Text3D;
@@ -53,7 +54,19 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 
 		context.waitForScreen(TitleScreen.class);
 		context.waitTicks(60);
-		context.takeScreenshot("title_white_energy_rounded_buttons");
+		context.takeScreenshot("vanilla_title_white_energy_rounded_buttons");
+
+		// WHITECLIENT main menu (the automatic swap is off during tests, so open it by hand)
+		context.setScreen(WhiteTitleScreen::new);
+		context.waitTicks(60);
+		context.takeScreenshot("main_menu");
+		context.runOnClient(client -> WhiteClient.get().music().setOverride(new NowPlaying("t", "Midnight Drive", "WHITECLIENT Radio", "",
+				200_000, 30_000, true, System.currentTimeMillis(), null, true, "test"), null));
+		context.waitTicks(30);
+		context.takeScreenshot("main_menu_now_playing");
+		context.runOnClient(client -> WhiteClient.get().music().setOverride(null, null));
+		context.setScreen(TitleScreen::new);
+		context.waitTicks(5);
 
 		try (TestSingleplayerContext sp = context.worldBuilder().create()) {
 			sp.getClientWorld().waitForChunksRender();

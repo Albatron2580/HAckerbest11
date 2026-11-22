@@ -16,6 +16,7 @@ import com.whiteclient.modules.Text3D;
 import com.whiteclient.modules.Watermark;
 import com.whiteclient.modules.Wings;
 import com.whiteclient.modules.MenuButtons;
+import com.whiteclient.modules.MainMenu;
 import com.whiteclient.modules.Spotify;
 import com.whiteclient.music.MusicService;
 import com.whiteclient.render.GlowBatch;
@@ -106,6 +107,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
 		modules.register(new MenuButtons());
+		modules.register(new MainMenu());
 
 		config = new ConfigManager(modules);
 		config.load();

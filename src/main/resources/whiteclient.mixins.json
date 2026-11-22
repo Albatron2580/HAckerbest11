@@ -4,6 +4,7 @@
 	"package": "com.whiteclient.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"MinecraftClientMixin",
 		"PressableWidgetMixin"
 	],
 	"injectors": {
