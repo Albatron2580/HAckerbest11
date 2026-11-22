@@ -1,4 +1,4 @@
-# WHITECLIENT 1.2.0 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.3.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server, no cheats.
 
@@ -14,6 +14,7 @@ Client-side visuals mod in a white/black style. Works on any server, no cheats.
 | Music | **Spotify** | Now-playing card (cover, title, artist, progress, current lyric) |
 | Music | **3D Text** | Big white 3D words that pop up in time with your Spotify lyrics (or your own text) |
 | HUD | **Watermark** | Logo / name / ping / FPS pill |
+| Menu | **Main Menu** | WHITECLIENT title screen (logo, rounded buttons, icon dock, account, now-playing) |
 | Menu | **Menu Background** | Animated white energy (or aurora / mono) on title + pause screen |
 | Menu | **Rounded Buttons** | Rounded see-through buttons on the title + pause screen |
 | Menu | **Pause Mods Button** | Opens the WHITECLIENT menu (own row next to NoRisk / ModMenu buttons) |
@@ -40,7 +41,7 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.2.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.3.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.
