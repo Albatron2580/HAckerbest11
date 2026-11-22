@@ -31,7 +31,7 @@ Every module has settings (colours, sizes, speeds...). Click a module card to ex
 Put `whiteclient-1.1.0.jar` and **Fabric API** (for 1.21.11) in `.minecraft/mods`, launch with Fabric Loader for 1.21.11.
 
 ## Build from source
-Needs Java 21.
+Needs Java 25 to run Gradle (the mod itself targets Java 21).
 ```
 gradlew build
 ```
