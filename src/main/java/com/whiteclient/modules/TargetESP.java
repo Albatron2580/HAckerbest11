@@ -391,7 +391,7 @@ public class TargetESP extends Module {
 				float d = (p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]) + (p[2] - q[2]) * (p[2] - q[2]);
 				if (d < 0.62f) {
 					float tw = 0.45f + 0.55f * (0.5f + 0.5f * (float) Math.sin(spin * 2 + i + j));
-					g.glowLine(pts[i].x(), pts[i].y(), pts[i].z(), pts[j].x(), pts[j].y(), pts[j].z(), 0.045f, Colors.mix(c1, c2, 0.5f), 0.6f * a * tw);
+					g.glowLine(pts[i].x(), pts[i].y(), pts[i].z(), pts[j].x(), pts[j].y(), pts[j].z(), 0.05f, Colors.mix(c1, c2, 0.5f), 0.9f * a * tw);
 				}
 			}
 			float tw = 0.5f + 0.5f * (float) Math.sin(spin * 3 + i * 1.7);

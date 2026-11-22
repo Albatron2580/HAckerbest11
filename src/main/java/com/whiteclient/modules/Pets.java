@@ -314,9 +314,11 @@ public class Pets extends Module {
 		int c1 = color.rgb(), c2 = color2.rgb();
 		V3 fwd = V3.forward(yawDeg);
 		V3 right = V3.right(yawDeg);
-		float flap = (float) Math.sin(t * 14) * 0.9f;
+		float flap = (float) Math.sin(t * 14);
 		for (int sideSign = -1; sideSign <= 1; sideSign += 2) {
-			V3 wingDir = right.mul(sideSign).rotate(fwd, -sideSign * flap * 0.6f);
+			// wings held up in a V and flapping, so they read from every side
+			float lift = 0.6f + 0.5f * flap;
+			V3 wingDir = right.mul(sideSign).rotate(fwd, -sideSign * lift);
 			// upper and lower wing as soft filled quads + glowing outline
 			for (int part = 0; part < 2; part++) {
 				float len = part == 0 ? 0.44f : 0.3f;

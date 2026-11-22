@@ -44,7 +44,7 @@ public class WhiteTitleScreen extends Screen {
 	/** Screenshot tests: fixed seconds into the walk-in animation (NaN = real time). */
 	public static float debugWalkTime = Float.NaN;
 	/** Direction the model faces while walking in (degrees for the skin widget). */
-	public static float walkYaw = 90f;
+	public static float walkYaw = -90f;
 
 	private record Hit(float x1, float y1, float x2, float y2, Runnable action) {
 	}
