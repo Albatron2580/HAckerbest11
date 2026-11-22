@@ -97,7 +97,7 @@ public class CustomCrosshair extends Module {
 			Render2D.line(ctx, cx - s, cy + s * 0.6f + g * 0.5f, cx, cy + g * 0.5f - s * 0.1f, t, col);
 			Render2D.line(ctx, cx, cy + g * 0.5f - s * 0.1f, cx + s, cy + s * 0.6f + g * 0.5f, t, col);
 		}
-		if (style.is("Dot") || style.endsWith("+ Dot")) {
+		if (style.is("Dot") || style.get().endsWith("+ Dot")) {
 			float r = Math.max(1f, t * 0.9f) + (back ? 0.6f : 0f);
 			Render2D.circle(ctx, cx, cy, r, col);
 		}
