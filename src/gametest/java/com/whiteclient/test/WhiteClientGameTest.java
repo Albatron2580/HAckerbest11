@@ -84,6 +84,11 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		}
 	}
 
+	private static void clearClutter(net.minecraft.client.MinecraftClient client) {
+		client.getToastManager().clear();
+		client.inGameHud.getChatHud().clear(false);
+	}
+
 	private static void attackHusk(net.minecraft.client.MinecraftClient client) {
 		for (Entity e : client.world.getEntities()) {
 			if (e instanceof HuskEntity h && h.isAlive()) {
@@ -228,6 +233,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			sp.getServer().runCommand("effect give @p speed 120 1");
 			sp.getServer().runCommand("effect give @p strength 120 0");
 			sp.getServer().runCommand("effect give @p regeneration 9 0");
+			sp.getServer().runCommand("effect give @e[type=husk] resistance 999 3");
 			for (int i = 0; i < 3; i++) {
 				context.runOnClient(WhiteClientGameTest::attackHusk);
 				context.waitTicks(13);
@@ -236,9 +242,10 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				Keystrokes.debugHeld = 0b10001;
 				LowHealth.debugHealth = 5;
 				WhiteClient.get().modules().get(Trail.class).toggle(); // shows a notification
+				clearClutter(client);
 				attackHusk(client);
 			});
-			context.waitTicks(4);
+			context.waitTicks(2);
 			context.takeScreenshot("combat_hits_hud");
 			context.runOnClient(client -> {
 				Keystrokes.debugHeld = 0;
@@ -251,6 +258,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.waitTicks(15);
 				context.runOnClient(client -> {
 					WhiteClient.get().modules().get(KillEffects.class).style.set(kill);
+					clearClutter(client);
 					attackHusk(client);
 				});
 				context.waitTicks(kill.equals("Lightning") ? 6 : 12);
@@ -261,6 +269,10 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			// ---- 1.6 cosmetics: china hat, trail, jump circles, cape
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();
+				mm.get(Halo.class).setEnabled(false);
+				mm.get(Wings.class).setEnabled(false);
+				mm.get(Aura.class).setEnabled(false);
+				clearClutter(client);
 				mm.get(ChinaHat.class).setEnabled(true);
 				mm.get(JumpCircles.class).setEnabled(true);
 				mm.get(Capes.class).setEnabled(true);
@@ -288,6 +300,10 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				var mm = WhiteClient.get().modules();
 				mm.get(ChinaHat.class).setEnabled(false);
 				mm.get(Trail.class).setEnabled(false);
+				mm.get(JumpCircles.class).setEnabled(false);
+				mm.get(Halo.class).setEnabled(true);
+				mm.get(Wings.class).setEnabled(true);
+				mm.get(Aura.class).setEnabled(true);
 				mm.get(BlockOutline.class).setEnabled(true);
 				HandView hv = mm.get(HandView.class);
 				hv.setEnabled(true);

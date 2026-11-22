@@ -113,13 +113,13 @@ public class Ambience extends Module {
 			float fade = Math.min(1f, age[i] / 1.5f);
 			switch (m) {
 				case "Petals" -> {
-					int col = customColor.isOn() ? color.rgb() : (i % 4 == 0 ? 0xFFFFFF : 0xFFB7D5);
+					int col = customColor.isOn() ? color.rgb() : (i % 4 == 0 ? 0xFFE4F0 : 0xFF6FAE);
 					float rot = t * 1.6f + spin[i];
-					float s = 0.07f;
+					float s = 0.13f;
 					float ax = (float) Math.cos(rot) * s, az = (float) Math.sin(rot) * s;
 					float ay = (float) Math.sin(rot * 0.7f + ph) * s;
-					int cc = Colors.argb(col, 0.55f * br * fade);
-					int ce = Colors.argb(col, 0.2f * br * fade);
+					int cc = Colors.argb(col, 0.95f * br * fade);
+					int ce = Colors.argb(col, 0.45f * br * fade);
 					g.quad(x - ax, y - ay, z - az, ce, x, y + s * 0.6f, z, cc, x + ax, y + ay, z + az, ce, x, y - s * 0.6f, z, cc);
 				}
 				case "Embers" -> {
@@ -142,8 +142,8 @@ public class Ambience extends Module {
 					int col = customColor.isOn() ? color.rgb() : 0xE4FF8A;
 					float blink = (float) Math.pow(Math.max(0, Math.sin(t * 1.4 + ph)), 3);
 					if (blink > 0.02f) {
-						g.disc(x, y, z, 0.28f, col, 0.35f * blink * br * fade, 10);
-						g.disc(x, y, z, 0.05f, 0xFFFFF0, Math.min(1f, blink * br * fade), 6);
+						g.disc(x, y, z, 0.36f, col, 0.55f * blink * br * fade, 10);
+						g.disc(x, y, z, 0.07f, 0xFFFFF0, Math.min(1f, blink * br * fade), 6);
 					}
 				}
 			}

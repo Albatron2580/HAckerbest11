@@ -377,7 +377,8 @@ public class WardrobeScreen extends Screen {
 		Theme th = Theme.get();
 		var mm = WhiteClient.get().modules();
 		List<Module> list = new ArrayList<>();
-		for (Class<? extends Module> c : List.of(Halo.class, Wings.class, Aura.class, BlockTrail.class, Pets.class)) {
+		for (Class<? extends Module> c : List.of(Halo.class, Wings.class, Aura.class, com.whiteclient.modules.Capes.class, com.whiteclient.modules.ChinaHat.class,
+				com.whiteclient.modules.Trail.class, com.whiteclient.modules.JumpCircles.class, BlockTrail.class, Pets.class)) {
 			Module m = mm.get(c);
 			if (m != null) {
 				list.add(m);

@@ -60,9 +60,9 @@ public class ChinaHat extends Module {
 			int c1 = rainbow.isOn() ? Colors.hsv((float) (i / (double) seg + ctx.time * 0.1), 0.55f, 1f) : color.rgb();
 			V3 pt = base.add(ringX, (float) Math.cos(ang) * r).add(ringZ, (float) Math.sin(ang) * r);
 			if (prev != null) {
-				prev.line(g, pt, 0.07f, c1, a);
-				int rim = Colors.argb(c1, 0.16f * a);
-				int tip = Colors.argb(color2.rgb(), 0.3f * a);
+				prev.line(g, pt, 0.09f, c1, a * 1.2f);
+				int rim = Colors.argb(c1, 0.24f * a);
+				int tip = Colors.argb(color2.rgb(), 0.45f * a);
 				g.quad(apex.x(), apex.y(), apex.z(), tip, apex.x(), apex.y(), apex.z(), tip, prev.x(), prev.y(), prev.z(), rim, pt.x(), pt.y(), pt.z(), rim);
 				if (i % 4 == 0) {
 					apex.line(g, pt, 0.025f, c1, a * 0.45f);
