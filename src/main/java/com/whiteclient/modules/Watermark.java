@@ -26,6 +26,10 @@ public class Watermark extends Module {
 
 	private float shownFps = -1;
 
+	/** Last drawn bounds in GUI coordinates (used so other HUD parts can avoid overlapping it). */
+	public static float boundsX1, boundsX2, boundsY2;
+	public static long boundsFrameMs;
+
 	public Watermark() {
 		super("Watermark", "Name / ping / FPS pill at the top", Category.HUD, true);
 	}
@@ -62,6 +66,11 @@ public class Watermark extends Module {
 			x = (sw / s - w) / 2f;
 		}
 		float y = 6;
+
+		boundsX1 = (x - 1) * s;
+		boundsX2 = (x + w + 1) * s;
+		boundsY2 = (y + h + 1) * s;
+		boundsFrameMs = System.currentTimeMillis();
 
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();

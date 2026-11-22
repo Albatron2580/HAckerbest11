@@ -168,6 +168,13 @@ public class Spotify extends Module {
 		boolean bottom = cardPosition.get().startsWith("Bottom");
 		float x = right ? sw / sc - w - 6 : 6;
 		float y = bottom ? sh / sc - h - 6 : 6;
+		if (!bottom && System.currentTimeMillis() - Watermark.boundsFrameMs < 500) {
+			// keep clear of the watermark pill
+			float cx1 = x * sc, cx2 = (x + w) * sc;
+			if (cx1 < Watermark.boundsX2 && cx2 > Watermark.boundsX1 && y * sc < Watermark.boundsY2) {
+				y = Watermark.boundsY2 / sc + 4;
+			}
+		}
 		float slide = (1 - shown) * 20 * (right ? 1 : -1);
 
 		var m = ctx.getMatrices();

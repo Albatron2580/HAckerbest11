@@ -38,7 +38,7 @@ public class Text3D extends Module {
 	public final NumberSetting wordsPerGroup = add(new NumberSetting("Words Per Group", 3, 1, 6, 1));
 	public final NumberSetting wordDelay = add(new NumberSetting("Word Delay", 0.32, 0.08, 1.5, 0.02, "s"));
 	public final NumberSetting holdTime = add(new NumberSetting("Hold Time", 1.6, 0.2, 6.0, 0.1, "s"));
-	public final NumberSetting scale = add(new NumberSetting("Size", 2.6, 0.5, 8.0, 0.1, "x"));
+	public final NumberSetting scale = add(new NumberSetting("Size", 3.0, 0.5, 8.0, 0.1, "x"));
 	public final NumberSetting depth = add(new NumberSetting("Depth", 12, 2, 20, 1));
 	public final NumberSetting distance = add(new NumberSetting("Distance", 6.0, 2.0, 16.0, 0.5));
 	public final NumberSetting height = add(new NumberSetting("Height", 0.9, -2.0, 4.0, 0.1));
