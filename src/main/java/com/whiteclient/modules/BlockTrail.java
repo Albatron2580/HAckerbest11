@@ -19,8 +19,8 @@ import java.util.Iterator;
 public class BlockTrail extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting duration = add(new NumberSetting("Duration", 4.0, 0.5, 15.0, 0.5, "s"));
-	public final NumberSetting fill = add(new NumberSetting("Fill", 0.12, 0.0, 0.5, 0.01));
-	public final NumberSetting outline = add(new NumberSetting("Outline", 0.85, 0.0, 1.5, 0.05));
+	public final NumberSetting fill = add(new NumberSetting("Fill", 0.20, 0.0, 0.5, 0.01));
+	public final NumberSetting outline = add(new NumberSetting("Outline", 1.1, 0.0, 1.5, 0.05));
 	public final NumberSetting squareSize = add(new NumberSetting("Square Size", 0.92, 0.4, 1.0, 0.01));
 	public final BoolSetting onlyGround = add(new BoolSetting("Only On Ground", true));
 
@@ -90,7 +90,7 @@ public class BlockTrail extends Module {
 				g.quad(x0, y, z0, c, x1, y, z0, c, x1, y, z1, c, x0, y, z1, c);
 			}
 			if (lineA > 0.001f) {
-				float w = 0.07f;
+				float w = 0.085f;
 				float in = lineA * alpha;
 				g.glowLine(x0, y, z0, x1, y, z0, w, rgb, in);
 				g.glowLine(x1, y, z0, x1, y, z1, w, rgb, in);

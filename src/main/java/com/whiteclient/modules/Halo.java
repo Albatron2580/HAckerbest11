@@ -14,12 +14,12 @@ import net.minecraft.util.math.Vec3d;
 /** Glowing golden halo with spikes above your head. */
 public class Halo extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFC63A));
-	public final NumberSetting radius = add(new NumberSetting("Radius", 0.30, 0.15, 0.6, 0.01));
+	public final NumberSetting radius = add(new NumberSetting("Radius", 0.34, 0.15, 0.6, 0.01));
 	public final NumberSetting height = add(new NumberSetting("Height", 0.14, 0.0, 0.8, 0.01));
 	public final NumberSetting spikes = add(new NumberSetting("Spikes", 10, 0, 24, 1));
 	public final NumberSetting spikeLength = add(new NumberSetting("Spike Length", 0.16, 0.0, 0.5, 0.01));
 	public final NumberSetting spin = add(new NumberSetting("Spin", 0.5, 0.0, 3.0, 0.1, "x"));
-	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.2, 2.0, 0.05, "x"));
+	public final NumberSetting glow = add(new NumberSetting("Glow", 1.3, 0.2, 2.0, 0.05, "x"));
 	public final BoolSetting followHead = add(new BoolSetting("Follow Head", true));
 	public final BoolSetting firstPerson = add(new BoolSetting("Show In First Person", false));
 
@@ -60,7 +60,7 @@ public class Halo extends Module {
 			double a = Math.PI * 2 * i / segments + spinAngle;
 			V3 pt = center.add(ringX, (float) Math.cos(a) * r).add(ringZ, (float) Math.sin(a) * r);
 			if (prev != null) {
-				prev.line(g, pt, 0.12f, rgb, intensity);
+				prev.line(g, pt, 0.15f, rgb, intensity);
 			}
 			prev = pt;
 		}
@@ -76,6 +76,6 @@ public class Halo extends Module {
 			base.line(g, tip, 0.07f, rgb, intensity * 0.9f);
 		}
 
-		g.disc(center.x(), center.y(), center.z(), r * 2.3f, rgb, 0.10f * intensity, 16);
+		g.disc(center.x(), center.y(), center.z(), r * 2.6f, rgb, 0.14f * intensity, 16);
 	}
 }

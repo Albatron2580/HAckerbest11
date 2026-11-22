@@ -15,8 +15,8 @@ import java.util.Random;
 /** Twinkling stars and a milky-way band painted over the sky. */
 public class GalaxySky extends Module {
 	public final NumberSetting stars = add(new NumberSetting("Stars", 500, 100, 2000, 50));
-	public final NumberSetting brightness = add(new NumberSetting("Brightness", 1.0, 0.2, 2.0, 0.05, "x"));
-	public final NumberSetting starSize = add(new NumberSetting("Star Size", 1.0, 0.4, 2.5, 0.05, "x"));
+	public final NumberSetting brightness = add(new NumberSetting("Brightness", 1.2, 0.2, 2.0, 0.05, "x"));
+	public final NumberSetting starSize = add(new NumberSetting("Star Size", 1.5, 0.4, 3.0, 0.05, "x"));
 	public final BoolSetting milkyWay = add(new BoolSetting("Milky Way", true));
 	public final BoolSetting twinkle = add(new BoolSetting("Twinkle", true));
 	public final ColorSetting tint = add(new ColorSetting("Nebula Tint", 0x9B5CFF));

@@ -31,7 +31,7 @@ public class Text3D extends Module {
 	public final NumberSetting wordDelay = add(new NumberSetting("Word Delay", 0.38, 0.08, 1.5, 0.02, "s"));
 	public final NumberSetting holdTime = add(new NumberSetting("Hold Time", 1.6, 0.2, 6.0, 0.1, "s"));
 	public final NumberSetting scale = add(new NumberSetting("Size", 3.0, 0.5, 8.0, 0.1, "x"));
-	public final NumberSetting depth = add(new NumberSetting("Depth", 9, 2, 20, 1));
+	public final NumberSetting depth = add(new NumberSetting("Depth", 12, 2, 20, 1));
 	public final NumberSetting distance = add(new NumberSetting("Distance", 6.0, 2.0, 16.0, 0.5));
 	public final ColorSetting front = add(new ColorSetting("Front Color", 0x3D8BFF));
 	public final ColorSetting accent = add(new ColorSetting("Accent Color", 0x33E6C8));
@@ -160,10 +160,22 @@ public class Text3D extends Module {
 		double rx = -Math.cos(r), rz = -Math.sin(r);
 		double side = (random.nextDouble() * 2 - 1) * 1.2;
 		double up = 0.4 + random.nextDouble() * 0.9;
-		double d = distance.get();
+		double d = distance.get() + cameraToPlayer(ctx);
 		anchor = new Vec3d(cam.x + fx * d + rx * side, cam.y + up - 0.6, cam.z + fz * d + rz * side);
 		// face the camera: local +Z points from the text towards the camera
 		anchorYaw = (float) Math.atan2(cam.x - anchor.x, cam.z - anchor.z);
+	}
+
+	/** In third person the text is pushed out past the player so it never spawns on top of you. */
+	private static double cameraToPlayer(WorldContext ctx) {
+		if (!ctx.thirdPerson() || ctx.client.player == null) {
+			return 0;
+		}
+		Vec3d p = ctx.client.player.getLerpedPos(ctx.tickDelta);
+		double dx = p.x - ctx.cam.x;
+		double dy = p.y + ctx.client.player.getStandingEyeHeight() - ctx.cam.y;
+		double dz = p.z - ctx.cam.z;
+		return Math.min(12, Math.sqrt(dx * dx + dy * dy + dz * dz));
 	}
 
 	private void drawGroup(WorldContext ctx, int start, int count, float delay, float outScale) {
@@ -181,7 +193,7 @@ public class Text3D extends Module {
 		if (placement.is("Camera")) {
 			double r = Math.toRadians(ctx.client.gameRenderer.getCamera().getYaw());
 			double pr = Math.toRadians(ctx.client.gameRenderer.getCamera().getPitch());
-			double d = distance.get();
+			double d = distance.get() + cameraToPlayer(ctx);
 			double fx = -Math.sin(r) * Math.cos(pr), fy = -Math.sin(pr), fz = Math.cos(r) * Math.cos(pr);
 			ms.translate(fx * d, fy * d, fz * d);
 			ms.multiply(new Quaternionf(ctx.camRotation));
