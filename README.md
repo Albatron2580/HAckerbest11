@@ -1,16 +1,19 @@
-# WHITECLIENT 1.3.0 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.4.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server, no cheats.
 
 ## Features
 | Category | Module | What it does |
 |---|---|---|
-| Visuals | **Halo** | White glowing halo with spikes, also on other players |
-| Visuals | **Wings** | Spiky white glowing wings, also on other players |
-| Visuals | **Aura** | Soft white glow over your player + sparkles |
-| Visuals | **Block Trail** | Glowing squares on the blocks you walk over |
+| Cosmetics | **Halo** | White glowing halo with spikes, also on other players |
+| Cosmetics | **Wings** | Spiky white glowing wings, also on other players |
+| Cosmetics | **Aura** | Soft white glow over your player + sparkles |
+| Cosmetics | **Block Trail** | Glowing squares on the blocks you walk over |
+| Cosmetics | **Pets** | A pet floating next to you: glowing Jellyfish (kwal), Wisp, Butterfly or a Dog, Cat, Fox, Parrot, Bee, Allay, Axolotl, Frog, Rabbit, Panda, Chicken, Bat, Vex. Only you see it; it can't be hit or push you |
+| PvP | **Target ESP** | Effects that spin around the entity you hit / look at: Shackles (glowing chains), Orbit, Spiral, Cards, Ring, Ghosts, Constellation. Visual only |
 | World | **Galaxy Sky** | Twinkling stars + milky way |
 | World | **Snow** | Glowing snow / dust in the air |
+| World | **Rain FX** | Glowing rain streaks, ripples on the ground, splash droplets + rainy colour mood |
 | Music | **Spotify** | Now-playing card (cover, title, artist, progress, current lyric) |
 | Music | **3D Text** | Big white 3D words that pop up in time with your Spotify lyrics (or your own text) |
 | HUD | **Watermark** | Logo / name / ping / FPS pill |
@@ -18,6 +21,21 @@ Client-side visuals mod in a white/black style. Works on any server, no cheats.
 | Menu | **Menu Background** | Animated white energy (or aurora / mono) on title + pause screen |
 | Menu | **Rounded Buttons** | Rounded see-through buttons on the title + pause screen |
 | Menu | **Pause Mods Button** | Opens the WHITECLIENT menu (own row next to NoRisk / ModMenu buttons) |
+| Menu | **Main Menu → Walking Player** | Your skin walks into the title screen, turns to you and follows your mouse |
+| Client | **Theme** | Change every menu colour (accent, background, panel, cards, text, toggles), opacity, roundness |
+| Client | **Wardrobe** | Free custom skins from PNG files + cosmetics & pet picker with a 3D preview. No pay-to-win, only a Support button |
+
+## Menu (Right Shift)
+- **Home:** big category cards (Cosmetics, PvP, World, Music, HUD, Menu) + Wardrobe / Search / Theme / Support.
+  Start typing to search.
+- **Window:** click a card. The window floats: drag it by the top bar or the **drag** handle, resize it with **resize**
+  in the corner (it remembers where you put it). Click a module to see its settings next to the list.
+- **Colours:** click any colour to open the picker (hue / saturation / brightness + presets).
+  **Theme** recolours the whole menu.
+
+## Wardrobe / custom skins
+Put a 64x64 skin `.png` in `.minecraft/config/whiteclient/skins/` (button **Open Skins Folder**), press **Reload**
+and click it. Turn on **Slim Arms** for Alex-style skins. Custom skins are client-side: only you see them.
 
 Cosmetics on other players: invisible players are skipped unless they wear armor.
 
@@ -41,7 +59,7 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.3.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.4.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.

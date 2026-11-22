@@ -178,7 +178,7 @@ public class RainFX extends Module {
 		}
 
 		// ---- extra ripples (rain hitting the ground everywhere, not only under the streaks)
-		spawnAcc += dt * 55 * (float) amount.get() * strength;
+		spawnAcc += dt * 55 * amount.getFloat() * strength;
 		while (spawnAcc >= 1f) {
 			spawnAcc -= 1f;
 			double ang = random.nextDouble() * Math.PI * 2;
