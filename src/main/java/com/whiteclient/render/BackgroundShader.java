@@ -70,9 +70,10 @@ public final class BackgroundShader {
 					float amb = 0.05f + 0.07f * (float) (0.5 + 0.5 * Noise.noise(u * 0.35, v * 0.35, time * 0.025));
 					float vig = 1f - 0.45f * (float) ((u * h / w - 0.5) * (u * h / w - 0.5) + (v - 0.5) * (v - 0.5)) * 2f;
 					float lum = (amb + glow * intensity) * vig;
-					r = cr * lum + core * intensity * 0.85f;
-					g = cg * lum + core * intensity * 0.75f;
-					b = cb * lum + core * intensity * 0.55f;
+					float ci = core * intensity * 0.9f;
+					r = cr * lum + ci * (0.55f + 0.45f * cr);
+					g = cg * lum + ci * (0.55f + 0.45f * cg);
+					b = cb * lum + ci * (0.55f + 0.45f * cb);
 				}
 				int ir = (int) (clamp01(r) * 255f);
 				int ig = (int) (clamp01(g) * 255f);

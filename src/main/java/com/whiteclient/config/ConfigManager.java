@@ -23,6 +23,13 @@ public final class ConfigManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private final Path file = FabricLoader.getInstance().getConfigDir().resolve("whiteclient.json");
 	private final ModuleManager modules;
+	private int loadedVersion = CURRENT_VERSION;
+	public static final int CURRENT_VERSION = 2;
+
+	/** Config version found on disk (CURRENT_VERSION when there was no file). */
+	public int loadedVersion() {
+		return loadedVersion;
+	}
 
 	public ConfigManager(ModuleManager modules) {
 		this.modules = modules;
@@ -37,7 +44,9 @@ public final class ConfigManager {
 			if (!root.isJsonObject()) {
 				return;
 			}
-			JsonObject mods = root.getAsJsonObject().getAsJsonObject("modules");
+			JsonObject rootObj = root.getAsJsonObject();
+			loadedVersion = rootObj.has("version") ? rootObj.get("version").getAsInt() : 1;
+			JsonObject mods = rootObj.getAsJsonObject("modules");
 			if (mods == null) {
 				return;
 			}
@@ -69,14 +78,17 @@ public final class ConfigManager {
 
 	public void save() {
 		JsonObject root = new JsonObject();
-		root.addProperty("version", 1);
+		root.addProperty("version", CURRENT_VERSION);
 		JsonObject mods = new JsonObject();
 		for (Module module : modules.all()) {
 			JsonObject obj = new JsonObject();
 			obj.addProperty("enabled", module.isEnabled());
 			JsonObject settings = new JsonObject();
 			for (Setting<?> s : module.getSettings()) {
-				settings.add(key(s.getName()), s.toJson());
+				JsonElement json = s.toJson();
+				if (json != null) {
+					settings.add(key(s.getName()), json);
+				}
 			}
 			obj.add("settings", settings);
 			mods.add(key(module.getName()), obj);

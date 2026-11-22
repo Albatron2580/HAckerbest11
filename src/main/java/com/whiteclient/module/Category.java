@@ -3,6 +3,7 @@ package com.whiteclient.module;
 public enum Category {
 	VISUALS("Visuals", "Cosmetics on your player"),
 	WORLD("World", "Sky, particles, 3D text"),
+	MUSIC("Music", "Spotify, lyrics & 3D text"),
 	HUD("HUD", "On-screen overlays"),
 	MENU("Menu", "Menus & backgrounds");
 

@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "com.whiteclient.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"PressableWidgetMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	}
+}

@@ -8,7 +8,8 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.network.ClientPlayerEntity;
+import com.whiteclient.render.CosmeticTargets;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
 /** Soft white glow around (and over) your player, with orbiting sparkles. */
@@ -19,6 +20,7 @@ public class Aura extends Module {
 	public final NumberSetting pulse = add(new NumberSetting("Pulse", 0.5, 0.0, 1.0, 0.05));
 	public final BoolSetting bodyGlow = add(new BoolSetting("Glow Over Body", true));
 	public final BoolSetting sparkles = add(new BoolSetting("Sparkles", true));
+	public final BoolSetting others = add(new BoolSetting("Show On Others", false));
 
 	public Aura() {
 		super("Aura", "Soft glow around your player", Category.VISUALS, true);
@@ -26,10 +28,12 @@ public class Aura extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		ClientPlayerEntity player = ctx.client.player;
-		if (player == null || player.isInvisible() || !ctx.thirdPerson()) {
-			return;
+		for (PlayerEntity player : CosmeticTargets.collect(ctx, true, false, others.isOn(), 48)) {
+			render(ctx, player);
 		}
+	}
+
+	private void render(WorldContext ctx, PlayerEntity player) {
 		Vec3d p = player.getLerpedPos(ctx.tickDelta);
 		float h = player.getHeight();
 		V3 center = new V3(ctx.rx(p.x), ctx.ry(p.y + h * 0.55f), ctx.rz(p.z));

@@ -5,7 +5,9 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.render.Colors;
+import com.whiteclient.setting.ActionSetting;
 import com.whiteclient.setting.BoolSetting;
+import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
@@ -74,6 +76,15 @@ public class ClickGuiScreen extends Screen {
 	public ClickGuiScreen(Screen parent) {
 		super(Text.literal("WHITECLIENT"));
 		this.parent = parent;
+	}
+
+	/** Opens on a given category with one module already expanded. */
+	public ClickGuiScreen(Screen parent, Category category, Module expand) {
+		this(parent);
+		this.selected = category;
+		if (expand != null) {
+			expanded.add(expand);
+		}
 	}
 
 	@Override
@@ -383,6 +394,27 @@ public class ClickGuiScreen extends Screen {
 			if (interactive) {
 				hit(x, y, x + w, y + 16, true, (a, b2, btn) -> mode.cycle(btn == 1 ? -1 : 1));
 			}
+		} else if (s instanceof ActionSetting action) {
+			Render2D.text(ctx, textRenderer, s.getName(), x, y + 5, label);
+			String bt = action.buttonText();
+			float bw = textRenderer.getWidth(bt) + 16;
+			boolean hover = inside(mx, my, x + w - bw, y, x + w, y + 16);
+			Render2D.roundRect(ctx, x + w - bw, y + 1, bw, 14, 7, hover ? 0xFFFFFFFF : 0xFFE6E6EA);
+			Render2D.text(ctx, textRenderer, bt, x + w - bw + 8, y + 4, 0xFF0B0B0F);
+			if (interactive) {
+				hit(x + w - bw, y, x + w, y + 16, true, (a, b2, btn) -> action.run());
+			}
+		} else if (s instanceof InfoSetting info) {
+			Render2D.text(ctx, textRenderer, s.getName(), x, y + 5, label);
+			String v = info.text();
+			float maxW = w - textRenderer.getWidth(s.getName()) - 12;
+			if (textRenderer.getWidth(v) > maxW) {
+				while (textRenderer.getWidth(v + "\u2026") > maxW && v.length() > 1) {
+					v = v.substring(0, v.length() - 1);
+				}
+				v = v + "\u2026";
+			}
+			Render2D.text(ctx, textRenderer, v, x + w - textRenderer.getWidth(v), y + 5, SUB);
 		} else if (s instanceof TextSetting text) {
 			Render2D.text(ctx, textRenderer, s.getName(), x, y + 6, label);
 			float bw = Math.min(170, w * 0.6f);

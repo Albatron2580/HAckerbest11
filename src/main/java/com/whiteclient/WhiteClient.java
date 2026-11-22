@@ -15,6 +15,9 @@ import com.whiteclient.modules.Snow;
 import com.whiteclient.modules.Text3D;
 import com.whiteclient.modules.Watermark;
 import com.whiteclient.modules.Wings;
+import com.whiteclient.modules.MenuButtons;
+import com.whiteclient.modules.Spotify;
+import com.whiteclient.music.MusicService;
 import com.whiteclient.render.GlowBatch;
 import com.whiteclient.render.WorldContext;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -46,12 +49,13 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.1.0";
+	public static final String VERSION = "1.2.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
 
 	private final ModuleManager modules = new ModuleManager();
+	private MusicService music;
 	private final GlowBatch glow = new GlowBatch();
 	private final Set<Module> crashed = new HashSet<>();
 	private ConfigManager config;
@@ -62,6 +66,10 @@ public final class WhiteClient implements ClientModInitializer {
 
 	public static WhiteClient get() {
 		return instance;
+	}
+
+	public MusicService music() {
+		return music;
 	}
 
 	public ModuleManager modules() {
@@ -89,15 +97,33 @@ public final class WhiteClient implements ClientModInitializer {
 		// World
 		modules.register(new GalaxySky());
 		modules.register(new Snow());
+		// Music
+		modules.register(new Spotify());
 		modules.register(new Text3D());
 		// HUD
 		modules.register(new Watermark());
 		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
+		modules.register(new MenuButtons());
 
 		config = new ConfigManager(modules);
 		config.load();
+		if (config.loadedVersion() < 2) {
+			// 1.2: everything switched to the white theme
+			modules.get(MenuBackground.class).color.reset();
+			modules.get(Halo.class).color.reset();
+			config.save();
+		}
+
+		music = new MusicService(
+				() -> {
+					Spotify sp = modules.get(Spotify.class);
+					Text3D t3 = modules.get(Text3D.class);
+					return sp.isEnabled() || (t3.isEnabled() && t3.source.is("Spotify Lyrics"));
+				},
+				() -> modules.get(Spotify.class).noLogin.isOn());
+		music.start();
 
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.whiteclient.menu",
@@ -229,6 +255,32 @@ public final class WhiteClient implements ClientModInitializer {
 											text3D.setEnabled(true);
 											config.save();
 											ctx.getSource().sendFeedback(Text.literal("§f[WHITECLIENT] §73D text set to: §f" + message));
+											return 1;
+										})))
+						.then(ClientCommandManager.literal("spotify")
+								.then(ClientCommandManager.literal("login")
+										.executes(ctx -> {
+											Spotify sp = modules.get(Spotify.class);
+											sp.login(sp.clientId.get());
+											return 1;
+										})
+										.then(ClientCommandManager.argument("clientId", StringArgumentType.word())
+												.executes(ctx -> {
+													modules.get(Spotify.class).login(StringArgumentType.getString(ctx, "clientId"));
+													config.save();
+													return 1;
+												})))
+								.then(ClientCommandManager.literal("logout")
+										.executes(ctx -> {
+											music.auth().logout();
+											ctx.getSource().sendFeedback(Text.literal("\u00a7f[WHITECLIENT] \u00a77Logged out of Spotify."));
+											return 1;
+										}))
+								.then(ClientCommandManager.literal("status")
+										.executes(ctx -> {
+											var np = music.current();
+											ctx.getSource().sendFeedback(Text.literal("\u00a7f[WHITECLIENT] \u00a77" + music.status()
+													+ (np == null ? "" : " \u00a7f" + np.artist() + " - " + np.title())));
 											return 1;
 										})))
 						.then(ClientCommandManager.literal("reload")

@@ -8,12 +8,13 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.network.ClientPlayerEntity;
+import com.whiteclient.render.CosmeticTargets;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
 /** Glowing golden halo with spikes above your head. */
 public class Halo extends Module {
-	public final ColorSetting color = add(new ColorSetting("Color", 0xFFC63A));
+	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting radius = add(new NumberSetting("Radius", 0.34, 0.15, 0.6, 0.01));
 	public final NumberSetting height = add(new NumberSetting("Height", 0.14, 0.0, 0.8, 0.01));
 	public final NumberSetting spikes = add(new NumberSetting("Spikes", 10, 0, 24, 1));
@@ -22,6 +23,8 @@ public class Halo extends Module {
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.3, 0.2, 2.0, 0.05, "x"));
 	public final BoolSetting followHead = add(new BoolSetting("Follow Head", true));
 	public final BoolSetting firstPerson = add(new BoolSetting("Show In First Person", false));
+	public final BoolSetting others = add(new BoolSetting("Show On Others", true));
+	public final NumberSetting range = add(new NumberSetting("Others Range", 48, 8, 128, 4));
 
 	public Halo() {
 		super("Halo", "Glowing halo with spikes above your head", Category.VISUALS, true);
@@ -29,10 +32,12 @@ public class Halo extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		ClientPlayerEntity player = ctx.client.player;
-		if (player == null || player.isInvisible() || (!ctx.thirdPerson() && !firstPerson.isOn())) {
-			return;
+		for (PlayerEntity player : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), range.get())) {
+			render(ctx, player);
 		}
+	}
+
+	private void render(WorldContext ctx, PlayerEntity player) {
 		float td = ctx.tickDelta;
 		Vec3d p = player.getLerpedPos(td);
 		float yaw = player.getYaw(td);

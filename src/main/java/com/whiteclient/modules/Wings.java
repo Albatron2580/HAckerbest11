@@ -9,7 +9,8 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.network.ClientPlayerEntity;
+import com.whiteclient.render.CosmeticTargets;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
@@ -23,6 +24,8 @@ public class Wings extends Module {
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.2, 2.0, 0.05, "x"));
 	public final NumberSetting fill = add(new NumberSetting("Fill", 0.08, 0.0, 0.4, 0.01));
 	public final BoolSetting feathers = add(new BoolSetting("Feather Lines", true));
+	public final BoolSetting others = add(new BoolSetting("Show On Others", true));
+	public final NumberSetting range = add(new NumberSetting("Others Range", 48, 8, 128, 4));
 
 	/** Wing outline in (outward, up) units; index 0 is the root. */
 	private static final float[][] SHAPE = {
@@ -44,10 +47,12 @@ public class Wings extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		ClientPlayerEntity player = ctx.client.player;
-		if (player == null || player.isInvisible() || !ctx.thirdPerson()) {
-			return;
+		for (PlayerEntity player : CosmeticTargets.collect(ctx, true, false, others.isOn(), range.get())) {
+			render(ctx, player);
 		}
+	}
+
+	private void render(WorldContext ctx, PlayerEntity player) {
 		float td = ctx.tickDelta;
 		Vec3d p = player.getLerpedPos(td);
 		float bodyYaw = MathHelper.lerpAngleDegrees(td, player.lastBodyYaw, player.bodyYaw);
@@ -57,7 +62,8 @@ public class Wings extends Module {
 		boolean sneaking = player.isInSneakingPose();
 
 		float s = size.getFloat();
-		float flap = (float) Math.sin(ctx.time * Math.PI * 1.4 * flapSpeed.getFloat());
+		float phase = (player.getId() % 97) * 0.37f;
+		float flap = (float) Math.sin((ctx.time + phase) * Math.PI * 1.4 * flapSpeed.getFloat());
 		float sweep = (float) Math.toRadians(spread.getFloat() + flapAngle.getFloat() * flap);
 		float lean = (float) Math.toRadians(sneaking ? 28 : 10);
 		V3 vDir = V3.UP.mul((float) Math.cos(lean)).add(back, (float) Math.sin(lean));

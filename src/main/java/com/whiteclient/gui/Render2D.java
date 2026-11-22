@@ -74,6 +74,104 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
+	/** Horizontal span [left, right] of a rounded rect at physical row centre cy, or null if outside. */
+	private static float[] span(float X, float Y, float W, float H, float R, float cy) {
+		if (cy < Y || cy > Y + H || W <= 0 || H <= 0) {
+			return null;
+		}
+		float dy;
+		if (cy < Y + R) {
+			dy = (Y + R) - cy;
+		} else if (cy > Y + H - R) {
+			dy = cy - (Y + H - R);
+		} else {
+			dy = 0;
+		}
+		float inset = R - (float) Math.sqrt(Math.max(0f, R * R - dy * dy));
+		return new float[]{X + inset, X + W - inset};
+	}
+
+	/** Fills [l, r] on one physical row with anti-aliased ends. */
+	private static void fillSpan(DrawContext ctx, float l, float r, int py, int argb) {
+		if (r <= l) {
+			return;
+		}
+		int li = (int) Math.ceil(l);
+		int ri = (int) Math.floor(r);
+		if (ri > li) {
+			ctx.fill(li, py, ri, py + 1, argb);
+		} else {
+			ctx.fill((int) Math.floor(l), py, (int) Math.floor(l) + 1, py + 1, Colors.mulAlpha(argb, r - l));
+			return;
+		}
+		float fl = li - l;
+		if (fl > 0.03f) {
+			ctx.fill(li - 1, py, li, py + 1, Colors.mulAlpha(argb, fl));
+		}
+		float fr = r - ri;
+		if (fr > 0.03f) {
+			ctx.fill(ri, py, ri + 1, py + 1, Colors.mulAlpha(argb, fr));
+		}
+	}
+
+	/** Anti-aliased rounded outline (only the ring is drawn, so it works over translucent fills). */
+	public static void roundRectOutline(DrawContext ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
+		if (w <= 0 || h <= 0 || (argb >>> 24) == 0) {
+			return;
+		}
+		int s = scale();
+		Matrix3x2fStack m = ctx.getMatrices();
+		m.pushMatrix();
+		m.scale(1f / s, 1f / s);
+		float X = x * s, Y = y * s, W = w * s, H = h * s;
+		float R = Math.min(radius * s, Math.min(W, H) / 2f);
+		float T = Math.max(1f, thickness * s);
+		float iX = X + T, iY = Y + T, iW = W - 2 * T, iH = H - 2 * T;
+		float iR = Math.max(0f, R - T);
+		int top = (int) Math.floor(Y);
+		int bottom = (int) Math.ceil(Y + H);
+		for (int py = top; py < bottom; py++) {
+			float cy = py + 0.5f;
+			float[] o = span(X, Y, W, H, R, cy);
+			if (o == null) {
+				continue;
+			}
+			float[] in = span(iX, iY, iW, iH, iR, cy);
+			if (in == null) {
+				fillSpan(ctx, o[0], o[1], py, argb);
+			} else {
+				fillSpan(ctx, o[0], in[0], py, argb);
+				fillSpan(ctx, in[1], o[1], py, argb);
+			}
+		}
+		m.popMatrix();
+	}
+
+	/** Vertical gradient inside a rounded rect (top colour -> bottom colour). */
+	public static void roundRectGradient(DrawContext ctx, float x, float y, float w, float h, float radius, int topArgb, int bottomArgb) {
+		if (w <= 0 || h <= 0) {
+			return;
+		}
+		int s = scale();
+		Matrix3x2fStack m = ctx.getMatrices();
+		m.pushMatrix();
+		m.scale(1f / s, 1f / s);
+		float X = x * s, Y = y * s, W = w * s, H = h * s;
+		float R = Math.min(radius * s, Math.min(W, H) / 2f);
+		int top = (int) Math.floor(Y);
+		int bottom = (int) Math.ceil(Y + H);
+		for (int py = top; py < bottom; py++) {
+			float cy = py + 0.5f;
+			float[] o = span(X, Y, W, H, R, cy);
+			if (o == null) {
+				continue;
+			}
+			float t = (cy - Y) / H;
+			fillSpan(ctx, o[0], o[1], py, Colors.mixArgb(topArgb, bottomArgb, t));
+		}
+		m.popMatrix();
+	}
+
 	/** Rounded rectangle with a 1px border (border drawn behind the fill). */
 	public static void roundRectBordered(DrawContext ctx, float x, float y, float w, float h, float radius, int fill, int border) {
 		roundRect(ctx, x - 1, y - 1, w + 2, h + 2, radius + 1, border);

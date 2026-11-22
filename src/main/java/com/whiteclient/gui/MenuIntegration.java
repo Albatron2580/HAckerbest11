@@ -79,14 +79,21 @@ public final class MenuIntegration {
 		}
 		ClickableWidget feedback = null;
 		ClickableWidget bugs = null;
+		ClickableWidget options = null;
+		ClickableWidget back = null;
 		boolean otherModsButton = false;
 		for (ClickableWidget w : buttons) {
 			String key = keyOf(w);
+			String text = w.getMessage() == null ? "" : w.getMessage().getString();
 			if (key.equals("menu.sendFeedback") || key.equals("menu.feedback")) {
 				feedback = w;
 			} else if (key.equals("menu.reportBugs") || key.equals("menu.server_links") || key.equals("menu.custom_options")) {
 				bugs = w;
-			} else if (key.equals("modmenu.title") || w.getMessage().getString().equalsIgnoreCase("Mods")) {
+			} else if (key.equals("menu.options")) {
+				options = w;
+			} else if (key.equals("menu.returnToGame")) {
+				back = w;
+			} else if (key.equals("modmenu.title") || text.equalsIgnoreCase("Mods")) {
 				otherModsButton = true;
 			}
 		}
@@ -95,6 +102,7 @@ public final class MenuIntegration {
 		Screen parent = screen;
 
 		if (feedback != null && !otherModsButton) {
+			// vanilla layout: the feedback / bug report row becomes one wide button
 			int x = feedback.getX();
 			int y = feedback.getY();
 			int h = feedback.getHeight();
@@ -104,16 +112,45 @@ public final class MenuIntegration {
 				buttons.remove(bugs);
 			}
 			buttons.remove(feedback);
-			buttons.add(ButtonWidget.builder(Text.literal(label),
+			ButtonWidget ours = ButtonWidget.builder(Text.literal(label),
 					b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
-					.dimensions(x, y, right - x, h).build());
-		} else {
-			// Another mod already owns that row (e.g. ModMenu) - add a compact button in the corner.
-			String text = otherModsButton ? "WHITECLIENT" : label;
-			int w = MinecraftClient.getInstance().textRenderer.getWidth(text) + 16;
-			buttons.add(ButtonWidget.builder(Text.literal(text),
-					b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
-					.dimensions(6, 6, w, 20).build());
+					.dimensions(x, y, right - x, h).build();
+			ButtonStyle.markAccent(ours);
+			buttons.add(ours);
+			return;
 		}
+
+		// Another client/mod (NoRisk, ModMenu...) owns that row: open up a new full-width row above "Options..."
+		ClickableWidget widthRef = back != null ? back : options;
+		if (options != null && widthRef != null) {
+			int insertY = options.getY();
+			int h = options.getHeight();
+			int step = h + 4;
+			int half = step / 2;
+			for (ClickableWidget w : buttons) {
+				if (w.getY() >= insertY) {
+					w.setY(w.getY() + (step - half));
+				} else {
+					w.setY(w.getY() - half);
+				}
+			}
+			int x = widthRef.getX();
+			int width = widthRef.getWidth();
+			ButtonWidget ours = ButtonWidget.builder(Text.literal(otherModsButton ? "WHITECLIENT" : label),
+					b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
+					.dimensions(x, insertY - half, width, h).build();
+			ButtonStyle.markAccent(ours);
+			buttons.add(ours);
+			return;
+		}
+
+		// Unknown layout - compact button in the corner.
+		String text = otherModsButton ? "WHITECLIENT" : label;
+		int w = MinecraftClient.getInstance().textRenderer.getWidth(text) + 16;
+		ButtonWidget ours = ButtonWidget.builder(Text.literal(text),
+				b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
+				.dimensions(6, 6, w, 20).build();
+		ButtonStyle.markAccent(ours);
+		buttons.add(ours);
 	}
 }
