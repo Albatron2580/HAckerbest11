@@ -1,4 +1,4 @@
-# WHITECLIENT 1.8.0 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.9.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -14,7 +14,7 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | Cosmetics | **Trail** | Glowing light ribbon / sparkles behind you |
 | Cosmetics | **Jump Circles** | Glowing rings on the ground when you jump and land |
 | Cosmetics | **Capes** | Free capes (White, Black, Galaxy, Silk, Sunset, Aurora or your own PNG from `config/whiteclient/capes`). Only you see them |
-| Cosmetics | **Car Emote** | Press **N**: you sit in a car (Sports convertible, Pickup truck or Kart) that drives wherever you walk, with headlights and underglow. Sneak or press N again to get out. Only you see it |
+| Cosmetics | **Car Emote** | Press **N** for a realistic car: a glossy black sports coupe, a lifted full-size pickup truck or a kart, with smooth bodies, tinted glass, spoked rims, brake calipers, real lights and a soft shadow. **Show Off** parks the car next to you so you can stand by it; **Drive** puts you in the seat and it drives wherever you walk. The camera zooms out so the whole car fits. Only you see it |
 | PvP | **Hit Effects** | Sparks / Ring / Stars / Hearts / Slash / Crimson burst where you hit (+ optional extra crit particles) |
 | PvP | **Kill Effects** | Soul / Lightning / Shockwave / Hearts / Confetti when you kill something |
 | PvP | **Damage Numbers** | Floating damage numbers (gold on crits, green heals). Hidden behind walls |
@@ -77,13 +77,13 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 ## Controls
 - **Right Shift** – WHITECLIENT menu
 - **C** (hold) – Zoom
-- **N** – Car emote (get in / out)
+- **N** – Car emote (spawn / put away)
 - `/whiteclient text <message>` – show your own 3D text
 - `/whiteclient spotify login|logout|status`
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.8.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.9.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.
