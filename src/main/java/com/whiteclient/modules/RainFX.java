@@ -294,10 +294,11 @@ public class RainFX extends Module {
 		GlowBatch g = ctx.glow;
 		float sh = shine.getFloat();
 		float night = dayLight(world);
-		int base = Colors.mix(color.rgb(), 0xFFFFFF, 0.45f);
-		int sky = Colors.mix(base, 0x7A8FD0, 0.55f * (1f - night));
-		float groundA = 0.42f * sh * wetness * (0.35f + 0.65f * night);
-		float puddleA = 0.85f * sh * wetness * (0.4f + 0.6f * night);
+		// the grey-blue rain sky is what wet ground and puddles mirror
+		int base = Colors.mix(color.rgb(), 0x7D8CA8, 0.45f);
+		int sky = Colors.mix(base, 0x46557F, 0.6f * (1f - night));
+		float groundA = 0.36f * sh * wetness * (0.35f + 0.65f * night);
+		float puddleA = 0.5f * sh * wetness * (0.45f + 0.55f * night);
 		float warmW = 1f - 0.7f * night; // torch / fire light only shows up in the dark
 		float reach = Math.min(WR, radius.getFloat() + 2f);
 		if (FpsBoost.lighter()) {
@@ -305,7 +306,7 @@ public class RainFX extends Module {
 		}
 		boolean doPuddles = puddles.isOn();
 		// puddles grow the longer it rains
-		float th = 0.80f - 0.20f * wetness;
+		float th = 0.86f - 0.20f * wetness;
 		float time = ctx.time;
 		int quads = 0, cells = 0;
 
@@ -388,10 +389,10 @@ public class RainFX extends Module {
 				double wx = x0 + sx * step, wz = z0 + sz * step;
 				float ax = ctx.rx(wx), az = ctx.rz(wz), bx = ax + step, bz = az + step;
 				// dark water body ...
-				puddleBase.quad(ax, yb, az, Colors.argb(0x04060A, 0.5f * m00 * wetness),
-						ax, yb, bz, Colors.argb(0x04060A, 0.5f * m01 * wetness),
-						bx, yb, bz, Colors.argb(0x04060A, 0.5f * m11 * wetness),
-						bx, yb, az, Colors.argb(0x04060A, 0.5f * m10 * wetness), 0f, 1f, 0f);
+				puddleBase.quad(ax, yb, az, Colors.argb(0x04060A, 0.58f * m00 * wetness),
+						ax, yb, bz, Colors.argb(0x04060A, 0.58f * m01 * wetness),
+						bx, yb, bz, Colors.argb(0x04060A, 0.58f * m11 * wetness),
+						bx, yb, az, Colors.argb(0x04060A, 0.58f * m10 * wetness), 0f, 1f, 0f);
 				// ... mirroring the sky, with a bright wet rim on the edge
 				float u0 = (float) sx / SUB, u1 = (float) (sx + 1) / SUB, v0 = (float) sz / SUB, v1 = (float) (sz + 1) / SUB;
 				int c00 = puddleCol(ax, ys, az, p, wx, wz, reach, m00, alpha, sky, bilerp(l00, l10, l01, l11, u0, v0) * warmW);
@@ -454,7 +455,7 @@ public class RainFX extends Module {
 		}
 		float f = fresnel(vx, vy, vz);
 		float rim = 4f * m * (1f - m);
-		float a = alpha * (m * (0.22f + 0.78f * f + warm * 0.4f) + rim * 0.45f) * edgeFade(p, wx, wz, reach);
+		float a = alpha * (m * (0.25f + 0.6f * f + warm * 0.5f) + rim * 0.4f) * edgeFade(p, wx, wz, reach);
 		return Colors.argb(tint(sky, warm), Math.min(1f, a));
 	}
 

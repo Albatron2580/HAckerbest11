@@ -263,6 +263,9 @@ public final class PauseStyle {
 						a *= Math.max(0f, (d - 0.7f) / 0.3f);
 					}
 				}
+				if (py < 50) {
+					a *= Math.max(0f, (py - 34) / 16f); // keep clear of the chips and icons at the top
+				}
 				float dxm = Math.abs(px - modelX) / (playerW * 0.55f + r * 2f);
 				if (player != null && dxm < 1f && py > height * 0.12f) {
 					a *= Math.max(0f, (dxm - 0.75f) * 4f);
