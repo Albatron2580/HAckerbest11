@@ -103,11 +103,12 @@ public class Pets extends Module {
 		return new double[]{pos.x, pos.y + (sneak ? 1.55 : 1.9) * sc + lift, pos.z};
 	}
 
+	/** How far over your head it floats: high enough to stay clear of your name tag. */
 	private double lift() {
 		return switch (pet.get()) {
-			case "Manta Ray" -> 0.55;
-			case "Star Whale" -> 0.75;
-			default -> 0.6;
+			case "Manta Ray" -> 0.82;
+			case "Star Whale" -> 0.88;
+			default -> 0.98;
 		};
 	}
 
@@ -215,9 +216,9 @@ public class Pets extends Module {
 
 	private static float restScale(String type) {
 		return switch (type) {
-			case "Star Whale" -> 0.6f;
-			case "Manta Ray" -> 0.75f;
-			default -> 0.6f;
+			case "Star Whale" -> 0.7f;
+			case "Manta Ray" -> 0.8f;
+			default -> 0.72f;
 		};
 	}
 
@@ -295,11 +296,15 @@ public class Pets extends Module {
 				if (k == n) {
 					trail = lead;
 				}
-				int fill = Colors.argb(Colors.mix(c1, c2, x * 0.6f), 0.16f * a * (1f - 0.4f * x));
+				int fill = Colors.argb(Colors.mix(c1, c2, x * 0.6f), 0.3f * a * (1f - 0.35f * x));
 				g.quad(prevLead.x(), prevLead.y(), prevLead.z(), fill, lead.x(), lead.y(), lead.z(), fill,
 						trail.x(), trail.y(), trail.z(), fill, prevTrail.x(), prevTrail.y(), prevTrail.z(), fill);
-				prevLead.line(g, lead, 0.05f * s, c1, 0.85f * a);
-				prevTrail.line(g, trail, 0.035f * s, Colors.mix(c1, c2, 0.5f), 0.55f * a);
+				prevLead.line(g, lead, 0.065f * s, Colors.mix(c1, 0xFFFFFF, 0.25f), a);
+				prevTrail.line(g, trail, 0.045f * s, Colors.mix(c1, c2, 0.5f), 0.75f * a);
+				// ribs of light across the wing
+				if (k % 2 == 0) {
+					lead.line(g, trail, 0.03f * s, Colors.mix(c1, c2, x), 0.45f * a);
+				}
 				if (k == 3 || k == 5) {
 					V3 spot = lerp(lead, trail, 0.5f);
 					g.disc(spot.x(), spot.y(), spot.z(), 0.025f * s, c2, 0.8f * a, 8);
@@ -348,12 +353,17 @@ public class Pets extends Module {
 			float x = i / (float) (rings - 1);
 			for (int j = 0; j < seg; j++) {
 				V3 p0 = pts[i][j], p1 = pts[i][(j + 1) % seg];
-				g.glowLine(p0.x(), p0.y(), p0.z(), p1.x(), p1.y(), p1.z(), 0.022f * s, Colors.mix(c1, c2, x * 0.3f), a * (0.55f - 0.25f * x));
+				g.glowLine(p0.x(), p0.y(), p0.z(), p1.x(), p1.y(), p1.z(), 0.032f * s, Colors.mix(c1, c2, x * 0.3f), a * (0.85f - 0.3f * x));
 				if (i + 1 < rings && (j % 2 == 0)) {
 					V3 q = pts[i + 1][j];
-					g.glowLine(p0.x(), p0.y(), p0.z(), q.x(), q.y(), q.z(), 0.02f * s, c1, a * 0.4f);
+					g.glowLine(p0.x(), p0.y(), p0.z(), q.x(), q.y(), q.z(), 0.026f * s, c1, a * 0.6f);
 				}
 			}
+		}
+		// soft light inside the body
+		for (int i = 0; i < rings - 1; i++) {
+			float x = i / (float) (rings - 1);
+			g.disc(centres[i].x(), centres[i].y(), centres[i].z(), 0.2f * s * (1f - 0.7f * x), Colors.mix(c1, 0xFFFFFF, 0.3f), 0.22f * a, 10);
 		}
 		// tail fluke
 		V3 end = centres[rings - 1];
@@ -361,7 +371,7 @@ public class Pets extends Module {
 		for (int side = -1; side <= 1; side += 2) {
 			V3 tip = end.add(f, -0.12f * s).add(r, side * 0.17f * s).add(u, beat);
 			V3 back = end.add(f, -0.06f * s).add(u, beat * 0.6f);
-			int fill = Colors.argb(c1, 0.2f * a);
+			int fill = Colors.argb(c1, 0.32f * a);
 			g.quad(end.x(), end.y(), end.z(), fill, tip.x(), tip.y(), tip.z(), fill, back.x(), back.y(), back.z(), fill, back.x(), back.y(), back.z(), fill);
 			end.line(g, tip, 0.035f * s, c1, 0.85f * a);
 			tip.line(g, back, 0.03f * s, c2, 0.6f * a);

@@ -220,6 +220,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				mm.get(Wings.class).setEnabled(false);
 				Pets pets = mm.get(Pets.class);
 				pets.name.set("");
+				pets.overHead.set(false);
 				pets.setEnabled(true);
 			});
 			for (String pet : Pets.TYPES) {
@@ -228,6 +229,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("gallery_pet_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
 			// standing still: the creature drifts over your head
+			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).overHead.set(true));
 			for (String pet : Pets.TYPES) {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
 				context.waitTicks(90);
