@@ -38,6 +38,7 @@ public abstract class HandledScreenMixin {
 		if (Tilt3D.inside) { // background drawn from render(): already tilted
 			Tilt3D.drawSlab(context, s);
 			original.call(self, context, delta, mouseX, mouseY);
+			Tilt3D.drawSheen(context, s);
 			return;
 		}
 		Tilt3D.push(context);
@@ -45,6 +46,7 @@ public abstract class HandledScreenMixin {
 		try {
 			Tilt3D.drawSlab(context, s);
 			original.call(self, context, delta, mouseX, mouseY);
+			Tilt3D.drawSheen(context, s);
 		} finally {
 			Tilt3D.inside = false;
 			Tilt3D.pop(context);

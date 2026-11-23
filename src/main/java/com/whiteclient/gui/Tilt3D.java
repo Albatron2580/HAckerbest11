@@ -102,17 +102,17 @@ public final class Tilt3D {
 		float open = Math.min(1f, (now - openedAt) / 1.0e9f / 0.38f);
 		float e = 1f - (1f - open) * (1f - open) * (1f - open);
 
-		float yaw = (float) Math.toRadians((-15f + followX * 9f) * strength + (1f - e) * 32f);
-		float pitch = (float) Math.toRadians((10f - followY * 7f) * strength - (1f - e) * 14f);
-		float roll = (float) Math.toRadians(-2.2f * strength * e);
-		float scale = 0.95f * (0.9f + 0.1f * e);
+		float yaw = (float) Math.toRadians((-22f + followX * 10f) * strength + (1f - e) * 34f);
+		float pitch = (float) Math.toRadians((14f - followY * 8f) * strength - (1f - e) * 16f);
+		float roll = (float) Math.toRadians(-3.2f * strength * e);
+		float scale = 0.96f * (0.9f + 0.1f * e);
 		Matrix3f r = new Matrix3f().rotateZ(roll).rotateX(pitch).rotateY(yaw);
 		a = r.m00 * scale;
 		b = r.m01 * scale;
 		c = r.m10 * scale;
 		d = r.m11 * scale;
 		// the back face of the slab, as seen on screen
-		float thick = 7f * scale * Math.max(0.4f, strength);
+		float thick = 13f * scale * Math.max(0.4f, strength);
 		depthX = -r.m20 * thick;
 		depthY = -r.m21 * thick;
 
@@ -171,26 +171,40 @@ public final class Tilt3D {
 		double det = a * d - b * c;
 		// screen-space offsets turned into panel space
 		float sx = (float) ((d * depthX - c * depthY) / det), sy = (float) ((-b * depthX + a * depthY) / det);
-		float shX = (float) ((d * 7 - c * 12) / det), shY = (float) ((-b * 7 + a * 12) / det);
+		float shX = (float) ((d * 10 - c * 18) / det), shY = (float) ((-b * 10 + a * 18) / det);
 
 		// soft shadow on the world behind
-		for (int i = 6; i >= 1; i--) {
-			float g = i * 2.2f;
-			Render2D.roundRect(ctx, x + shX - g, y + shY - g, w + g * 2, hh + g * 2, 6 + g, Colors.argb(0x000000, 0.055f));
+		for (int i = 7; i >= 1; i--) {
+			float g = i * 2.6f;
+			Render2D.roundRect(ctx, x + shX - g, y + shY - g, w + g * 2, hh + g * 2, 6 + g, Colors.argb(0x000000, 0.06f));
 		}
 		// the slab's thickness: dark layers from the back to the front, with a faint light rim at the back
 		int panel = t != null ? t.panel.rgb() : 0x16161D;
 		int edge = t != null ? t.edge.rgb() : 0xFFFFFF;
-		int layers = 7;
+		int layers = 12;
 		for (int i = layers; i >= 1; i--) {
 			float f = i / (float) layers;
 			float ox = sx * f, oy = sy * f;
-			int col = Colors.mix(panel, 0x000000, 0.35f + 0.4f * f);
+			int col = Colors.mix(Colors.mix(panel, 0xFFFFFF, 0.06f), 0x000000, 0.2f + 0.55f * f);
 			Render2D.roundRect(ctx, x + ox, y + oy, w, hh, 4, Colors.argb(col, 0.96f));
 			if (i == layers) {
 				Render2D.roundRectOutline(ctx, x + ox, y + oy, w, hh, 4, 1, Colors.argb(edge, 0.22f));
 			}
 		}
 		Render2D.roundRectOutline(ctx, x - 0.5f, y - 0.5f, w + 1, hh + 1, 4.5f, 1, Colors.argb(edge, 0.3f));
+	}
+
+	/** Light falling on the front of the panel: a soft sheen from the top and a bright top edge. Drawn over the background, under the items. */
+	public static void drawSheen(DrawContext ctx, Screen s) {
+		if (!(s instanceof HandledScreenAccessor h)) {
+			return;
+		}
+		InventoryTheme t = InventoryTheme.get();
+		int edge = t != null ? t.edge.rgb() : 0xFFFFFF;
+		int x = h.whiteclient$x(), y = h.whiteclient$y();
+		int w = h.whiteclient$backgroundWidth(), hh = h.whiteclient$backgroundHeight();
+		ctx.fillGradient(x + 2, y + 2, x + w - 2, y + (int) (hh * 0.42f), Colors.argb(edge, 0.075f), 0x00000000);
+		Render2D.roundRect(ctx, x + 4, y + 0.5f, w - 8, 1f, 0.5f, Colors.argb(edge, 0.45f));
+		Render2D.roundRect(ctx, x + 0.5f, y + 4, 1f, hh * 0.6f, 0.5f, Colors.argb(edge, 0.25f));
 	}
 }
