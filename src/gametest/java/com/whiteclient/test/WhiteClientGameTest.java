@@ -545,6 +545,22 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new com.whiteclient.gui.BrowserScreen(null, WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class)));
 			context.waitTicks(10);
 			context.takeScreenshot("browser_window");
+			// with the MCEF Modern engine present (CI installs it only for this test): a real page, then pinned on the HUD
+			if (context.computeOnClient(client -> com.whiteclient.browser.WebView.installed())) {
+				for (int i = 0; i < 120 && !context.computeOnClient(client -> com.whiteclient.browser.WebView.ready()); i++) {
+					context.waitTicks(20);
+				}
+				WhiteClient.LOGGER.info("[WHITECLIENT] browser engine ready: {} ({})", context.computeOnClient(client -> com.whiteclient.browser.WebView.ready()),
+						context.computeOnClient(client -> com.whiteclient.browser.WebView.progress()));
+				context.setScreen(() -> null);
+				context.setScreen(() -> new com.whiteclient.gui.BrowserScreen(null, WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class)));
+				context.waitTicks(160);
+				context.takeScreenshot("browser_page");
+				context.setScreen(() -> null);
+				context.waitTicks(20);
+				context.takeScreenshot("browser_pinned");
+				context.runOnClient(client -> WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class).closePage());
+			}
 			context.setScreen(() -> null);
 			context.runOnClient(client -> TargetESP.forcedTarget = null);
 			sp.getServer().runCommand("kill @e[type=husk]");

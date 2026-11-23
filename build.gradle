@@ -10,6 +10,13 @@ base {
 }
 
 repositories {
+	// MCEF Modern (a Chromium engine mod) is only used to test the browser window in CI. It is NOT part of WHITECLIENT.
+	maven {
+		url = "https://maven.dimaskama.net/releases"
+		content {
+			includeGroup "net.dimaskama"
+		}
+	}
 }
 
 loom {
@@ -36,6 +43,7 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	modRuntimeOnly "net.dimaskama:mcef-modern:0.3.3+mc1.21.11.jcef146.0.10"
 }
 
 processResources {

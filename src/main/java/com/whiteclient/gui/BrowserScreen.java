@@ -58,6 +58,7 @@ public class BrowserScreen extends Screen {
 
 	@Override
 	protected void init() {
+		WebView.startEngine();
 		float[] r = mod.rect(width, height);
 		wx = r[0];
 		wy = r[1];
