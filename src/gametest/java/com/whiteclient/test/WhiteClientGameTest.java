@@ -631,6 +631,39 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new net.minecraft.client.gui.screen.ingame.InventoryScreen(net.minecraft.client.MinecraftClient.getInstance().player));
 			context.waitTicks(15);
 			context.takeScreenshot("inventory_theme");
+			// 3D inventory: point at a hotbar item through the tilt, check the tooltip, then pick it up and put it back
+			for (int pass = 0; pass < 3; pass++) {
+				double[] at = context.computeOnClient(client -> {
+					if (!(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?> hs)) {
+						return null;
+					}
+					for (net.minecraft.screen.slot.Slot sl : hs.getScreenHandler().slots) {
+						if (sl.inventory == client.player.getInventory() && sl.getIndex() < 9 && sl.hasStack()) {
+							com.whiteclient.mixin.HandledScreenAccessor acc = (com.whiteclient.mixin.HandledScreenAccessor) hs;
+							double vx = acc.whiteclient$x() + sl.x + 8, vy = acc.whiteclient$y() + sl.y + 8;
+							double f = client.getWindow().getScaleFactor();
+							return new double[]{com.whiteclient.gui.Tilt3D.toRealX(vx, vy) * f, com.whiteclient.gui.Tilt3D.toRealY(vx, vy) * f, sl.id};
+						}
+					}
+					return null;
+				});
+				if (at == null) {
+					WhiteClient.LOGGER.info("[WHITECLIENT] tilt test: no hotbar item found");
+					break;
+				}
+				context.getInput().setCursorPos(at[0], at[1]);
+				context.waitTicks(12);
+			}
+			context.takeScreenshot("inventory_tilt_hover");
+			context.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(4);
+			context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] tilt test: picked up {}",
+					client.player.currentScreenHandler.getCursorStack()));
+			context.takeScreenshot("inventory_tilt_pickup");
+			context.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(4);
+			context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] tilt test: put back, cursor now {}",
+					client.player.currentScreenHandler.getCursorStack()));
 			context.setScreen(() -> null);
 			context.waitTicks(3);
 

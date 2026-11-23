@@ -29,6 +29,10 @@ public class InventoryTheme extends Module {
 	public final NumberSetting opacity = add(new NumberSetting("Opacity", 0.9, 0.4, 1.0, 0.02));
 	public final NumberSetting edgeGlow = add(new NumberSetting("Edge Glow", 0.18, 0.0, 0.6, 0.02));
 	public final BoolSetting lightTitles = add(new BoolSetting("Light Titles", true));
+	public final BoolSetting tilt = add(new BoolSetting("3D Tilt", true));
+	public final NumberSetting tiltStrength = add(new NumberSetting("Tilt Strength", 1.0, 0.2, 2.0, 0.05).visibleWhen(() -> tilt.isOn()));
+	public final BoolSetting followMouse = add(new BoolSetting("Tilt Follows Mouse", true).visibleWhen(() -> tilt.isOn()));
+	public final BoolSetting tooltips = add(new BoolSetting("Themed Tooltips", true));
 
 	private static final String[] TEXTURES = {
 			"inventory", "generic_54", "crafting_table", "furnace", "blast_furnace", "smoker", "shulker_box", "dispenser",
@@ -50,6 +54,21 @@ public class InventoryTheme extends Module {
 	}
 
 	/** Title colour for container screens (null = keep the game's). */
+	public static boolean themedTooltips() {
+		InventoryTheme t = get();
+		return t != null && t.isEnabled() && t.tooltips.isOn();
+	}
+
+	/** Rounded tooltip: x/y/w/h is the text area, like vanilla's (which draws 3 px around it). */
+	public static void drawTooltip(net.minecraft.client.gui.DrawContext ctx, int x, int y, int w, int h) {
+		InventoryTheme t = get();
+		int panel = t != null ? com.whiteclient.render.Colors.mix(t.panel.rgb(), 0x000000, 0.35f) : 0x0E0E13;
+		int edge = t != null ? t.edge.rgb() : 0xFFFFFF;
+		float px = x - 4, py = y - 4, pw = w + 8, ph = h + 8;
+		com.whiteclient.gui.Render2D.roundRect(ctx, px, py, pw, ph, 4, com.whiteclient.render.Colors.argb(panel, 0.94f));
+		com.whiteclient.gui.Render2D.roundRectOutline(ctx, px, py, pw, ph, 4, 1, com.whiteclient.render.Colors.argb(edge, 0.32f));
+	}
+
 	public static Integer titleColor() {
 		InventoryTheme t = get();
 		if (t == null || !t.isEnabled() || !t.lightTitles.isOn()) {
