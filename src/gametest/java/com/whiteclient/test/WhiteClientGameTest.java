@@ -255,6 +255,21 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("headwear_" + style.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
 			context.runOnClient(client -> WhiteClient.get().modules().get(HeadWear.class).setEnabled(false));
+			// your own sky (sunset) + cinematic bars
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(TimeChanger.class).setEnabled(true);
+				WhiteClient.get().modules().get(Cinematic.class).setEnabled(true);
+				client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+			});
+			context.waitTicks(30);
+			context.takeScreenshot("cinematic_sunset");
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(TimeChanger.class).setEnabled(false);
+				WhiteClient.get().modules().get(Cinematic.class).setEnabled(false);
+				client.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+			});
+			sp.getServer().runCommand("time set 6000");
+			context.waitTicks(5);
 			// ---- car emote: "Show Off" (car parked next to you) for every car, then driving
 			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).setEnabled(false));
 			for (String car : CarEmote.CARS) {
@@ -563,6 +578,16 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(120);
 			context.takeScreenshot("rain_fx");
 			perf(context, "rain");
+			// wet, shiny ground and puddles: look along the ground (first person)
+			context.runOnClient(client -> client.options.setPerspective(Perspective.FIRST_PERSON));
+			sp.getServer().runCommand("tp @p ~ ~ ~ 30 14");
+			context.waitTicks(12);
+			context.takeScreenshot("rain_wet_ground");
+			sp.getServer().runCommand("time set 15500");
+			context.waitTicks(8);
+			context.takeScreenshot("rain_wet_ground_dusk");
+			sp.getServer().runCommand("time set 6000");
+			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_BACK));
 			// the parked truck in the rain: rain, ripples and the block outline must stay behind it
 			sp.getServer().runCommand("tp @p ~ ~ ~ 0 10");
 			context.runOnClient(client -> {
@@ -586,6 +611,27 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				client.options.setPerspective(Perspective.FIRST_PERSON);
 			});
 			sp.getServer().runCommand("weather clear");
+
+			// pause menu in the main-menu look (world stays visible behind it)
+			context.setScreen(() -> new GameMenuScreen(true));
+			context.waitTicks(30);
+			context.takeScreenshot("pause_menu");
+			context.setScreen(() -> null);
+			context.waitTicks(3);
+
+			// themed inventory
+			context.setScreen(() -> new net.minecraft.client.gui.screen.ingame.InventoryScreen(net.minecraft.client.MinecraftClient.getInstance().player));
+			context.waitTicks(15);
+			context.takeScreenshot("inventory_theme");
+			context.setScreen(() -> null);
+			context.waitTicks(3);
+
+			// your own name tag with the WHITECLIENT logo in front (F5)
+			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
+			sp.getServer().runCommand("tp @p ~ ~ ~ 0 5");
+			context.waitTicks(10);
+			context.takeScreenshot("nametag_logo");
+			context.runOnClient(client -> client.options.setPerspective(Perspective.FIRST_PERSON));
 
 			fakeOtherClient = true;
 			context.setScreen(() -> new GameMenuScreen(true));

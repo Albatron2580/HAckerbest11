@@ -1,4 +1,4 @@
-# WHITECLIENT 1.10.0 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.11.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -9,7 +9,9 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | Cosmetics | **Wings** | Spiky white glowing wings, also on other players |
 | Cosmetics | **Aura** | Soft white glow over your player + sparkles |
 | Cosmetics | **Block Trail** | Glowing squares on the blocks you walk over |
-| Cosmetics | **Pets** | Real-looking pets with soft shaded fur and a soft glow: Dog, Cat, Fox, Bunny, Hamster, Bird (budgie), Bee, Butterfly, Fish (koi), Jellyfish (kwal) and Wisp. They walk next to you and jump when you jump. When you stand still (or fly / ride), they leap up and lie on your **shoulder** or **head**, and when you walk again they hop down. Birds, bees and butterflies land on you. **Light** style keeps the old glowing light-sketch look. Only you see them |
+| Cosmetics | **Pets** | Glowing creatures made of light: **Jellyfish**, **Manta Ray** and **Star Whale**. They swim through the air next to you, follow you when you walk and jump, and float over your head when you stand still. Name, size and colours are yours to pick. Only you see them |
+| Cosmetics | **Head Wear** | Crown, cat ears, bunny ears, devil horns, headphones or a flower crown |
+| Cosmetics | **Name Logo** | The WHITECLIENT planet logo in front of your name, on your name tag (also visible to you in F5) and in the Tab list |
 | Cosmetics | **China Hat** | Glowing cone hat on your head (also on others) |
 | Cosmetics | **Trail** | Glowing light ribbon / sparkles behind you |
 | Cosmetics | **Jump Circles** | Glowing rings on the ground when you jump and land |
@@ -28,7 +30,8 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | World | **Block Outline** | Glowing outline + soft fill on the block you look at |
 | World | **Zoom** | Hold **C** to zoom smoothly (key changeable in Controls) |
 | World | **Hand View** | Move / turn / resize the item in your hand |
-| World | **Rain FX** | Glowing rain streaks, ripples on the ground, splash droplets + rainy colour mood |
+| World | **Rain FX** | Glowing rain streaks, ripples on the ground, splash droplets + rainy colour mood. **Wet Ground:** when it rains the ground gets a shiny wet sheen (strongest when you look along the ground) and puddles slowly form on flat ground and reflect the sky and torch light. They dry up again after the rain |
+| World | **Time & Weather** | Your own time of day (sunrise, day, sunset, night, midnight) and weather (clear, rain, thunder). Only for you |
 | Music | **Spotify** | Now-playing card (cover, title, artist, progress, current lyric) |
 | Music | **3D Text** | Big white 3D words that pop up in time with your Spotify lyrics (or your own text) |
 | HUD | **Watermark** | Logo / name / ping / FPS pill |
@@ -39,10 +42,12 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | HUD | **Custom Crosshair** | 8 styles, colour, size, gap, outline, dynamic gap, cooldown bar |
 | HUD | **Low Health Glow** | Red pulsing glow around the screen when you're low |
 | HUD | **Notifications** | Little toast when you toggle a module |
-| HUD | **Browser** | Press **B**: a floating web browser window. Drag it, resize it, and pin it so it stays on screen while you play. Type an address or anything to search Google. Real web pages use the free **MCEF Modern** mod (put it in your mods folder; the first start downloads Chrome once); without it, links open in your normal browser |
+| HUD | **Browser** | Press **B**: a floating web browser window that shows real websites (Google, YouTube...) right inside Minecraft. Drag it, resize it, and pin it so it stays on screen while you play. You can keep walking with WASD while it is open (click the page to type in it). The browser engine (MCEF Modern) is built in: the first time you open it, it downloads Chrome once |
+| HUD | **Cinematic** | Movie black bars + colour grade (Warm, Cool, Dream, Night) and a soft vignette |
 | World | **FPS Boost** | One click faster video settings: no clouds, no entity shadows, fewer particles, fast biome blend, unlocked FPS, no vignette, lighter client effects. Turn it off and your own settings come back |
 | Menu | **Main Menu** | WHITECLIENT title screen. **Showcase** layout (default): big planet logo + text menu on the left, your player on grey silk curtains on the right with little planets floating by. **Centered** layout: the older centred buttons |
-| Menu | **Menu Background** | Animated white energy (or silk / aurora / mono) on title + pause screen |
+| Menu | **Menu Background** | Animated white energy (or silk / aurora / mono) on the title screen and loading screens. **Pause Menu Layout → Showcase** (default): the pause menu looks like the main menu: the big planet on the left, the logo and a clean text menu in the middle, your player on the right, and your world stays visible behind it |
+| Menu | **Inventory Theme** | Every inventory (chests, furnaces, crafting, creative...) in the WHITECLIENT colours: dark panels, dark slots, white edges, your own opacity, light titles |
 | Menu | **Rounded Buttons** | Rounded see-through buttons on the title + pause screen |
 | Menu | **Pause Mods Button** | Opens the WHITECLIENT menu (own row next to NoRisk / ModMenu buttons) |
 | Menu | **Main Menu → Walking Player** | Your skin walks into the title screen, turns to you and follows your mouse |
@@ -86,7 +91,9 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.10.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.11.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+
+The jar includes **MCEF Modern** (LGPL-2.1, by dimaskama) for the in-game browser; see `THIRD_PARTY_NOTICES.txt`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.

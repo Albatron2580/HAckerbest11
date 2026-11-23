@@ -15,7 +15,9 @@ public class MenuBackground extends Module {
 	public final NumberSetting speed = add(new NumberSetting("Speed", 1.0, 0.1, 3.0, 0.1, "x"));
 	public final NumberSetting intensity = add(new NumberSetting("Intensity", 1.0, 0.3, 2.0, 0.1, "x"));
 	public final BoolSetting titleScreen = add(new BoolSetting("Title Screen", true));
-	public final BoolSetting pauseMenu = add(new BoolSetting("Pause Menu", true));
+	public final ModeSetting pauseLayout = add(new ModeSetting("Pause Menu Layout", "Showcase", "Showcase", "Classic"));
+	/** The old full swirl background behind the pause menu (renamed so it starts off for everyone). */
+	public final BoolSetting pauseMenu = add(new BoolSetting("Pause Swirl Background", false));
 	public final BoolSetting clickGui = add(new BoolSetting("Client Menu", false));
 	public final BoolSetting loadingScreens = add(new BoolSetting("Loading Screens", true));
 	public final BoolSetting otherMenus = add(new BoolSetting("Other Menus", true));

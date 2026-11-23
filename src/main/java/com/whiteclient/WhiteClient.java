@@ -112,6 +112,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Pets());
 		modules.register(new ChinaHat());
 		modules.register(new HeadWear());
+		modules.register(new NameLogo());
 		modules.register(new Trail());
 		modules.register(new JumpCircles());
 		modules.register(new Capes());
@@ -148,11 +149,13 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new LowHealth());
 		modules.register(new Notifications());
 		modules.register(new Browser());
+		modules.register(new Cinematic());
 		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
 		modules.register(new MenuButtons());
 		modules.register(new MainMenu());
+		modules.register(new InventoryTheme());
 
 		modules.register(new Theme());
 		modules.register(new Wardrobe());

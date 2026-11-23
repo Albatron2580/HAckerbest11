@@ -30,6 +30,10 @@ public final class ButtonStyle {
 		ACCENT.add(widget);
 	}
 
+	public static boolean isAccent(ClickableWidget widget) {
+		return ACCENT.contains(widget);
+	}
+
 	public static boolean shouldStyle() {
 		WhiteClient wc = WhiteClient.get();
 		if (wc == null) {

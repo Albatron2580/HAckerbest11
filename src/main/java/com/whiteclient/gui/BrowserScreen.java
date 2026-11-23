@@ -42,6 +42,8 @@ public class BrowserScreen extends Screen {
 	private double dragDx, dragDy;
 	private long opened;
 	private String shownUrl = "";
+	/** Keys go to the web page (after clicking it); otherwise WASD / space / shift move you while the window is open. */
+	private boolean pageFocus;
 	private final List<Hit> hits = new ArrayList<>();
 
 	private record Hit(float x, float y, float w, float h, Runnable action) {
@@ -231,6 +233,18 @@ public class BrowserScreen extends Screen {
 		if (!Browser.drawPage(ctx, v, pX, pY, pW, pH, 1f)) {
 			drawPlaceholder(ctx, mouseX, mouseY, pX, pY, pW, pH, th);
 		}
+		// hint: typing vs walking
+		if (client.world != null) {
+			String hint = address.isFocused() ? "Enter to open · Esc to stop typing"
+					: pageFocus ? "Typing on the page · Esc or click outside it to walk again"
+					: "Walk with WASD · click the page to type · B or Esc to close (it stays pinned)";
+			float hw = UiFont.width(textRenderer, hint) * 0.7f + 14;
+			float hx = wx + ww / 2f - hw / 2f, hy = wy + wh + 4;
+			if (hy + 12 < height) {
+				Render2D.roundRect(ctx, hx, hy, hw, 11, 5.5f, Colors.argb(0x0B0B10, 0.85f));
+				UiFont.drawScaled(ctx, textRenderer, hint, hx + 7, hy + 2.5f, 0.7f, Colors.argb(0xFFFFFF, 0.8f));
+			}
+		}
 		// resize grip
 		Icons.resize(ctx, wx + ww - 8, wy + wh - 8, 7, Colors.argb(0xFFFFFF, 0.35f));
 		m.popMatrix();
@@ -374,6 +388,7 @@ public class BrowserScreen extends Screen {
 	@Override
 	public boolean mouseClicked(Click click, boolean doubled) {
 		double mx = click.x(), my = click.y();
+		pageFocus = false;
 		if (click.button() == 0) {
 			for (Hit h : hits) {
 				if (h.in(mx, my)) {
@@ -402,6 +417,7 @@ public class BrowserScreen extends Screen {
 			return true;
 		}
 		WebView v = mod.view();
+		pageFocus = v != null && inPage(mx, my);
 		if (v != null && inPage(mx, my)) {
 			drag = 3;
 			v.focus(true);
@@ -488,11 +504,15 @@ public class BrowserScreen extends Screen {
 			return super.keyPressed(input);
 		}
 		if (key == GLFW.GLFW_KEY_ESCAPE) {
+			if (pageFocus) {
+				pageFocus = false;
+				return true;
+			}
 			close();
 			return true;
 		}
 		WebView v = mod.view();
-		if (v != null) {
+		if (v != null && pageFocus) {
 			v.keyDown(input);
 			return true;
 		}
@@ -500,13 +520,13 @@ public class BrowserScreen extends Screen {
 			close();
 			return true;
 		}
-		return super.keyPressed(input);
+		return true;
 	}
 
 	@Override
 	public boolean keyReleased(KeyInput input) {
 		WebView v = mod.view();
-		if (v != null && !address.isFocused()) {
+		if (v != null && !address.isFocused() && pageFocus) {
 			v.keyUp(input);
 			return true;
 		}
@@ -516,7 +536,7 @@ public class BrowserScreen extends Screen {
 	@Override
 	public boolean charTyped(CharInput input) {
 		WebView v = mod.view();
-		if (v != null && !address.isFocused()) {
+		if (v != null && !address.isFocused() && pageFocus) {
 			v.type(input);
 			return true;
 		}
@@ -526,6 +546,42 @@ public class BrowserScreen extends Screen {
 	@Override
 	public boolean shouldPause() {
 		return false;
+	}
+
+	private net.minecraft.client.option.KeyBinding[] moveKeys() {
+		var o = client.options;
+		return new net.minecraft.client.option.KeyBinding[]{o.forwardKey, o.backKey, o.leftKey, o.rightKey, o.jumpKey, o.sneakKey, o.sprintKey};
+	}
+
+	/** While you are not typing, you can keep walking around with the window open (it stays in place). */
+	@Override
+	public void tick() {
+		super.tick();
+		if (client.world == null || client.player == null) {
+			return;
+		}
+		boolean walk = !address.isFocused() && !pageFocus;
+		for (net.minecraft.client.option.KeyBinding k : moveKeys()) {
+			boolean down = false;
+			if (walk) {
+				try {
+					net.minecraft.client.util.InputUtil.Key bound = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.getBoundKeyOf(k);
+					if (bound.getCategory() == net.minecraft.client.util.InputUtil.Type.KEYSYM) {
+						down = net.minecraft.client.util.InputUtil.isKeyPressed(client.getWindow(), bound.getCode());
+					}
+				} catch (Throwable ignored) {
+				}
+			}
+			k.setPressed(down);
+		}
+	}
+
+	@Override
+	public void removed() {
+		for (net.minecraft.client.option.KeyBinding k : moveKeys()) {
+			k.setPressed(false);
+		}
+		super.removed();
 	}
 
 	@Override

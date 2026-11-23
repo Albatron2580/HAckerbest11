@@ -5,6 +5,7 @@ import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.modules.ModsButton;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
+import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,6 +13,7 @@ import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.text.TextContent;
 import net.minecraft.text.TranslatableTextContent;
 
@@ -23,7 +25,24 @@ public final class MenuIntegration {
 	}
 
 	public static void register() {
+		ScreenEvents.BEFORE_INIT.register((client, screen, w, h) -> {
+			if (screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>) {
+				com.whiteclient.modules.InventoryTheme.ensure();
+			}
+		});
 		ScreenEvents.AFTER_INIT.register(MenuIntegration::afterInit);
+		// lay the pause menu out last, after every other mod had the chance to add its buttons
+		Identifier late = Identifier.of(WhiteClient.MOD_ID, "pause_layout");
+		ScreenEvents.AFTER_INIT.addPhaseOrdering(Event.DEFAULT_PHASE, late);
+		ScreenEvents.AFTER_INIT.register(late, (client, screen, w, h) -> {
+			if (screen instanceof GameMenuScreen && PauseStyle.enabled()) {
+				try {
+					PauseStyle.layout(client, screen);
+				} catch (Throwable t) {
+					WhiteClient.LOGGER.error("[WHITECLIENT] could not restyle the pause menu", t);
+				}
+			}
+		});
 	}
 
 	private static void afterInit(MinecraftClient client, Screen screen, int width, int height) {
@@ -45,6 +64,13 @@ public final class MenuIntegration {
 			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
 				MenuBackground bg = wc.modules().get(MenuBackground.class);
 				if (bg == null || !bg.isEnabled()) {
+					return;
+				}
+				if (s instanceof GameMenuScreen && PauseStyle.isCurrent(s) && PauseStyle.enabled()) {
+					if (bg.pauseMenu.isOn()) {
+						MenuBackgroundRenderer.draw(context, s.width, s.height, bg.opacity.getFloat());
+					}
+					PauseStyle.drawScene(context, s, mouseX, mouseY, delta);
 					return;
 				}
 				if (s instanceof TitleScreen && bg.titleScreen.isOn()) {
@@ -121,7 +147,12 @@ public final class MenuIntegration {
 	}
 
 	private static boolean hasButtons(Screen screen) {
-		return !Screens.getButtons(screen).isEmpty();
+		for (ClickableWidget w : Screens.getButtons(screen)) {
+			if (w instanceof net.minecraft.client.gui.widget.PressableWidget) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static String keyOf(ClickableWidget widget) {

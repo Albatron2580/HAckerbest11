@@ -1,0 +1,7 @@
+WHITECLIENT bundles the following open source software, unmodified:
+
+MCEF Modern (Minecraft Chromium Embedded Framework) by DimasKama
+  https://github.com/DimasKama/mcef-modern
+  License: GNU Lesser General Public License v2.1 (LGPL-2.1)
+  It powers the in-game browser window. On first use it downloads the Chromium
+  engine (java-cef / jcefmaven) once into config/mcef-modern.

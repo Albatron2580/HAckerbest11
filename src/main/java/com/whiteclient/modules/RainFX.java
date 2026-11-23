@@ -4,13 +4,20 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
 import com.whiteclient.render.GlowBatch;
+import com.whiteclient.render.SolidBatch;
 import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.LightType;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
@@ -29,6 +36,9 @@ public class RainFX extends Module {
 	public final BoolSetting mood = add(new BoolSetting("Rain Mood", true));
 	public final ColorSetting moodColor = add(new ColorSetting("Mood Color", 0x1C2A44));
 	public final NumberSetting moodStrength = add(new NumberSetting("Mood Strength", 0.22, 0.0, 0.6, 0.01));
+	public final BoolSetting wetGround = add(new BoolSetting("Wet Ground", true));
+	public final BoolSetting puddles = add(new BoolSetting("Puddles", true));
+	public final NumberSetting shine = add(new NumberSetting("Shine", 1.0, 0.2, 2.0, 0.05, "x"));
 	public final BoolSetting always = add(new BoolSetting("Preview Without Rain", false));
 
 	private static final int MAX_STREAKS = 260, MAX_RIPPLES = 220, MAX_DROPS = 500;
@@ -52,6 +62,22 @@ public class RainFX extends Module {
 	private float spawnAcc;
 	private float rainLevel;
 
+	// ---- wet ground: a cached grid of the rain-exposed top surfaces around the player
+	private static final int WR = 12, WN = WR * 2 + 1, SUB = 4, PN = WN * SUB + 1;
+	private final float[] wTop = new float[WN * WN];
+	private final float[] wLight = new float[WN * WN];
+	private final boolean[] wFlat = new boolean[WN * WN];
+	private final float[] wPeak = new float[WN * WN];
+	/** Streak noise on whole-block corners and puddle noise on a finer grid (both world-anchored). */
+	private final float[] wNoise = new float[(WN + 1) * (WN + 1)];
+	private final float[] pNoise = new float[PN * PN];
+	private int wcx = Integer.MIN_VALUE, wcz, wcy;
+	private float wRefresh;
+	/** Builds up while it rains and slowly dries afterwards, so puddles grow over time. */
+	private float wetness;
+	private ClientWorld wetWorld;
+	private final SolidBatch puddleBase = new SolidBatch();
+
 	public RainFX() {
 		super("Rain FX", "Glowing rain with ripples and splashes", Category.WORLD, true);
 	}
@@ -59,6 +85,8 @@ public class RainFX extends Module {
 	@Override
 	protected void onDisable() {
 		streakCount = rippleCount = dropCount = 0;
+		wcx = Integer.MIN_VALUE;
+		wetness = 0;
 	}
 
 	private float rainStrength(MinecraftClient mc, float td) {
@@ -227,6 +255,279 @@ public class RainFX extends Module {
 			g.ribbon(x, y, z, x - dvx[i] * 0.04f, y - dvy[i] * 0.04f, z - dvz[i] * 0.04f, 0.024f, Colors.argb(Colors.mix(rgb, 0xFFFFFF, 0.5f), a));
 			g.disc(x, y, z, 0.045f, rgb, a * 0.55f, 6);
 		}
+
+		wetGround(ctx, world, p, strength, dt);
+	}
+
+	// =====================================================================================
+	// Wet ground: rain-exposed surfaces get a view-angle sheen (strong at grazing angles,
+	// like real wet stone) and flat spots slowly fill with dark, sky-reflecting puddles.
+	// =====================================================================================
+
+	private void wetGround(WorldContext ctx, ClientWorld world, Vec3d p, float strength, float dt) {
+		if (world != wetWorld) {
+			wetWorld = world;
+			wetness = strength; // joining a world where it already rains: already wet
+			wcx = Integer.MIN_VALUE;
+		}
+		float target = always.isOn() ? 1f : strength;
+		if (always.isOn()) {
+			wetness = 1f;
+		} else if (target > wetness) {
+			wetness = Math.min(target, wetness + dt / 8f);
+		} else {
+			wetness = Math.max(target, wetness - dt / 45f);
+		}
+		if (!wetGround.isOn() || wetness < 0.01f) {
+			return;
+		}
+		int bx = (int) Math.floor(p.x), by = (int) Math.floor(p.y), bz = (int) Math.floor(p.z);
+		wRefresh -= dt;
+		if (bx != wcx || bz != wcz || Math.abs(by - wcy) > 2 || wRefresh <= 0) {
+			refreshWet(world, bx, by, bz);
+			wRefresh = 0.6f;
+		}
+
+		GlowBatch g = ctx.glow;
+		float sh = shine.getFloat();
+		float night = dayLight(world);
+		int base = Colors.mix(color.rgb(), 0xFFFFFF, 0.35f);
+		int sky = Colors.mix(base, 0x6F86C8, 0.55f * (1f - night));
+		float groundA = 0.26f * sh * wetness * (0.3f + 0.7f * night);
+		float puddleA = 0.62f * sh * wetness * (0.35f + 0.65f * night);
+		float reach = Math.min(WR, radius.getFloat() + 2f);
+		if (FpsBoost.lighter()) {
+			reach = Math.min(reach, 9f);
+		}
+		boolean doPuddles = puddles.isOn();
+		// puddles grow the longer it rains
+		float th = 0.80f - 0.20f * wetness;
+
+		for (int gz = 0; gz < WN; gz++) {
+			for (int gx = 0; gx < WN; gx++) {
+				int i = gz * WN + gx;
+				float top = wTop[i];
+				if (Float.isNaN(top)) {
+					continue;
+				}
+				int x0 = wcx - WR + gx, z0 = wcz - WR + gz;
+				double hx = x0 + 0.5 - p.x, hz = z0 + 0.5 - p.z;
+				double hd = Math.sqrt(hx * hx + hz * hz);
+				if (hd > reach + 0.8) {
+					continue;
+				}
+				float light = wLight[i];
+				int tint = light > 0.02f ? Colors.mix(sky, 0xFFB466, Math.min(1f, light * 0.85f)) : sky;
+				float lightBoost = 1f + light * 1.2f;
+				float y = top + 0.006f;
+				float ry = ctx.ry(y);
+				float ax = ctx.rx(x0), az = ctx.rz(z0), bxx = ax + 1, bzz = az + 1;
+				int c00 = wetCol(ax, ry, az, p, x0, z0, reach, wNoise[gz * (WN + 1) + gx], groundA * lightBoost, tint);
+				int c10 = wetCol(bxx, ry, az, p, x0 + 1, z0, reach, wNoise[gz * (WN + 1) + gx + 1], groundA * lightBoost, tint);
+				int c11 = wetCol(bxx, ry, bzz, p, x0 + 1, z0 + 1, reach, wNoise[(gz + 1) * (WN + 1) + gx + 1], groundA * lightBoost, tint);
+				int c01 = wetCol(ax, ry, bzz, p, x0, z0 + 1, reach, wNoise[(gz + 1) * (WN + 1) + gx], groundA * lightBoost, tint);
+				g.quad(ax, ry, az, c00, bxx, ry, az, c10, bxx, ry, bzz, c11, ax, ry, bzz, c01);
+
+				if (doPuddles && wFlat[i] && wPeak[i] > th) {
+					puddle(ctx, g, gx, gz, x0, z0, top, p, reach, th, puddleA * lightBoost, tint);
+				}
+			}
+		}
+		puddleBase.draw(ctx.consumers, ctx.matrices.peek().getPositionMatrix());
+	}
+
+	/** A whole block of puddle, split into small cells so the puddle edge is a soft, round blob. */
+	private void puddle(WorldContext ctx, GlowBatch g, int gx, int gz, int x0, int z0, float top, Vec3d p, float reach,
+						float th, float alpha, int tint) {
+		float yb = ctx.ry(top + 0.003f), ys = ctx.ry(top + 0.008f);
+		float step = 1f / SUB;
+		for (int sz = 0; sz < SUB; sz++) {
+			for (int sx = 0; sx < SUB; sx++) {
+				int px = gx * SUB + sx, pz = gz * SUB + sz;
+				float m00 = mask(pNoise[pz * PN + px], th), m10 = mask(pNoise[pz * PN + px + 1], th);
+				float m11 = mask(pNoise[(pz + 1) * PN + px + 1], th), m01 = mask(pNoise[(pz + 1) * PN + px], th);
+				if (m00 + m10 + m11 + m01 <= 0.001f) {
+					continue;
+				}
+				double wx = x0 + sx * step, wz = z0 + sz * step;
+				float ax = ctx.rx(wx), az = ctx.rz(wz), bx = ax + step, bz = az + step;
+				// darker water body (wet ground soaks up light) ...
+				puddleBase.quad(ax, yb, az, Colors.argb(0x05070C, 0.42f * m00 * wetness),
+						ax, yb, bz, Colors.argb(0x05070C, 0.42f * m01 * wetness),
+						bx, yb, bz, Colors.argb(0x05070C, 0.42f * m11 * wetness),
+						bx, yb, az, Colors.argb(0x05070C, 0.42f * m10 * wetness), 0f, 1f, 0f);
+				// ... with the sky mirrored on top of it
+				int c00 = puddleCol(ax, ys, az, p, wx, wz, reach, m00, alpha, tint);
+				int c10 = puddleCol(bx, ys, az, p, wx + step, wz, reach, m10, alpha, tint);
+				int c11 = puddleCol(bx, ys, bz, p, wx + step, wz + step, reach, m11, alpha, tint);
+				int c01 = puddleCol(ax, ys, bz, p, wx, wz + step, reach, m01, alpha, tint);
+				g.quad(ax, ys, az, c00, bx, ys, az, c10, bx, ys, bz, c11, ax, ys, bz, c01);
+			}
+		}
+	}
+
+	private static float mask(float n, float th) {
+		float t = (n - th) / 0.07f;
+		if (t <= 0) {
+			return 0;
+		}
+		if (t >= 1) {
+			return 1;
+		}
+		return t * t * (3 - 2 * t);
+	}
+
+	/** Fresnel: almost nothing straight down, a strong sheen when you look along the ground. */
+	private static float fresnel(float vx, float vy, float vz) {
+		float d = (float) Math.sqrt(vx * vx + vy * vy + vz * vz) + 1e-4f;
+		float cos = Math.min(1f, Math.abs(vy) / d);
+		float k = 1f - cos;
+		return 0.05f + 0.95f * k * k * k;
+	}
+
+	private static float edgeFade(Vec3d p, double wx, double wz, float reach) {
+		double hx = wx - p.x, hz = wz - p.z;
+		double hd = Math.sqrt(hx * hx + hz * hz);
+		return (float) Math.max(0, Math.min(1, (reach - hd) / 3.5));
+	}
+
+	private static int wetCol(float vx, float vy, float vz, Vec3d p, double wx, double wz, float reach, float noise, float alpha, int tint) {
+		if (vy > 0) {
+			return 0;
+		}
+		float a = alpha * fresnel(vx, vy, vz) * edgeFade(p, wx, wz, reach) * (0.35f + 0.65f * noise);
+		return Colors.argb(tint, Math.min(1f, a));
+	}
+
+	private static int puddleCol(float vx, float vy, float vz, Vec3d p, double wx, double wz, float reach, float m, float alpha, int tint) {
+		if (vy > 0 || m <= 0) {
+			return tint & 0xFFFFFF;
+		}
+		float a = alpha * m * (0.16f + 0.84f * fresnel(vx, vy, vz)) * edgeFade(p, wx, wz, reach);
+		return Colors.argb(tint, Math.min(1f, a));
+	}
+
+	/** 1 in daylight, 0 at midnight (moonlit puddles still shine a little). */
+	private static float dayLight(ClientWorld world) {
+		long tod = Math.floorMod(world.getTimeOfDay(), 24000L);
+		double ang = (tod - 6000) / 24000.0 * Math.PI * 2;
+		return (float) Math.max(0, Math.min(1, 0.5 + Math.cos(ang) * 0.9));
+	}
+
+	private void refreshWet(ClientWorld world, int bx, int by, int bz) {
+		wcx = bx;
+		wcz = bz;
+		wcy = by;
+		BlockPos.Mutable m = new BlockPos.Mutable();
+		boolean any = always.isOn();
+		for (int gz = 0; gz < WN; gz++) {
+			for (int gx = 0; gx < WN; gx++) {
+				int x = bx - WR + gx, z = bz - WR + gz;
+				wTop[gz * WN + gx] = wetTop(world, m, x, z, by, any);
+			}
+		}
+		for (int gz = 0; gz < WN; gz++) {
+			for (int gx = 0; gx < WN; gx++) {
+				int i = gz * WN + gx;
+				float t = wTop[i];
+				wLight[i] = 0;
+				wFlat[i] = false;
+				if (Float.isNaN(t)) {
+					continue;
+				}
+				m.set(bx - WR + gx, (int) Math.ceil(t - 0.01f), bz - WR + gz);
+				wLight[i] = Math.max(0, world.getLightLevel(LightType.BLOCK, m) - 6) / 9f;
+				wFlat[i] = gx > 0 && gz > 0 && gx < WN - 1 && gz < WN - 1
+						&& same(t, wTop[i - 1]) && same(t, wTop[i + 1]) && same(t, wTop[i - WN]) && same(t, wTop[i + WN]);
+			}
+		}
+		for (int gz = 0; gz <= WN; gz++) {
+			for (int gx = 0; gx <= WN; gx++) {
+				int x = bx - WR + gx, z = bz - WR + gz;
+				wNoise[gz * (WN + 1) + gx] = 0.6f * valueNoise(x / 4.0, z / 4.0, 11) + 0.4f * valueNoise(x / 1.7, z / 1.7, 23);
+			}
+		}
+		for (int pz = 0; pz < PN; pz++) {
+			for (int px = 0; px < PN; px++) {
+				double x = bx - WR + px / (double) SUB, z = bz - WR + pz / (double) SUB;
+				pNoise[pz * PN + px] = 0.72f * valueNoise(x / 5.5, z / 5.5, 41) + 0.28f * valueNoise(x / 1.9, z / 1.9, 57);
+			}
+		}
+		// the highest puddle value in each block, so dry blocks are skipped quickly
+		for (int gz = 0; gz < WN; gz++) {
+			for (int gx = 0; gx < WN; gx++) {
+				float peak = 0;
+				for (int sz = 0; sz <= SUB; sz++) {
+					for (int sx = 0; sx <= SUB; sx++) {
+						peak = Math.max(peak, pNoise[(gz * SUB + sz) * PN + gx * SUB + sx]);
+					}
+				}
+				// puddles only sit where every corner of the block is flat with its neighbours
+				wPeak[gz * WN + gx] = peak;
+			}
+		}
+		// fade puddle noise to zero on the edges of a flat block that borders a step, so puddles don't hang over edges
+		for (int gz = 0; gz < WN; gz++) {
+			for (int gx = 0; gx < WN; gx++) {
+				int i = gz * WN + gx;
+				if (wFlat[i]) {
+					continue;
+				}
+				for (int sz = 0; sz <= SUB; sz++) {
+					for (int sx = 0; sx <= SUB; sx++) {
+						pNoise[(gz * SUB + sz) * PN + gx * SUB + sx] = 0;
+					}
+				}
+			}
+		}
+	}
+
+	private static boolean same(float a, float b) {
+		return !Float.isNaN(b) && Math.abs(a - b) < 0.01f;
+	}
+
+	/** Y of the rain-exposed top face at x/z, or NaN (water, leaves, fences, snow biomes, far away). */
+	private static float wetTop(ClientWorld world, BlockPos.Mutable m, int x, int z, int playerY, boolean any) {
+		int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z);
+		if (top - playerY > 14 || playerY - top > 18) {
+			return Float.NaN;
+		}
+		m.set(x, top - 1, z);
+		BlockState st = world.getBlockState(m);
+		if (st.isAir() || !st.getFluidState().isEmpty() || st.isIn(BlockTags.LEAVES)) {
+			return Float.NaN;
+		}
+		VoxelShape shape = st.getCollisionShape(world, m);
+		if (shape.isEmpty()) {
+			return Float.NaN;
+		}
+		double h = shape.getMax(Direction.Axis.Y);
+		if (h > 1.0 || h < 0.05) {
+			return Float.NaN;
+		}
+		if (!any) {
+			m.set(x, top, z);
+			if (world.getPrecipitation(m) != Biome.Precipitation.RAIN) {
+				return Float.NaN;
+			}
+		}
+		return (float) (top - 1 + h);
+	}
+
+	private static float hash(int x, int z, int seed) {
+		int h = x * 374761393 + z * 668265263 + seed * 982451653;
+		h = (h ^ (h >>> 13)) * 1274126177;
+		h ^= h >>> 16;
+		return (h & 0xFFFFFF) / (float) 0xFFFFFF;
+	}
+
+	private static float valueNoise(double x, double z, int seed) {
+		int x0 = (int) Math.floor(x), z0 = (int) Math.floor(z);
+		float fx = (float) (x - x0), fz = (float) (z - z0);
+		fx = fx * fx * (3 - 2 * fx);
+		fz = fz * fz * (3 - 2 * fz);
+		float a = hash(x0, z0, seed), b = hash(x0 + 1, z0, seed), c = hash(x0, z0 + 1, seed), d = hash(x0 + 1, z0 + 1, seed);
+		return (a + (b - a) * fx) + ((c + (d - c) * fx) - (a + (b - a) * fx)) * fz;
 	}
 
 	private void copyRipple(int from, int to) {

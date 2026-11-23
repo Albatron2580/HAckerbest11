@@ -1,6 +1,8 @@
 package com.whiteclient.mixin;
 
 import com.whiteclient.gui.ButtonStyle;
+import com.whiteclient.gui.PauseStyle;
+import net.minecraft.client.font.DrawnTextConsumer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.PressableWidget;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,12 +16,28 @@ public abstract class PressableWidgetMixin {
 	@Inject(method = "drawButton", at = @At("HEAD"), cancellable = true, require = 0)
 	private void whiteclient$drawButton(DrawContext context, CallbackInfo ci) {
 		try {
+			if (PauseStyle.owns(this)) {
+				PauseStyle.drawWidget(context, (PressableWidget) (Object) this);
+				ci.cancel();
+				return;
+			}
 			if (ButtonStyle.shouldStyle()) {
 				ButtonStyle.draw(context, (PressableWidget) (Object) this);
 				ci.cancel();
 			}
 		} catch (Throwable ignored) {
 			// never break vanilla buttons
+		}
+	}
+
+	/** The pause menu draws its own (smooth font) labels. */
+	@Inject(method = "drawLabel", at = @At("HEAD"), cancellable = true, require = 0)
+	private void whiteclient$drawLabel(DrawnTextConsumer drawer, CallbackInfo ci) {
+		try {
+			if (PauseStyle.owns(this)) {
+				ci.cancel();
+			}
+		} catch (Throwable ignored) {
 		}
 	}
 }
