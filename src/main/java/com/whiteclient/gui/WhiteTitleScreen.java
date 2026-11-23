@@ -128,12 +128,15 @@ public class WhiteTitleScreen extends Screen {
 		walker.render(ctx, x, y, mouseX, mouseY, delta);
 		// name tag above the head
 		if (turn > 0.01f && showcase) {
-			// name with a thin underline above the head (like a profile tag)
+			// planet logo + name with a thin underline above the head (like a profile tag)
 			String name = client.getSession().getUsername();
 			float ny = y - 8 - 6 * (1 - turn);
 			float nw = UiFont.width(textRenderer, name) * 1.1f;
-			UiFont.drawScaled(ctx, textRenderer, name, cxp - nw / 2f, ny, 1.1f, Colors.withAlpha(TEXT, (int) (255 * turn)));
-			float ul = (nw + 6) * turn;
+			float logoW = 17;
+			float gx = cxp - (logoW + nw) / 2f;
+			Render2D.planetLogo(ctx, gx + 6.5f, ny + 5.5f, 3.4f, time, (int) (255 * turn));
+			UiFont.drawScaled(ctx, textRenderer, name, gx + logoW, ny, 1.1f, Colors.withAlpha(TEXT, (int) (255 * turn)));
+			float ul = (logoW + nw + 6) * turn;
 			Render2D.roundRect(ctx, cxp - ul / 2f, ny + 12, ul, 1.2f, 0.6f, Colors.withAlpha(0xFFFFFF, (int) (170 * turn)));
 		} else if (turn > 0.01f) {
 			String name = client.getSession().getUsername();
@@ -346,6 +349,10 @@ public class WhiteTitleScreen extends Screen {
 		super.render(ctx, mouseX, mouseY, delta);
 	}
 
+	private float menuHalfWidth() {
+		return textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
+	}
+
 	/** Right edge of the centred logo + menu column. */
 	private float menuRight() {
 		return width / 2f + textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
@@ -361,7 +368,17 @@ public class WhiteTitleScreen extends Screen {
 	private void renderShowcase(DrawContext ctx, int mouseX, int mouseY, float delta, float dt, float time) {
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 
-		// ---- floating planets (behind everything)
+		// ---- big planet on the left (behind everything)
+		boolean big = settings == null || settings.bigPlanet.isOn();
+		float br = Math.max(40, Math.min(150, height * 0.27f));
+		float bx = Math.min(width * 0.15f, width / 2f - menuHalfWidth() - br * 0.9f);
+		float by = height * 0.6f + (float) Math.sin(time * 0.35f) * 3;
+		if (big) {
+			float ba = intro(0.05f);
+			Render2D.bigPlanet(ctx, bx, by + (1 - ba) * 12, br, time, ba * 0.92f);
+		}
+
+		// ---- floating planets
 		if (settings == null || settings.planets.isOn()) {
 			float pa = intro(0.2f);
 			for (int i = 0; i < 11; i++) {
@@ -376,6 +393,14 @@ public class WhiteTitleScreen extends Screen {
 				float r = 2.2f + 3.4f * frac(seed * 0.91f);
 				float edge = Math.min(1f, Math.min(fy * 6f, (1f - fy) * 6f));
 				float a = (0.22f + 0.4f * frac(seed * 0.23f)) * edge * pa;
+				if (big) {
+					// fade out instead of drifting across the big planet
+					float ex = (px - bx) / (br * 1.9f), ey = (py - by) / (br * 1.15f);
+					float d = ex * ex + ey * ey;
+					if (d < 1f) {
+						a *= Math.max(0f, (d - 0.7f) / 0.3f);
+					}
+				}
 				// don't float through the player model (it is drawn on its own layer)
 				float dxm = Math.abs(px - showcaseModelX()) / (walkerW * 0.55f + r * 2f);
 				if (walker != null && dxm < 1f && py > height * 0.12f) {

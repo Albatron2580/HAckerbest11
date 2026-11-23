@@ -10,6 +10,7 @@ public class MainMenu extends Module {
 	public final ModeSetting layout = add(new ModeSetting("Layout", "Showcase", "Showcase", "Centered"));
 	public final ModeSetting background = add(new ModeSetting("Background", "Silk", "Silk", "Energy", "Panorama"));
 	public final BoolSetting planets = add(new BoolSetting("Floating Planets", true));
+	public final BoolSetting bigPlanet = add(new BoolSetting("Big Planet", true));
 	public final BoolSetting account = add(new BoolSetting("Show Account", true));
 	public final BoolSetting music = add(new BoolSetting("Show Now Playing", true));
 	public final BoolSetting player = add(new BoolSetting("Walking Player", true));
