@@ -370,8 +370,9 @@ public class WhiteTitleScreen extends Screen {
 
 		// ---- big planet on the left (behind everything)
 		boolean big = settings == null || settings.bigPlanet.isOn();
-		float br = Math.max(40, Math.min(150, height * 0.27f));
-		float bx = Math.min(width * 0.15f, width / 2f - menuHalfWidth() - br * 0.9f);
+		float br = Math.max(40, Math.min(150, height * 0.26f));
+		// keep the ring and moon clear of the centred logo / menu (the planet may slide off the left edge)
+		float bx = Math.min(width * 0.15f, width / 2f - menuHalfWidth() - br * Render2D.BIG_RING * 1.1f - 8);
 		float by = height * 0.6f + (float) Math.sin(time * 0.35f) * 3;
 		if (big) {
 			float ba = intro(0.05f);

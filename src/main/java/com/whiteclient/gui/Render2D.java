@@ -322,13 +322,16 @@ public final class Render2D {
 	 * A big shaded planet with the dotted logo ring, for backgrounds. The body is opaque (lit from the
 	 * top left), the ring passes behind and in front of it, and a small moon orbits slowly.
 	 */
+	/** Ring half-width of {@link #bigPlanet} relative to the planet radius (moon orbits at 1.1x this). */
+	public static final float BIG_RING = 1.55f;
+
 	public static void bigPlanet(DrawContext ctx, float cx, float cy, float r, float time, float alpha) {
 		if (alpha <= 0.01f || r < 4) {
 			return;
 		}
 		double tilt = Math.toRadians(-18);
 		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
-		float ra = r * 1.8f, rb = r * 0.42f;
+		float ra = r * BIG_RING, rb = r * 0.4f;
 		int n = Math.max(90, (int) (ra * 1.1f));
 		float dot = Math.max(0.6f, r * 0.022f);
 		float spinOffset = time * 0.05f;
@@ -351,7 +354,7 @@ public final class Render2D {
 		}
 		// body: dark base with lighter layers shifted toward the light
 		int dark = 0x1D1E23, light = 0xB7BAC4;
-		int layers = 22;
+		int layers = 40;
 		for (int i = 0; i <= layers; i++) {
 			float t = i / (float) layers;
 			float off = r * 0.36f * t;
@@ -380,7 +383,7 @@ public final class Render2D {
 		}
 		// moon
 		double m = time * 0.25;
-		float mx = (float) Math.cos(m) * ra * 1.12f, my = (float) Math.sin(m) * rb * 1.12f;
+		float mx = (float) Math.cos(m) * ra * 1.1f, my = (float) Math.sin(m) * rb * 1.1f;
 		boolean behind = Math.sin(m) < 0 && Math.abs(mx) < r;
 		if (!behind) {
 			float px = cx + mx * cos - my * sin, py = cy + mx * sin + my * cos;
