@@ -29,9 +29,6 @@ public class InventoryTheme extends Module {
 	public final NumberSetting opacity = add(new NumberSetting("Opacity", 0.9, 0.4, 1.0, 0.02));
 	public final NumberSetting edgeGlow = add(new NumberSetting("Edge Glow", 0.18, 0.0, 0.6, 0.02));
 	public final BoolSetting lightTitles = add(new BoolSetting("Light Titles", true));
-	public final BoolSetting tilt = add(new BoolSetting("3D Tilt", true));
-	public final NumberSetting tiltStrength = add(new NumberSetting("Tilt Strength", 1.0, 0.2, 2.0, 0.05).visibleWhen(() -> tilt.isOn()));
-	public final BoolSetting followMouse = add(new BoolSetting("Tilt Follows Mouse", true).visibleWhen(() -> tilt.isOn()));
 	public final BoolSetting tooltips = add(new BoolSetting("Themed Tooltips", true));
 
 	private static final String[] TEXTURES = {

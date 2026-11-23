@@ -7,14 +7,12 @@
 		"AbstractClientPlayerEntityMixin",
 		"CameraMixin",
 		"GameRendererMixin",
-		"HandledScreenAccessor",
 		"HandledScreenMixin",
 		"HeldItemRendererMixin",
 		"MinecraftClientMixin",
 		"EntityRenderManagerMixin",
 		"MouseMixin",
 		"DrawContextInvoker",
-		"DrawContextTooltipMixin",
 		"EntityRendererNameMixin",
 		"GameOptionsMixin",
 		"PlayerLikeEntityAccessor",
@@ -22,7 +20,6 @@
 		"PlayerListHudMixin",
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin",
-		"ScreenTiltMixin",
 		"TooltipBackgroundMixin"
 	],
 	"injectors": {
