@@ -171,6 +171,12 @@ public final class Icons {
 		Render2D.line(ctx, cx - s * 0.18f, cy, cx + s * 0.12f, cy + s * 0.3f, t, c);
 	}
 
+	public static void forward(DrawContext ctx, float cx, float cy, float s, int c) {
+		float t = Math.max(0.7f, s * 0.1f);
+		Render2D.line(ctx, cx - s * 0.12f, cy - s * 0.3f, cx + s * 0.18f, cy, t, c);
+		Render2D.line(ctx, cx + s * 0.18f, cy, cx - s * 0.12f, cy + s * 0.3f, t, c);
+	}
+
 	public static void paw(DrawContext ctx, float cx, float cy, float s, int c) {
 		Render2D.roundRect(ctx, cx - s * 0.22f, cy - s * 0.02f, s * 0.44f, s * 0.36f, s * 0.16f, c);
 		Render2D.circle(ctx, cx - s * 0.3f, cy - s * 0.12f, s * 0.1f, c);

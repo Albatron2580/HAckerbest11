@@ -175,6 +175,25 @@ public final class WebView {
 		}
 	}
 
+	private double zoom = 1.0;
+	private String zoomedFor = "";
+
+	/** Page zoom (1 = 100%). Chromium keeps zoom per website, so it is applied again on a new site. */
+	public void zoom(double z) {
+		String u = url();
+		if (u.isBlank()) {
+			return;
+		}
+		String host = u.replaceFirst("(?i)^[a-z]+://", "");
+		int i = host.indexOf('/');
+		host = i > 0 ? host.substring(0, i) : host;
+		if (Math.abs(z - zoom) > 1.0e-3 || !host.equals(zoomedFor)) {
+			zoom = z;
+			zoomedFor = host;
+			cefCall("setZoomLevel", Math.log(z) / Math.log(1.2));
+		}
+	}
+
 	public void focus(boolean f) {
 		call("setFocus", f);
 	}

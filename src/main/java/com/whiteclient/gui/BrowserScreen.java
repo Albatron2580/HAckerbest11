@@ -70,6 +70,7 @@ public class BrowserScreen extends Screen {
 			address.setDrawsBackground(false);
 			address.setText(mod.lastUrl.get().isBlank() ? mod.home.get() : mod.lastUrl.get());
 			address.setPlaceholder(Text.literal("Search Google or type a web address"));
+			address.setCursorToStart(false);
 		}
 		addDrawableChild(address);
 		layoutAddress();
@@ -122,6 +123,7 @@ public class BrowserScreen extends Screen {
 		String url = Browser.toUrl(typed);
 		mod.lastUrl.set(url);
 		address.setText(url);
+		address.setCursorToStart(false);
 		WebView v = mod.view();
 		if (v != null) {
 			v.load(url);
@@ -176,13 +178,7 @@ public class BrowserScreen extends Screen {
 			int c = Colors.argb(0xFFFFFF, hov ? 0.95f : 0.62f);
 			switch (i) {
 				case 0 -> Icons.back(ctx, cx, by, 8, c);
-				case 1 -> {
-					m.pushMatrix();
-					m.translate(cx, by);
-					m.scale(-1, 1);
-					Icons.back(ctx, 0, 0, 8, c);
-					m.popMatrix();
-				}
+				case 1 -> Icons.forward(ctx, cx, by, 8, c);
 				case 2 -> reloadIcon(ctx, cx, by, c);
 				default -> homeIcon(ctx, cx, by, c);
 			}
@@ -200,6 +196,7 @@ public class BrowserScreen extends Screen {
 			if (!u.isBlank() && !u.equals(shownUrl)) {
 				shownUrl = u;
 				address.setText(u);
+				address.setCursorToStart(false);
 				mod.lastUrl.set(u);
 			}
 		}

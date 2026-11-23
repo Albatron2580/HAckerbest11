@@ -33,10 +33,11 @@ public class Browser extends Module {
 	public final TextSetting home = add(new TextSetting("Home Page", "https://www.google.com", 300));
 	public final BoolSetting pin = add(new BoolSetting("Stay On Screen", true));
 	public final NumberSetting opacity = add(new NumberSetting("Opacity", 1.0, 0.3, 1.0, 0.05));
-	public final NumberSetting winX = add(new NumberSetting("Window X", 0.52, 0, 1, 0.001).visibleWhen(() -> false));
-	public final NumberSetting winY = add(new NumberSetting("Window Y", 0.07, 0, 1, 0.001).visibleWhen(() -> false));
-	public final NumberSetting winW = add(new NumberSetting("Window Width", 0.44, 0.15, 1, 0.001).visibleWhen(() -> false));
-	public final NumberSetting winH = add(new NumberSetting("Window Height", 0.55, 0.15, 1, 0.001).visibleWhen(() -> false));
+	public final NumberSetting zoom = add(new NumberSetting("Page Zoom", 0.9, 0.5, 1.5, 0.05, "x"));
+	public final NumberSetting winX = add(new NumberSetting("Window X", 0.5, 0, 1, 0.001).visibleWhen(() -> false));
+	public final NumberSetting winY = add(new NumberSetting("Window Y", 0.06, 0, 1, 0.001).visibleWhen(() -> false));
+	public final NumberSetting winW = add(new NumberSetting("Window Width", 0.47, 0.15, 1, 0.001).visibleWhen(() -> false));
+	public final NumberSetting winH = add(new NumberSetting("Window Height", 0.62, 0.15, 1, 0.001).visibleWhen(() -> false));
 	public final TextSetting lastUrl = add(new TextSetting("Last Page", "", 2000).visibleWhen(() -> false));
 
 	private WebView view;
@@ -126,6 +127,10 @@ public class Browser extends Module {
 	public static boolean drawPage(DrawContext ctx, WebView v, float x, float y, float w, float h, float alpha) {
 		if (v == null) {
 			return false;
+		}
+		Browser b = get();
+		if (b != null) {
+			v.zoom(b.zoom.get());
 		}
 		MinecraftClient mc = MinecraftClient.getInstance();
 		int s = Math.max(1, mc.getWindow().getScaleFactor());
