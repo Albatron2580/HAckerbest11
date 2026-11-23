@@ -199,7 +199,7 @@ public final class Shapes {
 			if (x1 <= x0 || y1 <= y0) {
 				return true;
 			}
-			int r = Math.round(Math.min(radius * s, Math.min(x1 - x0, y1 - y0) / 2f));
+			int r = Math.min(Math.round(radius * s), Math.min(x1 - x0, y1 - y0) / 2);
 			Matrix3x2fStack m = ctx.getMatrices();
 			m.pushMatrix();
 			m.scale(1f / s, 1f / s);
@@ -244,7 +244,7 @@ public final class Shapes {
 				return true;
 			}
 			int t = Math.max(1, Math.round(thickness * s));
-			int r = Math.round(Math.min(radius * s, Math.min(x1 - x0, y1 - y0) / 2f));
+			int r = Math.min(Math.round(radius * s), Math.min(x1 - x0, y1 - y0) / 2);
 			if (r < t || x1 - x0 < 2 * t || y1 - y0 < 2 * t) {
 				return false; // tiny or very thick: let the exact slow path handle it
 			}
