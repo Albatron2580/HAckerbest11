@@ -1,4 +1,4 @@
-# WHITECLIENT 1.9.1 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.10.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -39,6 +39,8 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | HUD | **Custom Crosshair** | 8 styles, colour, size, gap, outline, dynamic gap, cooldown bar |
 | HUD | **Low Health Glow** | Red pulsing glow around the screen when you're low |
 | HUD | **Notifications** | Little toast when you toggle a module |
+| HUD | **Browser** | Press **B**: a floating web browser window. Drag it, resize it, and pin it so it stays on screen while you play. Type an address or anything to search Google. Real web pages use the free **MCEF Modern** mod (put it in your mods folder; the first start downloads Chrome once); without it, links open in your normal browser |
+| World | **FPS Boost** | One click faster video settings: no clouds, no entity shadows, fewer particles, fast biome blend, unlocked FPS, no vignette, lighter client effects. Turn it off and your own settings come back |
 | Menu | **Main Menu** | WHITECLIENT title screen. **Showcase** layout (default): big planet logo + text menu on the left, your player on grey silk curtains on the right with little planets floating by. **Centered** layout: the older centred buttons |
 | Menu | **Menu Background** | Animated white energy (or silk / aurora / mono) on title + pause screen |
 | Menu | **Rounded Buttons** | Rounded see-through buttons on the title + pause screen |
@@ -78,12 +80,13 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - **Right Shift** – WHITECLIENT menu
 - **C** (hold) – Zoom
 - **N** – Car emote (spawn / put away)
+- **B** – Browser window
 - `/whiteclient text <message>` – show your own 3D text
 - `/whiteclient spotify login|logout|status`
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.9.1.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.10.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.
