@@ -43,6 +43,7 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | HUD | **Low Health Glow** | Red pulsing glow around the screen when you're low |
 | HUD | **Notifications** | Little toast when you toggle a module |
 | HUD | **Browser** | Press **B**: a floating web browser window that shows real websites (Google, YouTube...) right inside Minecraft. Drag it, resize it, and pin it so it stays on screen while you play. You can keep walking with WASD while it is open (click the page to type in it). The browser engine (MCEF Modern) is built in: the first time you open it, it downloads Chrome once |
+| Menu | **Discord Status** | Shows **Playing WhiteClient** with the logo on your Discord profile, plus where you are (main menu, singleplayer or the server), the dimension and your play time. Turn off the server name, skin head or time in its settings, or write your own text. Talks only to the Discord app on your PC |
 | HUD | **Cinematic** | Movie black bars + colour grade (Warm, Cool, Dream, Night) and a soft vignette |
 | World | **FPS Boost** | One click faster video settings: no clouds, no entity shadows, fewer particles, fast biome blend, unlocked FPS, no vignette, lighter client effects. Turn it off and your own settings come back |
 | Menu | **Main Menu** | WHITECLIENT title screen. **Showcase** layout (default): big planet logo + text menu on the left, your player on grey silk curtains on the right with little planets floating by. **Centered** layout: the older centred buttons |

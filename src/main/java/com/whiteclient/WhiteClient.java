@@ -150,6 +150,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Notifications());
 		modules.register(new Browser());
 		modules.register(new Cinematic());
+		modules.register(new com.whiteclient.modules.DiscordStatus());
 		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
