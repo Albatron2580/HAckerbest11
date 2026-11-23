@@ -444,7 +444,7 @@ public class WardrobeScreen extends Screen {
 		Render2D.roundRect(ctx, listX, y0, listW, 26, 8, th.card(0.6f));
 		Icons.paw(ctx, listX + 14, y0 + 13, 9, th.text());
 		UiFont.draw(ctx, textRenderer, "Pet", listX + 26, y0 + 9, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "real or light style · only you see it", listX + 48, y0 + 10, 0.75f, th.sub());
+		UiFont.drawScaled(ctx, textRenderer, "made of light · only you see it", listX + 48, y0 + 10, 0.75f, th.sub());
 		drawToggle(ctx, listX + listW - 30, y0 + 7.5f, anim("petOn", pets.isEnabled() ? 1f : 0f, dt));
 		listHit(listX + listW - 34, y0, 34, 26, pets::toggle);
 
@@ -479,7 +479,7 @@ public class WardrobeScreen extends Screen {
 		}
 		int rows = (types.length + cols - 1) / cols;
 		float end = gy + rows * (34 + gap);
-		float after = wrapped(ctx, "Style, name, size, colours, resting on your shoulder or head and jumping with you: Right Shift → Cosmetics → Pets.", listX, end + 2, listW, 0.78f, th.sub());
+		float after = wrapped(ctx, "Name, size, colours and floating over your head when you stand still: Right Shift → Cosmetics → Pets.", listX, end + 2, listW, 0.78f, th.sub());
 		return after - y0 + 6;
 	}
 

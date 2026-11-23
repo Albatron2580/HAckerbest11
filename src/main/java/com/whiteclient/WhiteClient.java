@@ -59,7 +59,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.10.0";
+	public static final String VERSION = "1.11.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -111,6 +111,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new BlockTrail());
 		modules.register(new Pets());
 		modules.register(new ChinaHat());
+		modules.register(new HeadWear());
 		modules.register(new Trail());
 		modules.register(new JumpCircles());
 		modules.register(new Capes());
@@ -132,6 +133,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new BlockOutline());
 		modules.register(new Zoom());
 		modules.register(new FpsBoost());
+		modules.register(new TimeChanger());
 		modules.register(new HandView());
 		// Music
 		modules.register(new Spotify());

@@ -220,66 +220,41 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				mm.get(Wings.class).setEnabled(false);
 				Pets pets = mm.get(Pets.class);
 				pets.name.set("");
-				pets.rest.set("Off");
 				pets.setEnabled(true);
 			});
 			for (String pet : Pets.TYPES) {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
-				context.waitTicks(pet.equals("Bird") ? 70 : 55);
-				context.takeScreenshot("gallery_pet_" + pet.toLowerCase(Locale.ROOT));
+				context.waitTicks(45);
+				context.takeScreenshot("gallery_pet_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
-			// pets resting on your shoulder / head when you stand still
-			for (String spot : new String[]{"Shoulder", "Head"}) {
-				for (String pet : spot.equals("Shoulder") ? new String[]{"Dog", "Cat", "Hamster", "Bird", "Butterfly"} : new String[]{"Cat", "Bunny"}) {
-					context.runOnClient(client -> {
-						Pets pets = WhiteClient.get().modules().get(Pets.class);
-						pets.rest.set(spot);
-						pets.pet.set(pet);
-					});
-					context.waitTicks(80);
-					context.takeScreenshot("rest_" + spot.toLowerCase(Locale.ROOT) + "_" + pet.toLowerCase(Locale.ROOT));
-					perf(context, "pet resting");
-				}
+			// standing still: the creature drifts over your head
+			for (String pet : Pets.TYPES) {
+				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
+				context.waitTicks(90);
+				context.takeScreenshot("pet_over_head_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
+				perf(context, "pet over head");
 			}
-			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).rest.set("Shoulder"));
-			// jumping with you
-			for (String pet : new String[]{"Dog", "Fox"}) {
-				context.runOnClient(client -> {
-					Pets pets = WhiteClient.get().modules().get(Pets.class);
-					pets.pet.set(pet);
-					pets.rest.set("Off");
-				});
-				context.waitTicks(30);
-				context.runOnClient(client -> client.player.setVelocity(0, 0.42, 0));
-				context.waitTicks(5);
-				context.takeScreenshot("jump_" + pet.toLowerCase(Locale.ROOT));
-				context.waitTicks(20);
-			}
-			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).rest.set("Shoulder"));
-			// pets following you while you walk (they hop down from your shoulder first)
-			for (String pet : new String[]{"Dog", "Bunny", "Bird"}) {
+			// following you while you walk
+			for (String pet : new String[]{"Manta Ray", "Star Whale"}) {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
 				context.waitTicks(10);
 				for (int i = 0; i < 22; i++) {
 					sp.getServer().runCommand("execute as @p at @s rotated ~ 0 run tp @s ^ ^ ^0.2");
 					context.waitTicks(1);
 				}
-				context.takeScreenshot("gallery_walk_" + pet.toLowerCase(Locale.ROOT));
+				context.takeScreenshot("gallery_walk_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
-			// the old light style is still there
+			// head wear cosmetics
 			context.runOnClient(client -> {
-				Pets pets = WhiteClient.get().modules().get(Pets.class);
-				pets.style.set("Light");
-				pets.pet.set("Fox");
-				pets.rest.set("Off");
+				WhiteClient.get().modules().get(Pets.class).setEnabled(false);
+				WhiteClient.get().modules().get(HeadWear.class).setEnabled(true);
 			});
-			context.waitTicks(40);
-			context.takeScreenshot("pet_light_style_fox");
-			context.runOnClient(client -> {
-				Pets pets = WhiteClient.get().modules().get(Pets.class);
-				pets.style.set("Real");
-				pets.rest.set("Shoulder");
-			});
+			for (String style : HeadWear.STYLES) {
+				context.runOnClient(client -> WhiteClient.get().modules().get(HeadWear.class).style.set(style));
+				context.waitTicks(6);
+				context.takeScreenshot("headwear_" + style.toLowerCase(Locale.ROOT).replace(' ', '_'));
+			}
+			context.runOnClient(client -> WhiteClient.get().modules().get(HeadWear.class).setEnabled(false));
 			// ---- car emote: "Show Off" (car parked next to you) for every car, then driving
 			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).setEnabled(false));
 			for (String car : CarEmote.CARS) {
@@ -382,7 +357,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				Wardrobe.reload();
 				Wardrobe w = WhiteClient.get().modules().get(Wardrobe.class);
 				w.skin.set("whiteclient_test");
-				WhiteClient.get().modules().get(Pets.class).pet.set("Wisp");
+				WhiteClient.get().modules().get(Pets.class).pet.set("Manta Ray");
 			});
 			context.waitTicks(20);
 			context.takeScreenshot("custom_skin_front_wisp");
@@ -588,6 +563,24 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(120);
 			context.takeScreenshot("rain_fx");
 			perf(context, "rain");
+			// the parked truck in the rain: rain, ripples and the block outline must stay behind it
+			sp.getServer().runCommand("tp @p ~ ~ ~ 0 10");
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(BlockOutline.class).setEnabled(true);
+				CarEmote ce = WhiteClient.get().modules().get(CarEmote.class);
+				ce.mode.set("Show Off");
+				ce.car.set("Pickup");
+				ce.start();
+			});
+			context.waitTicks(25);
+			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
+			context.waitTicks(5);
+			context.takeScreenshot("car_pickup_rain");
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(CarEmote.class).stop();
+				WhiteClient.get().modules().get(BlockOutline.class).setEnabled(false);
+			});
+			context.waitTicks(15);
 			context.runOnClient(client -> {
 				WhiteClient.get().modules().get(RainFX.class).always.set(false);
 				client.options.setPerspective(Perspective.FIRST_PERSON);

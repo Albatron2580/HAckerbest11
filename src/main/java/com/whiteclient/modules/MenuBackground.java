@@ -17,6 +17,9 @@ public class MenuBackground extends Module {
 	public final BoolSetting titleScreen = add(new BoolSetting("Title Screen", true));
 	public final BoolSetting pauseMenu = add(new BoolSetting("Pause Menu", true));
 	public final BoolSetting clickGui = add(new BoolSetting("Client Menu", false));
+	public final BoolSetting loadingScreens = add(new BoolSetting("Loading Screens", true));
+	public final BoolSetting otherMenus = add(new BoolSetting("Other Menus", true));
+	public final BoolSetting pauseCard = add(new BoolSetting("Pause Menu Card", true));
 	public final NumberSetting opacity = add(new NumberSetting("Pause Opacity", 0.92, 0.2, 1.0, 0.01));
 
 	public MenuBackground() {

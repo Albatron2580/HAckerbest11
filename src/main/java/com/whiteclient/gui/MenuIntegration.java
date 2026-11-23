@@ -52,8 +52,72 @@ public final class MenuIntegration {
 				} else if (s instanceof GameMenuScreen && bg.pauseMenu.isOn() && hasButtons(s)) {
 					MenuBackgroundRenderer.draw(context, s.width, s.height, bg.opacity.getFloat());
 				}
+				if (s instanceof GameMenuScreen && bg.pauseCard.isOn() && hasButtons(s)) {
+					drawButtonCard(context, s);
+				}
+			});
+		} else if (isLoading(screen)) {
+			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
+				MenuBackground bg = wc.modules().get(MenuBackground.class);
+				if (bg == null || !bg.isEnabled() || !bg.loadingScreens.isOn()) {
+					return;
+				}
+				MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
+				context.fill(0, 0, s.width, s.height, 0x40000000);
+				float time = WhiteClient.get().time();
+				float r = Math.max(9, Math.min(18, s.height * 0.045f));
+				float ly = Math.max(r * 2.2f, s.height * 0.16f);
+				Render2D.planetLogo(context, s.width / 2f, ly, r, time, 255);
+				String word = "WHITECLIENT";
+				int tw = client.textRenderer.getWidth(UiFont.title(word));
+				context.drawText(client.textRenderer, UiFont.title(word), Math.round(s.width / 2f - tw / 2f), Math.round(ly + r * 1.6f + 4), 0xFFFFFFFF, false);
+			});
+		} else if (client.world == null && isPlainMenu(screen)) {
+			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
+				MenuBackground bg = wc.modules().get(MenuBackground.class);
+				if (bg == null || !bg.isEnabled() || !bg.otherMenus.isOn() || MinecraftClient.getInstance().world != null) {
+					return;
+				}
+				MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
+				context.fill(0, 0, s.width, s.height, 0x66000000);
 			});
 		}
+	}
+
+	private static boolean isLoading(Screen s) {
+		return s instanceof net.minecraft.client.gui.screen.world.LevelLoadingScreen
+				|| s instanceof net.minecraft.client.gui.screen.multiplayer.ConnectScreen
+				|| s instanceof net.minecraft.client.gui.screen.MessageScreen
+				|| s instanceof net.minecraft.client.gui.screen.ProgressScreen
+				|| s instanceof net.minecraft.client.gui.screen.DisconnectedScreen;
+	}
+
+	/** Option / world / server list menus outside a world (not our own screens, they have their own looks). */
+	private static boolean isPlainMenu(Screen s) {
+		String pkg = s.getClass().getName();
+		return !(s instanceof TitleScreen) && !pkg.startsWith("com.whiteclient") && pkg.startsWith("net.minecraft");
+	}
+
+	/** A dark rounded card behind the pause menu buttons. */
+	private static void drawButtonCard(net.minecraft.client.gui.DrawContext ctx, Screen s) {
+		List<ClickableWidget> buttons = Screens.getButtons(s);
+		float x0 = Float.MAX_VALUE, y0 = Float.MAX_VALUE, x1 = -Float.MAX_VALUE, y1 = -Float.MAX_VALUE;
+		for (ClickableWidget b : buttons) {
+			if (!b.visible) {
+				continue;
+			}
+			x0 = Math.min(x0, b.getX());
+			y0 = Math.min(y0, b.getY());
+			x1 = Math.max(x1, b.getX() + b.getWidth());
+			y1 = Math.max(y1, b.getY() + b.getHeight());
+		}
+		if (x1 <= x0) {
+			return;
+		}
+		float pad = 10;
+		Render2D.shadow(ctx, x0 - pad, y0 - pad, x1 - x0 + pad * 2, y1 - y0 + pad * 2, 14, 8, 70);
+		Render2D.roundRect(ctx, x0 - pad, y0 - pad, x1 - x0 + pad * 2, y1 - y0 + pad * 2, 14, 0xB00B0B10);
+		Render2D.roundRectOutline(ctx, x0 - pad, y0 - pad, x1 - x0 + pad * 2, y1 - y0 + pad * 2, 14, 1, 0x1FFFFFFF);
 	}
 
 	private static boolean hasButtons(Screen screen) {
