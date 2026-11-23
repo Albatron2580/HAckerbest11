@@ -1,9 +1,11 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
 import com.whiteclient.render.GlowBatch;
+import com.whiteclient.render.OrganicMesh;
 import com.whiteclient.render.V3;
 import com.whiteclient.render.WorldContext;
 import com.whiteclient.render.WorldText;
@@ -21,11 +23,13 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.LightType;
 
 /**
- * A glowing pet made of light that moves like a real animal: dogs, cats, foxes and hamsters walk next to
- * you and sit when you stop, bunnies hop, birds fly and land on your shoulder, fish swim around you.
- * Only you can see it (it is drawn, not a real entity), so it can't be hit and never affects gameplay.
+ * Pets that look and move like real animals, with a soft glow. Dogs, cats, foxes, bunnies and hamsters walk
+ * next to you, jump when you jump, and when you stand still they leap up and lie on your shoulder or head.
+ * Birds, bees and butterflies land on you, fish swim around you. "Light" style draws them as glowing light
+ * sketches instead. Only you can see them (they are drawn, not real entities), so they never affect gameplay.
  */
 public class Pets extends Module {
 	public static final String[] TYPES = {
@@ -33,6 +37,7 @@ public class Pets extends Module {
 	};
 
 	public final ModeSetting pet = add(new ModeSetting("Pet", "Dog", TYPES));
+	public final ModeSetting style = add(new ModeSetting("Style", "Real", "Real", "Light"));
 	public final TextSetting name = add(new TextSetting("Name", "", 24));
 	public final BoolSetting natural = add(new BoolSetting("Natural Colors", true));
 	public final ColorSetting color = add(new ColorSetting("Glow Color", 0x7FB8FF).visibleWhen(() -> !natural.isOn()));
@@ -40,8 +45,9 @@ public class Pets extends Module {
 	public final NumberSetting size = add(new NumberSetting("Size", 1.2, 0.6, 2.0, 0.05, "x"));
 	public final ModeSetting side = add(new ModeSetting("Side", "Right", "Right", "Left"));
 	public final NumberSetting distance = add(new NumberSetting("Distance", 1.5, 0.8, 3.0, 0.05));
-	public final BoolSetting sit = add(new BoolSetting("Sit When You Stop", true).visibleWhen(this::isGround));
-	public final BoolSetting perch = add(new BoolSetting("Land On Your Shoulder", true).visibleWhen(() -> pet.is("Bird")));
+	public final ModeSetting rest = add(new ModeSetting("Rest On You", "Shoulder", "Shoulder", "Head", "Off"));
+	public final BoolSetting jumpWithYou = add(new BoolSetting("Jump With You", true).visibleWhen(this::isGround));
+	public final BoolSetting sit = add(new BoolSetting("Sit When You Stop", true).visibleWhen(() -> isGround() && rest.is("Off")));
 	public final NumberSetting height = add(new NumberSetting("Fly Height", 1.55, 0.5, 2.8, 0.05).visibleWhen(() -> !isGround()));
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.3, 2.0, 0.05, "x"));
 
@@ -54,9 +60,18 @@ public class Pets extends Module {
 	private ClientWorld lastWorld;
 	private String lastType = "";
 	private Vec3d lastPlayer;
+	// resting on you: 0 = on the ground, 1 = leaping up, 2 = lying on you, 3 = jumping down
+	private int restState;
+	private float restT, prestT;
+	private double fromX, fromY, fromZ, landX, landY, landZ;
+	// jumping with you
+	private boolean airborne, wasOnGround = true;
+	private double hopVy;
+	private float air, pair, lie, plie;
+	private final OrganicMesh mesh = new OrganicMesh();
 
 	public Pets() {
-		super("Pets", "A glowing pet that follows you", Category.COSMETICS, false);
+		super("Pets", "A pet that follows you, jumps with you and rests on your shoulder", Category.COSMETICS, false);
 	}
 
 	/** Pets are drawn, not entities; kept for code that skips pets. */
@@ -75,9 +90,30 @@ public class Pets extends Module {
 		};
 	}
 
+	/** Flyers that land on you when you stand still. */
+	private static boolean lands(String type) {
+		return switch (type) {
+			case "Bird", "Bee", "Butterfly", "Wisp", "Jellyfish" -> true;
+			default -> false;
+		};
+	}
+
+	/** How big the pet is while it rests on you (a full size dog would not fit on a shoulder). */
+	private static float restScale(String type) {
+		return switch (type) {
+			case "Dog" -> 0.55f;
+			case "Fox" -> 0.58f;
+			case "Cat" -> 0.62f;
+			case "Bunny" -> 0.75f;
+			case "Jellyfish", "Wisp" -> 0.55f;
+			default -> 1f;
+		};
+	}
+
 	@Override
 	protected void onDisable() {
 		init = false;
+		restState = 0;
 	}
 
 	// ------------------------------------------------------------------ colours
@@ -117,6 +153,29 @@ public class Pets extends Module {
 		};
 	}
 
+	/** Real-style colours: fur/feathers on top, belly, legs, nose, eyes, inner ears, accent. */
+	private record Look(int top, int belly, int legs, int nose, int eye, int inner, int accent) {
+	}
+
+	private Look look() {
+		if (!natural.isOn()) {
+			int a = color.rgb(), b = color2.rgb();
+			return new Look(a, b, a, 0x1A1616, 0x161214, b, b);
+		}
+		return switch (pet.get()) {
+			case "Dog" -> new Look(0xD39A52, 0xF2D7A6, 0xDDAA66, 0x1B1716, 0x2B1B10, 0xB97A3E, 0xF2D7A6);
+			case "Cat" -> new Look(0x8A8D96, 0xEDEDF0, 0xEDEDF0, 0xE79AA8, 0x9BE36B, 0xF0A9B6, 0x5E616A);
+			case "Fox" -> new Look(0xE0742A, 0xF8F1E8, 0x2E2420, 0x1B1716, 0x2B1B10, 0xF8F1E8, 0x2E2420);
+			case "Bunny" -> new Look(0xF1F1F4, 0xFFFFFF, 0xF1F1F4, 0xF09AB2, 0x1C1416, 0xF4B3C6, 0xFFFFFF);
+			case "Hamster" -> new Look(0xE3A462, 0xFFF4E6, 0xF6CDB7, 0xE79AA8, 0x140E0E, 0xF2B9A6, 0xFFF4E6);
+			case "Bird" -> new Look(0x4FBDF0, 0xA8E4FA, 0xB9A7A0, 0xE8B04A, 0x111111, 0x3E57D6, 0xFFE27A);
+			case "Bee" -> new Look(0xF2C230, 0xC98E24, 0x1C1A16, 0x1C1A16, 0x111111, 0xFFFFFF, 0x1C1A16);
+			case "Butterfly" -> new Look(0x2F86FF, 0x0C1838, 0x1A1A22, 0x1A1A22, 0x111111, 0xFFFFFF, 0x9BD3FF);
+			case "Fish" -> new Look(0xFF7424, 0xFFF3EA, 0xFF7424, 0xF0A0A0, 0x111111, 0xFFB27A, 0xFFF6EE);
+			default -> new Look(c1(), c2(), c1(), 0x1A1616, 0x111111, c2(), c2());
+		};
+	}
+
 	// ------------------------------------------------------------------ simulation
 
 	private static double groundAt(ClientWorld world, double x, double z, double nearY) {
@@ -133,6 +192,26 @@ public class Pets extends Module {
 		return nearY;
 	}
 
+	/** Where the pet rests on you (world x, y, z) and the way it faces. */
+	private double[] restSpot(PlayerEntity p, float td) {
+		Vec3d pos = p.getLerpedPos(td);
+		float sc = p.getScale();
+		boolean sneak = p.isInSneakingPose();
+		if (rest.is("Head")) {
+			float headYaw = MathHelper.lerpAngleDegrees(td, p.lastHeadYaw, p.headYaw);
+			double pitch = Math.toRadians(MathHelper.clamp(p.getPitch(td), -45f, 45f));
+			V3 f = V3.forward(headYaw);
+			double neck = (sneak ? 1.14 : 1.5) * sc;
+			double fwd = 0.5 * sc * Math.sin(pitch) + (sneak ? 0.1 * sc : 0);
+			return new double[]{pos.x + f.x() * fwd, pos.y + neck + 0.5 * sc * Math.cos(pitch) + 0.012, pos.z + f.z() * fwd, headYaw};
+		}
+		float bodyYaw = MathHelper.lerpAngleDegrees(td, p.lastBodyYaw, p.bodyYaw);
+		V3 f = V3.forward(bodyYaw), r = V3.right(bodyYaw);
+		float sideSign = side.is("Left") ? -1f : 1f;
+		double out = 0.31 * sc, up = (sneak ? 1.2 : 1.5) * sc + 0.005, fwd = sneak ? 0.12 * sc : 0.0;
+		return new double[]{pos.x + r.x() * sideSign * out + f.x() * fwd, pos.y + up, pos.z + r.z() * sideSign * out + f.z() * fwd, bodyYaw};
+	}
+
 	@Override
 	public void onTick(MinecraftClient mc) {
 		ClientWorld world = mc.world;
@@ -140,10 +219,13 @@ public class Pets extends Module {
 		if (world == null || player == null) {
 			init = false;
 			lastPlayer = null;
+			restState = 0;
 			return;
 		}
 		if (world != lastWorld || !pet.get().equals(lastType)) {
 			init = false;
+			restState = 0;
+			airborne = false;
 			lastWorld = world;
 			lastType = pet.get();
 		}
@@ -155,6 +237,9 @@ public class Pets extends Module {
 		pmove = move;
 		psit = sitAmt;
 		pperch = perchAmt;
+		prestT = restT;
+		pair = air;
+		plie = lie;
 
 		Vec3d pl = player.getEntityPos();
 		double pSpeed = lastPlayer == null ? 0 : Math.hypot(pl.x - lastPlayer.x, pl.z - lastPlayer.z);
@@ -168,8 +253,10 @@ public class Pets extends Module {
 		if (isGround()) {
 			tickGround(world, player, pl, pSpeed, f, r, sideSign);
 		} else {
+			restState = 0;
 			tickFlyer(player, pl, f, r, sideSign);
 		}
+		wasOnGround = player.isOnGround();
 		fade = Math.min(1f, fade + 0.06f);
 	}
 
@@ -181,6 +268,8 @@ public class Pets extends Module {
 		vx = vy = vz = 0;
 		fade = 0;
 		idle = 0;
+		airborne = false;
+		hopVy = 0;
 		init = true;
 	}
 
@@ -189,6 +278,50 @@ public class Pets extends Module {
 		double d = distance.get();
 		double tx = pl.x + r.x() * sideSign * d - f.x() * 0.5;
 		double tz = pl.z + r.z() * sideSign * d - f.z() * 0.5;
+		boolean carried = player.getAbilities().flying || player.isGliding() || player.hasVehicle();
+		boolean wantRest = !rest.is("Off") && (still > 40 || carried) && !player.isSpectator() && !player.isSleeping()
+				&& !player.isTouchingWater() && !player.isInvisible();
+
+		if (restState != 0 && init) {
+			double[] spot = restSpot(player, 1f);
+			if (restState == 1) {
+				restT = Math.min(1f, restT + (carried ? 0.16f : 0.1f));
+				if (restT >= 1f) {
+					restState = 2;
+				}
+			} else if (restState == 2) {
+				if (!wantRest) {
+					restState = 3;
+					restT = prestT = 0f;
+				}
+			} else {
+				landX = tx;
+				landZ = tz;
+				landY = groundAt(world, tx, tz, pl.y);
+				restT = Math.min(1f, restT + 0.1f);
+				if (restT >= 1f) {
+					restState = 0;
+					x = px = landX;
+					y = py = landY;
+					z = pz = landZ;
+					yaw = pyaw = (float) spot[3];
+					idle = 0;
+					airborne = false;
+					hopVy = 0;
+					return;
+				}
+			}
+			x = spot[0];
+			y = spot[1];
+			z = spot[2];
+			yaw = (float) spot[3];
+			move += (0f - move) * 0.3f;
+			air += ((restState == 2 ? 0f : 1f) - air) * 0.4f;
+			lie += ((restState == 2 ? 1f : 0f) - lie) * 0.22f;
+			sitAmt += (0f - sitAmt) * 0.2f;
+			return;
+		}
+
 		if (!init || Math.hypot(x - pl.x, z - pl.z) > 18 || Math.abs(pl.y - y) > 5) {
 			teleport(tx, groundAt(world, tx, tz, pl.y), tz, player.getBodyYaw());
 		}
@@ -226,79 +359,115 @@ public class Pets extends Module {
 				}
 			}
 		}
+		// jump when you jump
+		boolean onG = player.isOnGround();
+		if (jumpWithYou.isOn() && !airborne && wasOnGround && !onG && player.getVelocity().y > 0.15 && !carried) {
+			airborne = true;
+			hopVy = 0.42;
+		}
 		double gy = groundAt(world, x, z, Math.max(pl.y, y));
-		y += (gy - y) * 0.45;
-		boolean wantSit = sit.isOn() && idle > 40;
+		if (airborne) {
+			y += hopVy;
+			hopVy = (hopVy - 0.08) * 0.98;
+			if (hopVy < 0 && y <= gy) {
+				y = gy;
+				airborne = false;
+				hopVy = 0;
+			}
+		} else {
+			y += (gy - y) * 0.45;
+		}
+		air += ((airborne ? 1f : 0f) - air) * 0.4f;
+		lie += (0f - lie) * 0.25f;
+		boolean wantSit = sit.isOn() && rest.is("Off") && idle > 40;
 		sitAmt += ((wantSit ? 1f : 0f) - sitAmt) * 0.1f;
+		// stood still long enough (or you are flying / riding): leap up onto you
+		if (wantRest && !airborne && (carried || (idle > 6 && Math.hypot(pl.x - x, pl.z - z) < 4.5 && Math.abs(pl.y - y) < 2.5))) {
+			restState = 1;
+			restT = prestT = 0f;
+			fromX = x;
+			fromY = y;
+			fromZ = z;
+		}
 	}
 
 	private void tickFlyer(PlayerEntity player, Vec3d pl, V3 f, V3 r, float sideSign) {
 		double h = height.get() * player.getScale();
 		double d = distance.get();
-		float t = com.whiteclient.WhiteClient.get().time();
+		float t = WhiteClient.get().time();
 		double tx = pl.x + r.x() * sideSign * d * 0.85 + f.x() * 0.1;
 		double ty = pl.y + h;
 		double tz = pl.z + r.z() * sideSign * d * 0.85 + f.z() * 0.1;
 		double k = 0.06, damp = 0.22;
 		float flapRate;
 		String type = pet.get();
+		boolean wantRest = !rest.is("Off") && still > 40 && !player.isTouchingWater() && !player.isSpectator();
+		boolean land = wantRest && lands(type);
+		if (land) {
+			double[] spot = restSpot(player, 1f);
+			tx = spot[0];
+			ty = spot[1] + restLift(type);
+			tz = spot[2];
+			k = 0.16;
+			damp = 0.42;
+		}
 		switch (type) {
 			case "Bird" -> {
-				boolean land = perch.isOn() && still > 40;
-				if (land) {
-					tx = pl.x + r.x() * sideSign * 0.33 - f.x() * 0.03;
-					ty = pl.y + 1.43 * player.getScale() + (player.isSneaking() ? -0.25 : 0);
-					tz = pl.z + r.z() * sideSign * 0.33 - f.z() * 0.03;
-					k = 0.16;
-					damp = 0.42;
-				} else {
+				if (!land) {
 					tx += Math.sin(t * 0.7) * 0.3;
 					ty += Math.sin(t * 1.1) * 0.15;
 					tz += Math.cos(t * 0.9) * 0.3;
 				}
-				double toTarget = Math.sqrt(Math.pow(tx - x, 2) + Math.pow(ty - y, 2) + Math.pow(tz - z, 2));
-				perchAmt += ((land && toTarget < 0.12 ? 1f : 0f) - perchAmt) * 0.25f;
 				flapRate = perchAmt > 0.5f ? 0.05f : 0.95f;
 			}
 			case "Bee" -> {
-				// lazy figure-eight around the anchor
-				V3 off = r.mul((float) Math.sin(t * 1.3) * 0.5f).add(f, (float) Math.sin(t * 2.6) * 0.25f);
-				tx += off.x();
-				ty += Math.sin(t * 2.6 + 1) * 0.12;
-				tz += off.z();
-				k = 0.1;
-				damp = 0.25;
-				flapRate = 2.8f;
+				if (!land) {
+					// lazy figure-eight around the anchor
+					V3 off = r.mul((float) Math.sin(t * 1.3) * 0.5f).add(f, (float) Math.sin(t * 2.6) * 0.25f);
+					tx += off.x();
+					ty += Math.sin(t * 2.6 + 1) * 0.12;
+					tz += off.z();
+					k = 0.1;
+					damp = 0.25;
+				}
+				flapRate = perchAmt > 0.5f ? 0.15f : 2.8f;
 			}
 			case "Butterfly" -> {
-				tx += Math.sin(t * 1.7) * 0.4 + Math.sin(t * 4.3) * 0.08;
-				ty += Math.sin(t * 3.1) * 0.15 + Math.sin(t * 1.3) * 0.1;
-				tz += Math.cos(t * 1.4) * 0.4 + Math.cos(t * 3.7) * 0.08;
-				k = 0.05;
+				if (!land) {
+					tx += Math.sin(t * 1.7) * 0.4 + Math.sin(t * 4.3) * 0.08;
+					ty += Math.sin(t * 3.1) * 0.15 + Math.sin(t * 1.3) * 0.1;
+					tz += Math.cos(t * 1.4) * 0.4 + Math.cos(t * 3.7) * 0.08;
+					k = 0.05;
+				}
 				flapRate = 0.9f;
 			}
 			case "Fish" -> {
-				// swims in a slow circle around you
-				double ang = t * 0.55 * sideSign;
-				tx = pl.x + Math.cos(ang) * d;
-				tz = pl.z + Math.sin(ang) * d;
-				ty = pl.y + h * 0.75 + Math.sin(t * 1.3) * 0.12;
+				// swims in a slow circle around you (a small one around your head when you stand still)
+				double ang = t * (wantRest ? 0.9 : 0.55) * sideSign;
+				double rad = wantRest ? 0.62 : d;
+				tx = pl.x + Math.cos(ang) * rad;
+				tz = pl.z + Math.sin(ang) * rad;
+				ty = pl.y + (wantRest ? 1.75 * player.getScale() : h * 0.75) + Math.sin(t * 1.3) * 0.12;
 				k = 0.05;
 				damp = 0.2;
 				flapRate = 0.35f;
 			}
 			case "Jellyfish" -> {
-				ty += Math.sin(t * 0.8) * 0.18;
-				tx += Math.sin(t * 0.3) * 0.2;
-				tz += Math.cos(t * 0.35) * 0.2;
-				k = 0.035;
-				damp = 0.18;
+				if (!land) {
+					ty += Math.sin(t * 0.8) * 0.18;
+					tx += Math.sin(t * 0.3) * 0.2;
+					tz += Math.cos(t * 0.35) * 0.2;
+					k = 0.035;
+					damp = 0.18;
+				}
 				flapRate = 0.13f;
 			}
 			default -> { // wisp
-				tx += Math.cos(t * 1.5) * 0.25;
-				tz += Math.sin(t * 1.5) * 0.25;
-				ty += Math.sin(t * 2.2) * 0.1;
+				if (!land) {
+					tx += Math.cos(t * 1.5) * 0.25;
+					tz += Math.sin(t * 1.5) * 0.25;
+					ty += Math.sin(t * 2.2) * 0.1;
+				}
 				flapRate = 0.2f;
 			}
 		}
@@ -311,6 +480,8 @@ public class Pets extends Module {
 		x += vx;
 		y += vy;
 		z += vz;
+		double toTarget = Math.sqrt(Math.pow(tx - x, 2) + Math.pow(ty - y, 2) + Math.pow(tz - z, 2));
+		perchAmt += ((land && toTarget < 0.15 ? 1f : 0f) - perchAmt) * 0.25f;
 		double hs = Math.sqrt(vx * vx + vz * vz);
 		float want = hs > 0.008 && perchAmt < 0.5f ? (float) Math.toDegrees(Math.atan2(-vx, vz)) : player.getBodyYaw();
 		yaw += MathHelper.wrapDegrees(want - yaw) * 0.18f;
@@ -319,6 +490,14 @@ public class Pets extends Module {
 		if (type.equals("Bird") && vy > 0.01) {
 			phase += 0.4f; // flap harder when climbing
 		}
+	}
+
+	private static double restLift(String type) {
+		return switch (type) {
+			case "Jellyfish" -> 0.55;
+			case "Wisp" -> 0.16;
+			default -> 0;
+		};
 	}
 
 	private static float strideOf(String type) {
@@ -346,18 +525,84 @@ public class Pets extends Module {
 		};
 	}
 
+	/** Proportions of the real-style animals (blocks, at size 1). */
+	private record Rig(float bodyLen, float legLen, float bodyW, float bodyH, float headR, float neck, float snoutLen, float snoutR,
+					   int ears, int tail, boolean hop, boolean round) {
+	}
+
+	private static Rig rigOf(String type) {
+		return switch (type) {
+			case "Cat" -> new Rig(0.25f, 0.17f, 0.066f, 0.074f, 0.072f, 0.06f, 0.026f, 0.034f, 1, 1, false, false);
+			case "Fox" -> new Rig(0.28f, 0.17f, 0.068f, 0.078f, 0.074f, 0.07f, 0.085f, 0.03f, 2, 2, false, false);
+			case "Bunny" -> new Rig(0.1f, 0.06f, 0.085f, 0.092f, 0.07f, 0.02f, 0.022f, 0.036f, 3, 3, true, true);
+			case "Hamster" -> new Rig(0.05f, 0.03f, 0.08f, 0.076f, 0.066f, 0f, 0.018f, 0.03f, 4, 4, false, true);
+			default -> new Rig(0.27f, 0.2f, 0.088f, 0.096f, 0.088f, 0.085f, 0.072f, 0.042f, 0, 0, false, false);
+		};
+	}
+
+	private static float ease(float t) {
+		t = Math.max(0f, Math.min(1f, t));
+		return t * t * (3 - 2 * t);
+	}
+
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		if (!init || ctx.client.player == null) {
+		if (!init || ctx.client.player == null || ctx.client.world == null) {
 			return;
 		}
 		float td = ctx.tickDelta;
+		PlayerEntity player = ctx.client.player;
+		String type = pet.get();
+		boolean ground = isGround();
 		double lx = MathHelper.lerp(td, px, x), ly = MathHelper.lerp(td, py, y), lz = MathHelper.lerp(td, pz, z);
 		float lyaw = pyaw + MathHelper.wrapDegrees(yaw - pyaw) * td;
+		float onYou = 0f; // 0 on the ground .. 1 resting on you
+		float airUp = (float) MathHelper.clamp((y - py) / 0.18, -1.0, 1.0);
+		float rt = MathHelper.lerp(td, prestT, restT);
+		if (ground && restState != 0) {
+			double[] spot = restSpot(player, td);
+			float e = ease(rt);
+			if (restState == 1) {
+				lx = MathHelper.lerp(e, fromX, spot[0]);
+				lz = MathHelper.lerp(e, fromZ, spot[2]);
+				ly = fromY + (spot[1] - fromY) * rt + 0.5 * 4 * rt * (1 - rt);
+				float travel = (float) Math.toDegrees(Math.atan2(-(spot[0] - fromX), spot[2] - fromZ));
+				lyaw = travel + MathHelper.wrapDegrees((float) spot[3] - travel) * ease((rt - 0.6f) / 0.4f);
+				onYou = e;
+				airUp = rt < 0.55f ? 1f : -0.4f;
+			} else if (restState == 2) {
+				lx = spot[0];
+				ly = spot[1];
+				lz = spot[2];
+				lyaw = (float) spot[3];
+				onYou = 1f;
+				airUp = 0f;
+			} else {
+				lx = MathHelper.lerp(e, spot[0], landX);
+				lz = MathHelper.lerp(e, spot[2], landZ);
+				ly = spot[1] + (landY - spot[1]) * rt + 0.35 * 4 * rt * (1 - rt);
+				float travel = (float) Math.toDegrees(Math.atan2(-(landX - spot[0]), landZ - spot[2]));
+				lyaw = (float) spot[3] + MathHelper.wrapDegrees(travel - (float) spot[3]) * ease(rt / 0.3f);
+				onYou = 1f - e;
+				airUp = rt < 0.3f ? 0.6f : -1f;
+			}
+		} else if (!ground && lands(type)) {
+			float pr = MathHelper.lerp(td, pperch, perchAmt);
+			if (pr > 0.001f) {
+				double[] spot = restSpot(player, td);
+				lx = MathHelper.lerp(pr, lx, spot[0]);
+				ly = MathHelper.lerp(pr, ly, spot[1] + restLift(type));
+				lz = MathHelper.lerp(pr, lz, spot[2]);
+				lyaw = lyaw + MathHelper.wrapDegrees((float) spot[3] - lyaw) * pr;
+				onYou = pr;
+			}
+		}
 		float ph = MathHelper.lerp(td, pphase, phase);
 		float mv = MathHelper.lerp(td, pmove, move);
 		float st = MathHelper.lerp(td, psit, sitAmt);
 		float pr = MathHelper.lerp(td, pperch, perchAmt);
+		float ar = MathHelper.lerp(td, pair, air);
+		float li = MathHelper.lerp(td, plie, lie);
 		V3 base = new V3(ctx.rx(lx), ctx.ry(ly), ctx.rz(lz));
 		// in first person, hide the pet when it is right in front of the camera (e.g. on your shoulder)
 		float camDist = base.length();
@@ -369,46 +614,112 @@ public class Pets extends Module {
 			return;
 		}
 		int c1 = c1(), c2 = c2();
-		float s = size.getFloat();
+		float s = size.getFloat() * MathHelper.lerp(onYou, 1f, restScale(type));
 		float t = ctx.time;
 		GlowBatch g = ctx.glow;
 		float tagHeight;
-		switch (pet.get()) {
-			case "Bird" -> {
-				bird(g, base, lyaw, ph, pr, s * 1.5f, c1, c2, a);
-				tagHeight = 0.4f * s;
-			}
-			case "Bee" -> {
-				bee(g, base, lyaw, ph, s * 1.7f, c1, c2, a);
-				tagHeight = 0.38f * s;
-			}
-			case "Butterfly" -> {
-				butterfly(g, base, lyaw, t, s, c1, c2, a);
-				tagHeight = 0.35f * s;
-			}
-			case "Fish" -> {
-				fish(g, base, lyaw, ph, t, s * 1.6f, c1, c2, a);
-				tagHeight = 0.38f * s;
-			}
-			case "Jellyfish" -> {
-				jellyfish(g, base, t, s, c1, c2, a);
-				tagHeight = 0.5f * s;
-			}
-			case "Wisp" -> {
-				wisp(g, base, t, s, c1, c2, a);
-				tagHeight = 0.45f * s;
-			}
-			default -> {
-				Quad q = quadOf(pet.get());
-				float headTurn = 0;
-				if (mv < 0.6f) {
-					Vec3d player = ctx.client.player.getLerpedPos(td);
-					double wx = player.x - lx, wz = player.z - lz;
-					float toPlayer = (float) Math.toDegrees(Math.atan2(-wx, wz));
-					headTurn = (float) Math.toRadians(MathHelper.clamp(MathHelper.wrapDegrees(toPlayer - lyaw), -55f, 55f)) * (1f - mv / 0.6f);
+		boolean real = style.is("Real") && !type.equals("Jellyfish") && !type.equals("Wisp");
+		if (real) {
+			float pop = 1f - (1f - fade) * (1f - fade) * (1f - fade);
+			s *= 0.35f + 0.65f * pop;
+			BlockPos bp = BlockPos.ofFloored(lx, ly + 0.3, lz);
+			long time = ctx.client.world.getTimeOfDay() % 24000L;
+			float day = 0.5f + 0.5f * (float) Math.cos((time - 6000L) / 24000.0 * Math.PI * 2);
+			float sky = ctx.client.world.getLightLevel(LightType.SKY, bp) / 15f * (0.18f + 0.82f * day);
+			float block = ctx.client.world.getLightLevel(LightType.BLOCK, bp) / 15f;
+			float light = 0.3f + 0.7f * Math.max(sky, block);
+			int glowRgb = Colors.mix(c1, 0xFFFFFF, 0.25f);
+			mesh.setup(light, glowRgb, 0.55f * a);
+			Look lk = look();
+			boolean blink = (t % 4.3f) < 0.13f;
+			V3 center;
+			switch (type) {
+				case "Bird" -> {
+					birdReal(base, lyaw, ph, pr, s * 1.5f, lk, blink);
+					center = base.add(V3.UP, 0.05f * s);
+					tagHeight = 0.3f * s;
 				}
-				quadruped(g, base, lyaw, ph, mv, st, headTurn, t, s, q, c1, c2, a);
-				tagHeight = (q.legLen + q.bodyR * 2 + q.neck + q.headR * 2.2f) * s + 0.12f;
+				case "Bee" -> {
+					beeReal(base, lyaw, ph, pr, s * 1.7f, lk);
+					center = base;
+					tagHeight = 0.3f * s;
+				}
+				case "Butterfly" -> {
+					butterflyReal(g, base, lyaw, t, pr, s, lk, a);
+					center = base;
+					tagHeight = 0.32f * s;
+				}
+				case "Fish" -> {
+					fishReal(base, lyaw, ph, s * 1.6f, lk);
+					center = base;
+					tagHeight = 0.32f * s;
+				}
+				default -> {
+					Rig rg = rigOf(type);
+					float headTurn = 0, headPitch = 0;
+					if (onYou > 0.5f) {
+						headTurn = (float) Math.sin(t * 0.55f) * 0.45f + (float) Math.sin(t * 1.7f) * 0.08f;
+						headPitch = 0.08f;
+					} else if (mv < 0.6f) {
+						Vec3d pp = player.getLerpedPos(td);
+						double wx = pp.x - lx, wz = pp.z - lz;
+						float toPlayer = (float) Math.toDegrees(Math.atan2(-wx, wz));
+						float k = 1f - mv / 0.6f;
+						headTurn = (float) Math.toRadians(MathHelper.clamp(MathHelper.wrapDegrees(toPlayer - lyaw), -55f, 55f)) * k;
+						headPitch = (0.12f + 0.25f * st) * k;
+					}
+					if (onYou < 0.05f) {
+						double gy = groundAt(ctx.client.world, lx, lz, ly);
+						float above = (float) (ly - gy);
+						float sa = Math.max(0f, 1f - above * 1.4f);
+						V3 sc = new V3(base.x(), (float) (ctx.ry(gy) + 0.012), base.z());
+						mesh.shadow(sc, V3.forward(lyaw), (rg.bodyLen() * 0.5f + rg.bodyH() * 1.4f) * s, rg.bodyW() * 2.1f * s, 0.42f * sa);
+					}
+					quadrupedReal(base, lyaw, ph, mv, st, li, ar, airUp, headTurn, headPitch, t, s, rg, lk, blink);
+					center = base.add(V3.UP, (rg.legLen() + rg.bodyH()) * s);
+					tagHeight = (rg.legLen() + rg.bodyH() * 2 + rg.neck() + rg.headR() * 2.6f) * s + 0.08f;
+				}
+			}
+			mesh.draw(ctx.consumers, ctx.matrices.peek().getPositionMatrix());
+			g.disc(center.x(), center.y(), center.z(), 0.42f * s, glowRgb, 0.09f * a, 14);
+		} else {
+			switch (type) {
+				case "Bird" -> {
+					bird(g, base, lyaw, ph, pr, s * 1.5f, c1, c2, a);
+					tagHeight = 0.4f * s;
+				}
+				case "Bee" -> {
+					bee(g, base, lyaw, ph, s * 1.7f, c1, c2, a);
+					tagHeight = 0.38f * s;
+				}
+				case "Butterfly" -> {
+					butterfly(g, base, lyaw, t, s, c1, c2, a);
+					tagHeight = 0.35f * s;
+				}
+				case "Fish" -> {
+					fish(g, base, lyaw, ph, t, s * 1.6f, c1, c2, a);
+					tagHeight = 0.38f * s;
+				}
+				case "Jellyfish" -> {
+					jellyfish(g, base, t, s, c1, c2, a);
+					tagHeight = 0.5f * s;
+				}
+				case "Wisp" -> {
+					wisp(g, base, t, s, c1, c2, a);
+					tagHeight = 0.45f * s;
+				}
+				default -> {
+					Quad q = quadOf(type);
+					float headTurn = 0;
+					if (mv < 0.6f && onYou < 0.5f) {
+						Vec3d pp = player.getLerpedPos(td);
+						double wx = pp.x - lx, wz = pp.z - lz;
+						float toPlayer = (float) Math.toDegrees(Math.atan2(-wx, wz));
+						headTurn = (float) Math.toRadians(MathHelper.clamp(MathHelper.wrapDegrees(toPlayer - lyaw), -55f, 55f)) * (1f - mv / 0.6f);
+					}
+					quadruped(g, base, lyaw, ph, mv, Math.max(st, li), headTurn, t, s, q, c1, c2, a);
+					tagHeight = (q.legLen + q.bodyR * 2 + q.neck + q.headR * 2.2f) * s + 0.12f;
+				}
 			}
 		}
 		String n = name.get().trim();
@@ -416,6 +727,352 @@ public class Pets extends Module {
 			WorldText.draw(ctx, base.x(), base.y() + tagHeight + 0.1f, base.z(), n, 0.9f, Colors.argb(0xFFFFFF, Math.min(1f, fade)), true);
 		}
 	}
+
+	// ------------------------------------------------------------------ real style
+
+	private static V3[] frame(V3 dir) {
+		V3 az = dir.normalize();
+		V3 ref = Math.abs(az.y()) < 0.95f ? V3.UP : new V3(1, 0, 0);
+		V3 ax = ref.cross(az).normalize();
+		V3 ay = az.cross(ax).normalize();
+		return new V3[]{ax, ay, az};
+	}
+
+	/** Ellipsoid stretched from a to b (tails, segments). */
+	private void blobAlong(V3 a, V3 b, float rad, float radV, int top, int bottom) {
+		V3 d = b.sub(a);
+		float len = d.length();
+		if (len < 1.0e-5f) {
+			return;
+		}
+		V3[] fr = frame(d);
+		mesh.ellipsoid(lerp(a, b, 0.5f), fr[0], fr[1], fr[2], rad, radV, len * 0.5f + rad * 0.55f, top, bottom, 0f, 0xFF);
+	}
+
+	private void eye(V3 c, V3 rh, V3 uh, V3 fh, float er, int iris, boolean blink, boolean slit, int side) {
+		if (blink) {
+			mesh.ellipsoid(c, rh, uh, fh, er * 1.05f, er * 0.16f, er * 0.9f, 0x1A1414);
+			return;
+		}
+		mesh.ellipsoid(c, rh, uh, fh, er, er, er * 0.92f, iris, iris, 1.3f, 0xFF);
+		if (slit) {
+			mesh.ellipsoid(c.add(fh, er * 0.72f), rh, uh, fh, er * 0.26f, er * 0.8f, er * 0.3f, 0x0C0C0C);
+		}
+		mesh.sphere(c.add(fh, er * 0.78f).add(uh, er * 0.42f).add(rh, -side * er * 0.2f), er * 0.27f, 0xFFFFFF);
+	}
+
+	/** Dogs, cats, foxes, bunnies and hamsters with soft shaded fur, real proportions and natural poses. */
+	private void quadrupedReal(V3 base, float yawDeg, float ph, float mv, float st, float lie, float air, float airUp,
+							   float headTurn, float headPitch, float t, float s, Rig rg, Look lk, boolean blink) {
+		OrganicMesh m = mesh;
+		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
+		float L = rg.bodyLen() * s, Lg = rg.legLen() * s, W = rg.bodyW() * s, H = rg.bodyH() * s, HR = rg.headR() * s;
+		float grounded = (1f - air);
+		float bob = mv * Math.abs((float) Math.sin(ph)) * 0.014f * s * grounded;
+		float hop = rg.hop() ? Math.abs((float) Math.sin(ph * 0.5f)) * 0.2f * s * (1f - lie) * grounded : 0f;
+		float breathe = (float) Math.sin(t * 2.2f) * 0.004f * s;
+		float hipH = MathHelper.lerp(st, Lg + H * 0.5f, H * 0.72f);
+		float shH = MathHelper.lerp(st, Lg + H * 0.6f, Lg * 1.05f + H * 0.72f);
+		hipH = MathHelper.lerp(lie, hipH, H * 0.8f);
+		shH = MathHelper.lerp(lie, shH, H * 0.86f);
+		hipH += hop + bob;
+		shH += hop + bob;
+		float pitch = air * MathHelper.clamp(airUp, -1f, 1f) * 0.38f;
+		float hipShift = L * 0.14f * st;
+		V3 mid = base.add(u, (hipH + shH) / 2f + breathe).add(f, hipShift / 2f);
+		V3 sd0 = f.mul(L - hipShift).add(u, shH - hipH);
+		float span = Math.max(1.0e-4f, sd0.length());
+		V3 sd = sd0.mul(1f / span).rotate(r, pitch);
+		V3 hip = mid.add(sd, -span / 2f), sh = mid.add(sd, span / 2f);
+		V3 bu = r.cross(sd).normalize();
+		int top = lk.top(), belly = lk.belly();
+
+		// torso: barrel + chest + haunches (or one round ball for small animals)
+		if (rg.round()) {
+			m.ellipsoid(mid, r, bu, sd, W * 1.05f, H * 1.02f, span / 2f + H * 0.9f, top, belly, 0f, 0xFF);
+		} else {
+			m.ellipsoid(mid, r, bu, sd, W * 0.98f, H * 0.9f, span / 2f + H * 0.4f, top, belly, 0f, 0xFF);
+			m.ellipsoid(sh.add(bu, H * 0.06f), r, bu, sd, W * 1.06f, H * 1.04f, H * 1.0f, top, belly, 0f, 0xFF);
+			m.ellipsoid(hip.add(bu, H * 0.04f), r, bu, sd, W * 1.0f, H * 0.98f, H * 0.95f, top, belly, 0f, 0xFF);
+		}
+
+		// head
+		V3 fh = f.rotate(u, headTurn), rh = r.rotate(u, headTurn);
+		V3 fh2 = fh.rotate(rh, headPitch);
+		V3 uh = rh.cross(fh2).normalize();
+		float neckLen = rg.neck() * s * (1f - 0.25f * lie);
+		V3 head;
+		if (rg.round()) {
+			head = sh.add(sd, H * 0.62f).add(u, H * 0.5f);
+		} else {
+			V3 neckBase = sh.add(bu, H * 0.35f).add(sd, H * 0.3f);
+			head = neckBase.add(u, neckLen + HR * 0.3f).add(fh, HR * 0.45f + neckLen * 0.4f);
+			m.tube(sh.add(bu, H * 0.15f), head.add(uh, -HR * 0.25f).add(fh2, -HR * 0.2f), W * 0.75f, HR * 0.62f, top);
+		}
+		m.ellipsoid(head, rh, uh, fh2, HR * 0.94f, HR * 0.9f, HR, top, belly, 0f, 0xFF);
+		if (rg.ears() == 4) { // hamster cheeks
+			for (int e = -1; e <= 1; e += 2) {
+				m.ellipsoid(head.add(rh, e * HR * 0.5f).add(uh, -HR * 0.28f).add(fh2, HR * 0.28f), rh, uh, fh2, HR * 0.5f, HR * 0.45f, HR * 0.5f, belly);
+			}
+		}
+		// muzzle + nose
+		float sl = rg.snoutLen() * s, sr = rg.snoutR() * s;
+		float sLen = Math.max(sl * 0.62f, sr * 0.8f);
+		V3 snout = head.add(fh2, HR * 0.72f + sl * 0.4f).add(uh, -HR * 0.26f);
+		m.ellipsoid(snout, rh, uh, fh2, sr, sr * 0.82f, sLen, top, belly, 0f, 0xFF);
+		float noseR = sr * (rg.ears() == 0 || rg.ears() == 2 ? 0.42f : 0.3f);
+		m.glossySphere(snout.add(fh2, sLen * 0.92f).add(uh, sr * 0.38f), noseR, lk.nose(), 1.1f);
+		// eyes
+		boolean round = rg.round();
+		for (int e = -1; e <= 1; e += 2) {
+			V3 ec = head.add(fh2, HR * 0.7f).add(uh, HR * 0.2f).add(rh, e * HR * (round ? 0.48f : 0.42f));
+			eye(ec, rh, uh, fh2, HR * (round ? 0.19f : 0.16f), lk.eye(), blink, rg.ears() == 1, e);
+		}
+		// ears
+		for (int e = -1; e <= 1; e += 2) {
+			switch (rg.ears()) {
+				case 0 -> { // floppy (dog)
+					float flop = (float) Math.sin(ph) * 0.12f * mv + air * 0.35f;
+					V3 ax = rh.rotate(fh2, e * (0.3f + flop)), ay = uh.rotate(fh2, e * (0.3f + flop));
+					V3 c = head.add(rh, e * HR * 0.86f).add(uh, -HR * 0.08f).add(fh2, -HR * 0.12f);
+					m.ellipsoid(c, ax, ay, fh2, HR * 0.14f, HR * 0.55f, HR * 0.34f, lk.inner());
+				}
+				case 1, 2 -> { // pointy (cat, fox)
+					boolean fox = rg.ears() == 2;
+					V3 b = head.add(uh, HR * 0.58f).add(rh, e * HR * 0.48f).add(fh2, -HR * 0.06f);
+					V3 tip = b.add(uh, HR * (fox ? 1.05f : 0.8f)).add(rh, e * HR * 0.16f).add(fh2, -HR * 0.08f);
+					m.cone(b, tip, rh, HR * (fox ? 0.36f : 0.32f), HR * 0.11f, top, lk.inner(), fh2);
+					if (fox) {
+						m.cone(lerp(b, tip, 0.55f), tip.add(uh, HR * 0.02f), rh, HR * 0.18f, HR * 0.125f, lk.accent(), lk.accent(), null);
+					}
+				}
+				case 3 -> { // long bunny ears
+					float twitch = (float) Math.sin(t * 3 + e * 1.3f) * 0.08f;
+					V3 dir = uh.add(fh2, -0.22f + twitch - air * 0.3f).add(rh, e * 0.18f).normalize();
+					V3 b = head.add(uh, HR * 0.6f).add(rh, e * HR * 0.32f);
+					float len = HR * 1.2f;
+					V3 c = b.add(dir, len * 0.85f);
+					V3 wdir = rh.sub(dir.mul(rh.dot(dir))).normalize();
+					V3 thin = dir.cross(wdir).normalize();
+					if (thin.dot(fh2) < 0) {
+						thin = thin.mul(-1f);
+					}
+					m.ellipsoid(c, wdir, dir, thin, HR * 0.27f, len, HR * 0.1f, top);
+					m.ellipsoid(c.add(thin, HR * 0.05f), wdir, dir, thin, HR * 0.16f, len * 0.8f, HR * 0.06f, lk.inner());
+				}
+				default -> // round hamster ears
+						m.ellipsoid(head.add(uh, HR * 0.72f).add(rh, e * HR * 0.55f).add(fh2, -HR * 0.05f), rh, uh, fh2, HR * 0.22f, HR * 0.24f, HR * 0.08f, lk.inner());
+			}
+		}
+
+		// legs: walk (diagonal pairs), sit, lie (paws forward), stretch out in the air
+		float legR = W * (round ? 0.34f : 0.36f);
+		for (int leg = 0; leg < 4; leg++) {
+			boolean front = leg < 2;
+			float sideS = leg % 2 == 0 ? -1f : 1f;
+			V3 attach = (front ? sh : hip).add(r, sideS * W * 0.55f).add(bu, -H * 0.42f);
+			float legPhase = ph + (((front ? 0 : 1) + (sideS > 0 ? 1 : 0)) % 2) * (float) Math.PI;
+			float swing = (float) Math.sin(legPhase) * strideOf(pet.get()) * s * 0.28f * mv;
+			float lift = Math.max(0f, (float) Math.cos(legPhase)) * 0.05f * s * mv;
+			if (rg.hop()) {
+				swing = front ? -0.02f * s : 0.03f * s;
+				lift = hop * 0.35f;
+			}
+			V3 foot = base.add(f, (front ? L / 2f : -L / 2f) + swing).add(r, sideS * W * 0.62f).add(u, lift);
+			if (!front) {
+				foot = foot.add(f, L * 0.3f * st);
+			}
+			V3 lieFoot = front ? base.add(f, L / 2f + H * 1.1f).add(r, sideS * W * 0.5f).add(u, legR * 0.4f)
+					: base.add(f, -L / 2f + H * 0.5f).add(r, sideS * W * 1.05f).add(u, legR * 0.5f);
+			foot = lerp(foot, lieFoot, lie);
+			V3 airFoot = attach.add(f, front ? Lg * 0.7f : -Lg * 0.8f).add(u, -Lg * 0.6f);
+			foot = lerp(foot, airFoot, air);
+			V3 knee = lerp(attach, foot, 0.5f).add(f, front ? 0.012f * s : -0.035f * s * (1f + st)).add(u, lie * legR * 0.6f);
+			int upper = top, lower = lk.legs();
+			m.tube(attach, knee, legR * 1.15f, legR * 0.95f, upper, lower);
+			m.sphere(knee, legR * 0.95f, lower);
+			V3 pawC = foot.add(u, legR * 0.55f);
+			m.tube(knee, pawC, legR * 0.95f, legR * 0.8f, lower);
+			float pawLen = (rg.hop() && !front) ? 2.3f : 1.35f;
+			m.ellipsoid(pawC.add(f, legR * 0.3f * pawLen), r, u, f, legR * 1.1f, legR * 0.65f, legR * pawLen, lower);
+		}
+
+		// tail
+		V3 tb = hip.add(sd, -H * 0.75f).add(bu, H * 0.35f);
+		switch (rg.tail()) {
+			case 0 -> { // dog: feathery, wags faster when happy
+				float wag = (float) Math.sin(t * (mv > 0.3f ? 10 : 14)) * (0.35f + 0.4f * (1f - mv)) * (1f - 0.5f * lie);
+				V3 dir = sd.mul(-0.6f).add(u, 0.8f).normalize().rotate(u, wag);
+				V3 p0 = tb;
+				for (int i = 0; i < 5; i++) {
+					V3 p1 = p0.add(dir, 0.05f * s);
+					blobAlong(p0, p1, (0.03f - 0.003f * i) * s, (0.026f - 0.002f * i) * s, top, belly);
+					p0 = p1;
+					dir = dir.add(sd, -0.25f).add(u, -0.06f).normalize();
+				}
+			}
+			case 1 -> { // cat: long, curls slowly at the tip
+				V3 dir = sd.mul(-0.85f).add(u, 0.35f).normalize();
+				V3 p0 = tb;
+				for (int i = 0; i < 8; i++) {
+					float sway = (float) Math.sin(t * 1.6 - i * 0.5) * 0.22f;
+					V3 p1 = p0.add(dir.rotate(u, sway), 0.042f * s);
+					blobAlong(p0, p1, 0.016f * s, 0.016f * s, i > 5 ? lk.accent() : top, top);
+					p0 = p1;
+					dir = dir.add(u, 0.3f - 0.4f * lie).normalize();
+				}
+			}
+			case 2 -> { // fox: big bushy tail with a white tip
+				V3 dir = sd.mul(-0.9f).add(u, -0.05f + air * 0.3f).normalize().rotate(u, (float) Math.sin(t * 2) * 0.18f);
+				V3 p0 = tb;
+				for (int i = 0; i < 5; i++) {
+					V3 p1 = p0.add(dir, 0.05f * s);
+					float rad = (0.03f + 0.011f * Math.min(i, 3)) * s;
+					blobAlong(p0, p1, rad, rad, i == 4 ? belly : top, i == 4 ? belly : top);
+					p0 = p1;
+					dir = dir.add(u, -0.07f).normalize();
+				}
+			}
+			case 3 -> m.sphere(hip.add(sd, -H * 0.95f).add(bu, H * 0.25f), 0.045f * s, belly); // cotton tail
+			default -> {
+			}
+		}
+	}
+
+	/** Budgie: blue body, yellow face, wings that flap (folded when it sits on you). */
+	private void birdReal(V3 p, float yawDeg, float ph, float perched, float s, Look lk, boolean blink) {
+		OrganicMesh m = mesh;
+		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
+		float tilt = 0.55f * perched;
+		V3 bf = f.rotate(r, tilt), bu = r.cross(bf).normalize();
+		V3 body = p.add(u, 0.055f * s * perched);
+		m.ellipsoid(body, r, bu, bf, 0.048f * s, 0.05f * s, 0.075f * s, lk.top(), lk.belly(), 0.3f, 0xFF);
+		V3 head = body.add(bf, 0.062f * s).add(bu, 0.042f * s).add(u, 0.01f * s);
+		m.ellipsoid(head, r, u, f, 0.042f * s, 0.041f * s, 0.044f * s, lk.accent(), lk.accent(), 0.2f, 0xFF);
+		m.cone(head.add(f, 0.034f * s).add(u, -0.004f * s), head.add(f, 0.066f * s).add(u, -0.026f * s), r, 0.013f * s, 0.012f * s, lk.nose(), lk.nose(), null);
+		for (int e = -1; e <= 1; e += 2) {
+			m.sphere(head.add(f, 0.026f * s).add(u, -0.02f * s).add(r, e * 0.032f * s), 0.01f * s, lk.inner());
+			eye(head.add(f, 0.024f * s).add(u, 0.012f * s).add(r, e * 0.031f * s), r, u, f, 0.0095f * s, lk.eye(), blink, false, e);
+			// wings
+			float flap = perched > 0.5f ? 0f : (float) Math.sin(ph) * 0.95f + 0.2f;
+			V3 root = body.add(r, e * 0.034f * s).add(bu, 0.024f * s);
+			V3 spread = r.mul(e).rotate(f, -e * flap).add(f, -0.15f);
+			V3 folded = bf.mul(-1f).add(r, e * 0.22f).add(bu, 0.08f);
+			V3 wdir = lerp(spread.normalize(), folded.normalize(), perched).normalize();
+			V3 wn = lerp(u.rotate(f, -e * flap), r.mul(e), perched).normalize();
+			V3 wide = wn.cross(wdir).normalize();
+			float wl = MathHelper.lerp(perched, 0.12f, 0.09f) * s;
+			m.ellipsoid(root.add(wdir, wl * 0.55f), wide, wn, wdir, 0.045f * s, 0.009f * s, wl * 0.62f,
+					Colors.mix(lk.top(), 0x14204A, 0.3f), lk.top(), 0.2f, 0xFF);
+		}
+		V3 tdir = bf.mul(-1f).add(bu, -0.35f).normalize();
+		V3[] tf = frame(tdir);
+		m.ellipsoid(body.add(tdir, 0.1f * s), tf[0], tf[1], tf[2], 0.02f * s, 0.007f * s, 0.065f * s, Colors.mix(lk.top(), 0x1A2A6A, 0.5f));
+		if (perched > 0.3f) {
+			for (int e = -1; e <= 1; e += 2) {
+				m.tube(body.add(r, e * 0.018f * s).add(bu, -0.04f * s), p.add(r, e * 0.02f * s).add(f, 0.012f * s), 0.006f * s, 0.005f * s, lk.legs());
+			}
+		}
+	}
+
+	/** Honey bee: fuzzy thorax, striped abdomen, see-through wings that buzz. */
+	private void beeReal(V3 p, float yawDeg, float ph, float perched, float s, Look lk) {
+		OrganicMesh m = mesh;
+		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
+		V3 thorax = p.add(u, 0.035f * s * perched);
+		int dark = lk.accent();
+		m.ellipsoid(thorax, r, u, f, 0.034f * s, 0.033f * s, 0.036f * s, lk.belly(), Colors.mix(lk.belly(), 0x3A2A10, 0.4f), 0f, 0xFF);
+		V3 abd = thorax.add(f, -0.062f * s).add(u, -0.008f * s);
+		m.ellipsoid(abd, r, u, f, 0.04f * s, 0.038f * s, 0.055f * s, lk.top(), lk.top(), 0.2f, 0xFF);
+		for (int k = 0; k < 3; k++) {
+			m.ellipsoid(abd.add(f, (0.016f - 0.024f * k) * s), r, u, f, (0.0412f - 0.004f * k) * s, (0.0392f - 0.004f * k) * s, 0.0075f * s, dark);
+		}
+		m.cone(abd.add(f, -0.05f * s), abd.add(f, -0.076f * s), r, 0.008f * s, 0.008f * s, dark, dark, null);
+		V3 head = thorax.add(f, 0.042f * s).add(u, 0.004f * s);
+		m.ellipsoid(head, r, u, f, 0.028f * s, 0.027f * s, 0.022f * s, dark, dark, 0.3f, 0xFF);
+		for (int e = -1; e <= 1; e += 2) {
+			m.ellipsoid(head.add(r, e * 0.019f * s).add(f, 0.008f * s).add(u, 0.004f * s), r, u, f, 0.01f * s, 0.017f * s, 0.012f * s, lk.eye(), lk.eye(), 1.3f, 0xFF);
+			V3 an = head.add(u, 0.018f * s).add(r, e * 0.008f * s);
+			V3 tip = an.add(u, 0.035f * s).add(f, 0.03f * s).add(r, e * 0.016f * s);
+			m.tube(an, tip, 0.0035f * s, 0.003f * s, dark);
+			// wings: a blur of fast beats while flying, folded flat when sitting
+			V3 root = thorax.add(u, 0.03f * s).add(r, e * 0.012f * s);
+			int ghosts = perched > 0.5f ? 1 : 2;
+			for (int k = 0; k < ghosts; k++) {
+				float flap = perched > 0.5f ? 0f : (float) Math.sin(ph + k * 1.3f) * 0.75f + 0.25f;
+				V3 wd = lerp(r.mul(e).rotate(f, -e * flap).add(f, -0.25f).normalize(), f.mul(-1f).add(r, e * 0.25f).normalize(), perched).normalize();
+				V3 across = lerp(f, r.mul(e), perched);
+				V3[] fore = {root, root.add(wd, 0.035f * s).add(across, 0.02f * s), root.add(wd, 0.082f * s).add(across, 0.006f * s),
+						root.add(wd, 0.066f * s).add(across, -0.02f * s), root.add(wd, 0.02f * s).add(across, -0.016f * s)};
+				float al = perched > 0.5f ? 0.55f : 0.32f;
+				m.membrane(fore, 0xFFFFFF, 0xCFE6FF, al, al * 0.5f);
+				V3 root2 = root.add(f, -0.012f * s);
+				V3[] hind = {root2, root2.add(wd, 0.025f * s).add(across, 0.012f * s), root2.add(wd, 0.055f * s),
+						root2.add(wd, 0.04f * s).add(across, -0.016f * s)};
+				m.membrane(hind, 0xFFFFFF, 0xCFE6FF, al * 0.8f, al * 0.4f);
+			}
+		}
+	}
+
+	/** Morpho-style butterfly: bright wings with dark edges, slow open/close when it sits on you. */
+	private void butterflyReal(GlowBatch g, V3 c, float yawDeg, float t, float perched, float s, Look lk, float a) {
+		OrganicMesh m = mesh;
+		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
+		V3 body = c.add(u, 0.02f * s * perched);
+		m.ellipsoid(body, r, u, f, 0.014f * s, 0.014f * s, 0.07f * s, lk.legs());
+		V3 head = body.add(f, 0.075f * s);
+		m.sphere(head, 0.017f * s, lk.legs());
+		for (int e = -1; e <= 1; e += 2) {
+			V3 tip = head.add(f, 0.07f * s).add(u, 0.06f * s).add(r, e * 0.035f * s);
+			m.tube(head.add(u, 0.01f * s), tip, 0.003f * s, 0.0025f * s, lk.legs());
+			m.sphere(tip, 0.0065f * s, lk.legs());
+		}
+		float flap = perched > 0.5f ? 0.35f + 0.9f * (0.5f + 0.5f * (float) Math.sin(t * 1.6f)) : 0.6f + 0.55f * (float) Math.sin(t * 14);
+		for (int e = -1; e <= 1; e += 2) {
+			V3 wd = r.mul(e).rotate(f, -e * flap);
+			V3 root = body.add(f, 0.02f * s);
+			V3[] fore = {root, root.add(f, 0.1f * s).add(wd, 0.05f * s), root.add(f, 0.09f * s).add(wd, 0.19f * s),
+					root.add(f, 0.01f * s).add(wd, 0.24f * s), root.add(f, -0.03f * s).add(wd, 0.12f * s)};
+			m.membrane(fore, lk.top(), lk.belly(), 0.95f, 0.95f);
+			V3 root2 = body.add(f, -0.01f * s);
+			V3[] hind = {root2, root2.add(wd, 0.12f * s).add(f, -0.02f * s), root2.add(wd, 0.16f * s).add(f, -0.1f * s),
+					root2.add(wd, 0.08f * s).add(f, -0.15f * s), root2.add(wd, 0.02f * s).add(f, -0.08f * s)};
+			m.membrane(hind, lk.top(), lk.belly(), 0.95f, 0.95f);
+			V3 a1 = fore[2], a2 = fore[3];
+			g.glowLine(a1.x(), a1.y(), a1.z(), a2.x(), a2.y(), a2.z(), 0.02f * s, lk.accent(), 0.35f * a);
+		}
+	}
+
+	/** Koi: orange and white, a body that bends as it swims, see-through fins. */
+	private void fishReal(V3 p, float yawDeg, float ph, float s, Look lk) {
+		OrganicMesh m = mesh;
+		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
+		float w1 = (float) Math.sin(ph * 2.2f) * 0.18f, w2 = (float) Math.sin(ph * 2.2f - 1.2f) * 0.38f;
+		m.ellipsoid(p.add(f, 0.02f * s), r, u, f, 0.04f * s, 0.048f * s, 0.085f * s, lk.top(), lk.belly(), 0.6f, 0xFF);
+		m.ellipsoid(p.add(f, 0.04f * s).add(u, 0.028f * s), r, u, f, 0.03f * s, 0.016f * s, 0.035f * s, lk.accent());
+		V3 bdir = f.mul(-1f).rotate(u, w1);
+		V3[] bf = frame(bdir);
+		V3 mid2 = p.add(bdir, 0.075f * s);
+		m.ellipsoid(mid2, bf[0], bf[1], bf[2], 0.028f * s, 0.034f * s, 0.06f * s, lk.top(), lk.belly(), 0.6f, 0xFF);
+		V3 tdir = bdir.rotate(u, w2 - w1);
+		V3 tb = mid2.add(bdir, 0.05f * s);
+		V3[] tail = {tb, tb.add(tdir, 0.06f * s).add(u, 0.05f * s), tb.add(tdir, 0.11f * s).add(u, 0.07f * s), tb.add(tdir, 0.08f * s),
+				tb.add(tdir, 0.11f * s).add(u, -0.07f * s), tb.add(tdir, 0.06f * s).add(u, -0.05f * s)};
+		m.membrane(tail, lk.top(), lk.inner(), 0.85f, 0.4f);
+		V3[] dorsal = {p.add(u, 0.045f * s).add(f, 0.02f * s), p.add(u, 0.08f * s).add(f, -0.01f * s), p.add(u, 0.058f * s).add(f, -0.08f * s),
+				p.add(u, 0.035f * s).add(f, -0.07f * s)};
+		m.membrane(dorsal, lk.top(), lk.inner(), 0.8f, 0.4f);
+		for (int e = -1; e <= 1; e += 2) {
+			V3 fr = p.add(f, 0.035f * s).add(r, e * 0.035f * s).add(u, -0.025f * s);
+			float fl = (float) Math.sin(ph * 3 + e) * 0.012f * s;
+			V3[] fin = {fr, fr.add(r, e * 0.045f * s).add(f, -0.02f * s).add(u, fl), fr.add(r, e * 0.03f * s).add(f, -0.05f * s).add(u, -0.01f * s)};
+			m.membrane(fin, lk.top(), lk.inner(), 0.8f, 0.35f);
+			eye(p.add(f, 0.085f * s).add(u, 0.014f * s).add(r, e * 0.03f * s), r, u, f, 0.011f * s, lk.eye(), false, false, e);
+		}
+		m.sphere(p.add(f, 0.105f * s).add(u, -0.006f * s), 0.012f * s, lk.nose());
+	}
+
+	// ------------------------------------------------------------------ light style
 
 	private static V3 lerp(V3 a, V3 b, float t) {
 		return new V3(a.x() + (b.x() - a.x()) * t, a.y() + (b.y() - a.y()) * t, a.z() + (b.z() - a.z()) * t);

@@ -9,7 +9,7 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | Cosmetics | **Wings** | Spiky white glowing wings, also on other players |
 | Cosmetics | **Aura** | Soft white glow over your player + sparkles |
 | Cosmetics | **Block Trail** | Glowing squares on the blocks you walk over |
-| Cosmetics | **Pets** | A glowing pet made of light that moves like a real animal: Dog, Cat, Fox and Hamster walk next to you and sit when you stop, Bunny hops, Bird flies and lands on your shoulder, Bee buzzes in loops, Fish swims around you, plus Butterfly, Jellyfish (kwal) and Wisp. Only you see it |
+| Cosmetics | **Pets** | Real-looking pets with soft shaded fur and a soft glow: Dog, Cat, Fox, Bunny, Hamster, Bird (budgie), Bee, Butterfly, Fish (koi), Jellyfish (kwal) and Wisp. They walk next to you and jump when you jump. When you stand still (or fly / ride), they leap up and lie on your **shoulder** or **head**, and when you walk again they hop down. Birds, bees and butterflies land on you. **Light** style keeps the old glowing light-sketch look. Only you see them |
 | Cosmetics | **China Hat** | Glowing cone hat on your head (also on others) |
 | Cosmetics | **Trail** | Glowing light ribbon / sparkles behind you |
 | Cosmetics | **Jump Circles** | Glowing rings on the ground when you jump and land |

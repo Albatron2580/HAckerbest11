@@ -37,7 +37,7 @@ public class CarEmote extends Module {
 	public final BoolSetting underglow = add(new BoolSetting("Underglow", false));
 	public final ColorSetting glowColor = add(new ColorSetting("Underglow Color", 0xFFFFFF).visibleWhen(underglow::isOn));
 	public final BoolSetting thirdPerson = add(new BoolSetting("Third Person", true));
-	public final NumberSetting cameraDistance = add(new NumberSetting("Camera Distance", 1.7, 1.0, 3.0, 0.1, "x"));
+	public final NumberSetting cameraDistance = add(new NumberSetting("Camera Distance", 1.35, 1.0, 3.0, 0.05, "x"));
 	public final BoolSetting sneakExit = add(new BoolSetting("Sneak To Get Out", true));
 	public final ActionSetting toggleAction = add(new ActionSetting("Car", () -> active ? "Put Away" : "Spawn Car", this::toggleCar));
 
@@ -246,12 +246,14 @@ public class CarEmote extends Module {
 
 	private static final int PAINT = 0, GLASS = 1, TRIM = 2, CHROME = 3, RIM = 4, TYRE = 5, LEATHER = 6, BED = 7, LAMP = 8,
 			RED_LAMP = 9, CALIPER = 10, ROTOR = 11, DARK_RIM = 12, TYRE2 = 13, AMBER = 14, PIANO = 15;
-	private static final int[] MAT_RGB = {0, 0x07090C, 0x111215, 0xD4D8E0, 0x70747D, 0x121214, 0x232429, 0x18191C, 0xD9E0EA,
-			0x9A121C, 0xC01C2A, 0x55585F, 0x26282D, 0x1B1B1E, 0xD98A1A, 0x08080A};
-	private static final float[] MAT_R0 = {0.05f, 0.08f, 0.03f, 0.75f, 0.3f, 0f, 0.01f, 0.02f, 0.25f, 0.12f, 0.05f, 0.15f, 0.12f, 0f, 0.15f, 0.08f};
-	private static final float[] MAT_F = {0.75f, 0.85f, 0.25f, 0.2f, 0.4f, 0.06f, 0.1f, 0.12f, 0.6f, 0.6f, 0.35f, 0.3f, 0.5f, 0.06f, 0.6f, 0.8f};
-	private static final float[] MAT_S = {1.1f, 1.4f, 0.25f, 1.4f, 1f, 0.04f, 0.12f, 0.15f, 1.4f, 1.2f, 0.8f, 0.5f, 0.9f, 0.04f, 1.2f, 1.2f};
+	private static final int[] MAT_RGB = {0, 0x0A0E15, 0x111215, 0xAEB3BC, 0x8A8F98, 0x121214, 0x232429, 0x18191C, 0xD9E0EA,
+			0x9A121C, 0xC01C2A, 0x55585F, 0x2C2E34, 0x1B1B1E, 0xD98A1A, 0x08080A};
+	private static final float[] MAT_R0 = {0.07f, 0.14f, 0.03f, 0.6f, 0.32f, 0f, 0.01f, 0.02f, 0.25f, 0.12f, 0.05f, 0.15f, 0.14f, 0f, 0.15f, 0.1f};
+	private static final float[] MAT_F = {0.92f, 0.86f, 0.25f, 0.3f, 0.45f, 0.06f, 0.1f, 0.12f, 0.6f, 0.6f, 0.35f, 0.3f, 0.5f, 0.06f, 0.6f, 0.8f};
+	private static final float[] MAT_S = {1.3f, 1.5f, 0.25f, 1.4f, 1.1f, 0.04f, 0.12f, 0.15f, 1.4f, 1.2f, 0.8f, 0.5f, 0.9f, 0.04f, 1.2f, 1.2f};
 	private static final float[] MAT_P = {40, 70, 20, 80, 50, 8, 12, 12, 80, 60, 30, 20, 50, 8, 60, 60};
+	/** Broad soft sheen (clear coat catching the sky light). */
+	private static final float[] MAT_SHEEN = {0.16f, 0.1f, 0.03f, 0.12f, 0.1f, 0f, 0.02f, 0f, 0.05f, 0.05f, 0.05f, 0.03f, 0.06f, 0f, 0.05f, 0.08f};
 	private static final float LX = 0.32f, LY = 0.86f, LZ = 0.4f;
 
 	private int paintRgb;
@@ -276,15 +278,15 @@ public class CarEmote extends Module {
 		float rx = 2 * ndv * nx - vx, ry = 2 * ndv * ny - vy, rz = 2 * ndv * nz - vz;
 		float ndl = Math.max(0f, nx * LX + ny * LY + nz * LZ);
 		float rl = Math.max(0f, rx * LX + ry * LY + rz * LZ);
-		float spec = MAT_S[m] * (float) Math.pow(rl, MAT_P[m]);
+		float spec = MAT_S[m] * (float) Math.pow(rl, MAT_P[m]) + MAT_SHEEN[m] * (float) Math.pow(rl, 5);
 		float c = 1f - Math.min(1f, ndv);
 		float fres = c * c * c * c * c;
 		float refl = Math.min(0.95f, MAT_R0[m] + MAT_F[m] * fres);
 		float hz = smooth(-0.06f, 0.1f, ry);
 		float skyK = 0.85f + 0.15f * Math.max(0f, ry);
-		float er = 0.12f + (0.66f * skyK - 0.12f) * hz;
-		float eg = 0.13f + (0.76f * skyK - 0.13f) * hz;
-		float eb = 0.11f + (0.92f * skyK - 0.11f) * hz;
+		float er = 0.13f + (0.8f * skyK - 0.13f) * hz;
+		float eg = 0.17f + (0.88f * skyK - 0.17f) * hz;
+		float eb = 0.11f + (1.0f * skyK - 0.11f) * hz;
 		float diff = 0.36f + 0.64f * ndl;
 		float r = ((rgb >> 16) & 0xFF) / 255f * diff, g = ((rgb >> 8) & 0xFF) / 255f * diff, b = (rgb & 0xFF) / 255f * diff;
 		r = (r * (1 - refl) + er * refl + spec) * light;
@@ -582,6 +584,17 @@ public class CarEmote extends Module {
 		}
 	}
 
+	/** A strip along the side lit as if it faced upwards: reads as a sharp crease catching the sky. */
+	private void crease(float[][] st, int side, float y, float z1, float z2, float halfHeight) {
+		int n = Math.max(2, (int) (Math.abs(z2 - z1) / 0.3f));
+		for (int i = 0; i < n; i++) {
+			float za = z1 + (z2 - z1) * i / n, zb = z1 + (z2 - z1) * (i + 1) / n;
+			float xa1 = side * (surfaceX(st, za, y - halfHeight) + 0.004f), xa2 = side * (surfaceX(st, za, y + halfHeight) + 0.004f);
+			float xb1 = side * (surfaceX(st, zb, y - halfHeight) + 0.004f), xb2 = side * (surfaceX(st, zb, y + halfHeight) + 0.004f);
+			quad(v(xa1, y - halfHeight, za), v(xb1, y - halfHeight, zb), v(xb2, y + halfHeight, zb), v(xa2, y + halfHeight, za), side, 1.6f, 0, PAINT);
+		}
+	}
+
 	/** A small flat patch on the body side (vents, handles, side lamps). */
 	private void sidePatch(float[][] st, int side, float z1, float z2, float y1, float y2, float lift, int m) {
 		float[] a = v(side * (surfaceX(st, z1, y1) + lift), y1, z1);
@@ -701,7 +714,7 @@ public class CarEmote extends Module {
 		for (int k = 0; k < count; k++) {
 			double base = Math.PI * 2 * (twin ? k / 2 : k) / spokes + spin;
 			double a = twin ? base + (k % 2 == 0 ? -0.11 : 0.11) : base;
-			double hwHub = twin ? 0.05 : 0.11, hwRim = twin ? 0.045 : 0.09;
+			double hwHub = twin ? 0.07 : 0.13, hwRim = twin ? 0.06 : 0.11;
 			quad(wp(x, y, z, oHub, a - hwHub, rim * 0.22f, cs, sn), wp(x, y, z, oHub, a + hwHub, rim * 0.22f, cs, sn),
 					wp(x, y, z, oRim, a + hwRim, rim * 0.9f, cs, sn), wp(x, y, z, oRim, a - hwRim, rim * 0.9f, cs, sn), ax, 0, az, rimMat);
 		}
@@ -897,9 +910,11 @@ public class CarEmote extends Module {
 			sidePatch(SPORTS_BODY, s, -0.58f, -0.76f, 0.79f, 0.815f, 0.008f, CHROME);
 			sidePatch(SPORTS_BODY, s, 1.02f, 0.78f, 0.52f, 0.6f, 0.007f, PIANO);
 			sideLineH(SPORTS_BODY, s, 0.54f, 1.0f, 0.78f, 0.004f, CHROME);
-			float mx = s > 0 ? 0.8f : -1.05f;
-			box(mx, 0.9f, 0.48f, mx + 0.25f, 0.99f, 0.6f, PAINT);
-			quad(v(mx, 0.9f, 0.478f), v(mx + 0.25f, 0.9f, 0.478f), v(mx + 0.25f, 0.99f, 0.478f), v(mx, 0.99f, 0.478f), 0, 0, -1, CHROME);
+			crease(SPORTS_BODY, s, 0.66f, 2.05f, -2.0f, 0.012f);
+			float mx = s > 0 ? 0.86f : -1.08f;
+			box(s > 0 ? 0.78f : -0.88f, 0.9f, 0.53f, s > 0 ? 0.88f : -0.78f, 0.93f, 0.57f, PIANO);
+			box(mx, 0.9f, 0.48f, mx + 0.22f, 0.99f, 0.6f, PAINT);
+			quad(v(mx, 0.9f, 0.478f), v(mx + 0.22f, 0.9f, 0.478f), v(mx + 0.22f, 0.99f, 0.478f), v(mx, 0.99f, 0.478f), 0, 0, -1, CHROME);
 			// wheels in dark arches
 			arch(SPORTS_BODY, s, 0.35f, 1.5f, 0.4f);
 			arch(SPORTS_BODY, s, 0.35f, -1.4f, 0.41f);
@@ -974,9 +989,10 @@ public class CarEmote extends Module {
 			}
 			return PAINT;
 		});
+		final boolean driving = !showOff;
 		loft(PICKUP_CAB, -1f, true, (seg, x, y, z, nx, ny, nz) -> {
 			if (seg == -1) {
-				return z < 0 ? PAINT : -1;
+				return z < 0 && !driving ? PAINT : -1;
 			}
 			if (seg < SEG_SIDE) {
 				return -1;
@@ -1007,8 +1023,16 @@ public class CarEmote extends Module {
 		}
 		quad(v(-0.91f, 0.98f, -0.62f), v(0.91f, 0.98f, -0.62f), v(0.91f, 1.43f, -0.62f), v(-0.91f, 1.43f, -0.62f), 0, 0, -1, BED);
 		quad(v(0.91f, 0.98f, -2.9f), v(-0.91f, 0.98f, -2.9f), v(-0.91f, 1.43f, -2.9f), v(0.91f, 1.43f, -2.9f), 0, 0, 1, BED);
-		// rear window
-		zRect(-0.7f, 1.64f, 0.7f, 2.06f, -0.585f, -1, GLASS);
+		// rear window (while driving the back wall is built around it so you can be seen through the glass)
+		if (driving) {
+			zRect(-0.94f, 1.3f, 0.94f, 1.64f, -0.58f, -1, PAINT);
+			zRect(-0.88f, 2.06f, 0.88f, 2.21f, -0.58f, -1, PAINT);
+			zRect(-0.93f, 1.64f, -0.7f, 2.06f, -0.58f, -1, PAINT);
+			zRect(0.7f, 1.64f, 0.93f, 2.06f, -0.58f, -1, PAINT);
+			zRect(-0.7f, 1.64f, 0.7f, 2.06f, -0.58f, 0, GLASS);
+		} else {
+			zRect(-0.7f, 1.64f, 0.7f, 2.06f, -0.585f, -1, GLASS);
+		}
 		// front: big blacked-out grille, headlights, bumper, fog lights
 		float fz = 3.025f;
 		zRect(-0.66f, 0.74f, 0.66f, 1.27f, fz, 1, CHROME);
@@ -1050,9 +1074,11 @@ public class CarEmote extends Module {
 			sideLineH(PICKUP_BODY, s, 1.38f, 1.25f, -2.95f, 0.006f, PIANO);
 			float rb = s > 0 ? 1.03f : -1.16f;
 			box(rb, 0.47f, -0.55f, rb + 0.13f, 0.53f, 1.2f, TRIM);
-			float mx = s > 0 ? 0.92f : -1.22f;
-			box(mx, 1.62f, 1.0f, mx + 0.3f, 1.9f, 1.12f, PIANO);
-			quad(v(mx, 1.64f, 0.998f), v(mx + 0.3f, 1.64f, 0.998f), v(mx + 0.3f, 1.88f, 0.998f), v(mx, 1.88f, 0.998f), 0, 0, -1, CHROME);
+			float mx = s > 0 ? 0.98f : -1.26f;
+			box(s > 0 ? 0.9f : -1.02f, 1.66f, 1.03f, s > 0 ? 1.02f : -0.9f, 1.7f, 1.08f, PIANO);
+			box(s > 0 ? 0.9f : -1.02f, 1.84f, 1.03f, s > 0 ? 1.02f : -0.9f, 1.87f, 1.08f, PIANO);
+			box(mx, 1.6f, 1.0f, mx + 0.28f, 1.92f, 1.12f, PIANO);
+			quad(v(mx + 0.02f, 1.62f, 0.998f), v(mx + 0.26f, 1.62f, 0.998f), v(mx + 0.26f, 1.9f, 0.998f), v(mx + 0.02f, 1.9f, 0.998f), 0, 0, -1, CHROME);
 			arch(PICKUP_BODY, s, 0.48f, 1.85f, 0.58f);
 			arch(PICKUP_BODY, s, 0.48f, -1.85f, 0.58f);
 			wheel(s * 0.87f, 0.47f, 1.85f, 0.47f, 0.36f, s, true, 6, false, DARK_RIM, false, true);
