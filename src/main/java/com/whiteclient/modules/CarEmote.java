@@ -203,8 +203,8 @@ public class CarEmote extends Module {
 				};
 				double r = Math.toRadians(body);
 				double rx = -Math.cos(r), rz = -Math.sin(r), fx = -Math.sin(r), fz = Math.cos(r);
-				cx = pos.x + rx * side + fx * 0.2;
-				cz = pos.z + rz * side + fz * 0.2;
+				cx = pos.x + rx * side - fx * 0.7;
+				cz = pos.z + rz * side - fz * 0.7;
 				cy = pos.y;
 				yaw = body + 20f;
 			} else {
@@ -812,8 +812,9 @@ public class CarEmote extends Module {
 
 	private static final float[][] SPORTS_BODY = {
 			// z, bottom, top, half width bottom, half width top, top radius, bottom radius, crown
-			{2.44f, 0.2f, 0.56f, 0.78f, 0.7f, 0.12f, 0.08f, 0f},
-			{2.38f, 0.15f, 0.64f, 0.88f, 0.8f, 0.17f, 0.08f, 0.02f},
+			{2.45f, 0.21f, 0.54f, 0.74f, 0.64f, 0.11f, 0.08f, 0f},
+			{2.4f, 0.16f, 0.61f, 0.85f, 0.76f, 0.16f, 0.08f, 0.02f},
+			{2.32f, 0.14f, 0.66f, 0.9f, 0.83f, 0.19f, 0.07f, 0.03f},
 			{2.2f, 0.13f, 0.71f, 0.93f, 0.87f, 0.2f, 0.07f, 0.03f},
 			{1.85f, 0.13f, 0.77f, 0.955f, 0.91f, 0.2f, 0.07f, 0.04f},
 			{1.5f, 0.13f, 0.8f, 0.96f, 0.92f, 0.2f, 0.07f, 0.04f},
@@ -922,7 +923,7 @@ public class CarEmote extends Module {
 			wheel(s * 0.84f, 0.355f, -1.4f, 0.355f, 0.29f, s, false, 5, true, RIM, true, false);
 		}
 		// front: kidney grille, intakes, headlights (front cap is at z 2.44)
-		float fz = 2.445f;
+		float fz = 2.455f;
 		for (int s = -1; s <= 1; s += 2) {
 			float g1 = s * 0.035f, g2 = s * 0.27f;
 			zRect(Math.min(g1, g2) - 0.012f, 0.33f, Math.max(g1, g2) + 0.012f, 0.53f, fz, 1, CHROME);
@@ -931,11 +932,11 @@ public class CarEmote extends Module {
 				float bx = s * (0.07f + b * 0.045f);
 				zRect(bx - 0.006f, 0.35f, bx + 0.006f, 0.51f, fz + 0.007f, 1, TRIM);
 			}
-			float i1 = s * 0.46f, i2 = s * 0.7f;
+			float i1 = s * 0.44f, i2 = s * 0.64f;
 			zRect(Math.min(i1, i2), 0.22f, Math.max(i1, i2), 0.36f, fz, 1, PIANO);
-			float h1 = s * 0.36f, h2 = s * 0.66f;
-			zRect(Math.min(h1, h2), 0.42f, Math.max(h1, h2), 0.5f, fz, 1, PIANO);
-			zRect(Math.min(h1, h2) + 0.02f, 0.445f, Math.max(h1, h2) - 0.02f, 0.475f, fz + 0.004f, 1, LAMP);
+			float h1 = s * 0.34f, h2 = s * 0.6f;
+			zRect(Math.min(h1, h2), 0.42f, Math.max(h1, h2), 0.49f, fz, 1, PIANO);
+			zRect(Math.min(h1, h2) + 0.02f, 0.44f, Math.max(h1, h2) - 0.02f, 0.47f, fz + 0.004f, 1, LAMP);
 		}
 		zRect(-0.42f, 0.21f, 0.42f, 0.3f, fz, 1, PIANO);
 		// rear: L-shaped tail lights, diffuser, quad exhaust
@@ -1137,9 +1138,9 @@ public class CarEmote extends Module {
 		if (lights.isOn()) {
 			if (c.equals("Sports")) {
 				for (int s = -1; s <= 1; s += 2) {
-					glowLineCar(g, s * 0.38f, 0.46f, 2.452f, s * 0.64f, 0.46f, 2.452f, 0.035f, 0xEAF2FF, a * 1.5f);
-					glowLineCar(g, s * 0.64f, 0.46f, 2.452f, s * 0.62f, 0.5f, 2.452f, 0.03f, 0xEAF2FF, a * 1.2f);
-					glowDisc(g, s * 0.52f, 0.46f, 2.6f, 0.4f, 0xDCE6FF, 0.22f * a);
+					glowLineCar(g, s * 0.37f, 0.455f, 2.462f, s * 0.58f, 0.455f, 2.462f, 0.035f, 0xEAF2FF, a * 1.5f);
+					glowLineCar(g, s * 0.58f, 0.455f, 2.462f, s * 0.57f, 0.485f, 2.462f, 0.03f, 0xEAF2FF, a * 1.2f);
+					glowDisc(g, s * 0.48f, 0.455f, 2.6f, 0.4f, 0xDCE6FF, 0.22f * a);
 					glowLineCar(g, s * 0.38f, 0.755f, -2.47f, s * 0.68f, 0.755f, -2.47f, 0.035f, 0xFF2236, a * 1.3f);
 					glowLineCar(g, s * 0.66f, 0.755f, -2.47f, s * 0.66f, 0.64f, -2.47f, 0.035f, 0xFF2236, a * 1.3f);
 				}

@@ -101,10 +101,10 @@ public class Pets extends Module {
 	/** How big the pet is while it rests on you (a full size dog would not fit on a shoulder). */
 	private static float restScale(String type) {
 		return switch (type) {
-			case "Dog" -> 0.55f;
-			case "Fox" -> 0.58f;
-			case "Cat" -> 0.62f;
-			case "Bunny" -> 0.75f;
+			case "Dog" -> 0.7f;
+			case "Fox" -> 0.72f;
+			case "Cat" -> 0.78f;
+			case "Bunny" -> 0.85f;
 			case "Jellyfish", "Wisp" -> 0.55f;
 			default -> 1f;
 		};
@@ -195,20 +195,21 @@ public class Pets extends Module {
 	/** Where the pet rests on you (world x, y, z) and the way it faces. */
 	private double[] restSpot(PlayerEntity p, float td) {
 		Vec3d pos = p.getLerpedPos(td);
-		float sc = p.getScale();
+		// the player model is drawn at 15/16 scale: shoulders at 1.41, top of the head at 1.875
+		float sc = p.getScale() * 0.9375f;
 		boolean sneak = p.isInSneakingPose();
+		double neck = (sneak ? 1.18 : 1.5) * sc;
 		if (rest.is("Head")) {
 			float headYaw = MathHelper.lerpAngleDegrees(td, p.lastHeadYaw, p.headYaw);
 			double pitch = Math.toRadians(MathHelper.clamp(p.getPitch(td), -45f, 45f));
 			V3 f = V3.forward(headYaw);
-			double neck = (sneak ? 1.14 : 1.5) * sc;
 			double fwd = 0.5 * sc * Math.sin(pitch) + (sneak ? 0.1 * sc : 0);
-			return new double[]{pos.x + f.x() * fwd, pos.y + neck + 0.5 * sc * Math.cos(pitch) + 0.012, pos.z + f.z() * fwd, headYaw};
+			return new double[]{pos.x + f.x() * fwd, pos.y + neck + 0.5 * sc * Math.cos(pitch) + 0.01, pos.z + f.z() * fwd, headYaw};
 		}
 		float bodyYaw = MathHelper.lerpAngleDegrees(td, p.lastBodyYaw, p.bodyYaw);
 		V3 f = V3.forward(bodyYaw), r = V3.right(bodyYaw);
 		float sideSign = side.is("Left") ? -1f : 1f;
-		double out = 0.31 * sc, up = (sneak ? 1.2 : 1.5) * sc + 0.005, fwd = sneak ? 0.12 * sc : 0.0;
+		double out = 0.36 * sc, up = neck + 0.004, fwd = sneak ? 0.12 * sc : -0.01;
 		return new double[]{pos.x + r.x() * sideSign * out + f.x() * fwd, pos.y + up, pos.z + r.z() * sideSign * out + f.z() * fwd, bodyYaw};
 	}
 
