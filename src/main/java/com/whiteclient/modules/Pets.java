@@ -37,7 +37,7 @@ public class Pets extends Module {
 	public final BoolSetting natural = add(new BoolSetting("Natural Colors", true));
 	public final ColorSetting color = add(new ColorSetting("Glow Color", 0x7FB8FF).visibleWhen(() -> !natural.isOn()));
 	public final ColorSetting color2 = add(new ColorSetting("Second Color", 0xE79BFF).visibleWhen(() -> !natural.isOn()));
-	public final NumberSetting size = add(new NumberSetting("Size", 1.0, 0.6, 1.8, 0.05, "x"));
+	public final NumberSetting size = add(new NumberSetting("Size", 1.2, 0.6, 2.0, 0.05, "x"));
 	public final ModeSetting side = add(new ModeSetting("Side", "Right", "Right", "Left"));
 	public final NumberSetting distance = add(new NumberSetting("Distance", 1.5, 0.8, 3.0, 0.05));
 	public final BoolSetting sit = add(new BoolSetting("Sit When You Stop", true).visibleWhen(this::isGround));
@@ -375,20 +375,20 @@ public class Pets extends Module {
 		float tagHeight;
 		switch (pet.get()) {
 			case "Bird" -> {
-				bird(g, base, lyaw, ph, pr, s, c1, c2, a);
-				tagHeight = 0.28f * s;
+				bird(g, base, lyaw, ph, pr, s * 1.5f, c1, c2, a);
+				tagHeight = 0.4f * s;
 			}
 			case "Bee" -> {
-				bee(g, base, lyaw, ph, s, c1, c2, a);
-				tagHeight = 0.25f * s;
+				bee(g, base, lyaw, ph, s * 1.7f, c1, c2, a);
+				tagHeight = 0.38f * s;
 			}
 			case "Butterfly" -> {
 				butterfly(g, base, lyaw, t, s, c1, c2, a);
 				tagHeight = 0.35f * s;
 			}
 			case "Fish" -> {
-				fish(g, base, lyaw, ph, t, s, c1, c2, a);
-				tagHeight = 0.25f * s;
+				fish(g, base, lyaw, ph, t, s * 1.6f, c1, c2, a);
+				tagHeight = 0.38f * s;
 			}
 			case "Jellyfish" -> {
 				jellyfish(g, base, t, s, c1, c2, a);
@@ -422,8 +422,8 @@ public class Pets extends Module {
 	}
 
 	private static void blob(GlowBatch g, V3 p, float r, int col, float a) {
-		g.disc(p.x(), p.y(), p.z(), r * 2.1f, col, 0.16f * a, 14);
-		g.disc(p.x(), p.y(), p.z(), r, col, 0.3f * a, 12);
+		g.disc(p.x(), p.y(), p.z(), r * 2.1f, col, 0.26f * a, 14);
+		g.disc(p.x(), p.y(), p.z(), r * 1.05f, col, 0.5f * a, 12);
 	}
 
 	private static void dot(GlowBatch g, V3 p, float r, int col, float a) {
@@ -461,8 +461,8 @@ public class Pets extends Module {
 				foot = foot.add(f, q.bodyLen * 0.32f * st);
 			}
 			V3 knee = lerp(attach, foot, 0.5f).add(f, front ? 0.012f * s : -0.04f * s * (1f + st));
-			float w = 0.055f * s;
-			attach.line(g, knee, w, c1, 0.8f * a);
+			float w = 0.07f * s;
+			attach.line(g, knee, w, c1, 0.9f * a);
 			knee.line(g, foot, w * 0.9f, c1, 0.8f * a);
 			dot(g, foot, 0.03f * s, c2, 0.55f * a);
 		}

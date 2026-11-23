@@ -58,7 +58,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.7.0";
+	public static final String VERSION = "1.8.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -70,6 +70,7 @@ public final class WhiteClient implements ClientModInitializer {
 	private ConfigManager config;
 	private KeyBinding menuKey;
 	private KeyBinding zoomKey;
+	private KeyBinding carKey;
 	public static final KeyBinding.Category KEY_CATEGORY = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
 	private boolean openMenuNextTick;
 	private final long startNanos = System.nanoTime();
@@ -110,6 +111,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Trail());
 		modules.register(new JumpCircles());
 		modules.register(new Capes());
+		modules.register(new CarEmote());
 
 		modules.register(new TargetESP());
 		modules.register(new HitEffects());
@@ -181,6 +183,10 @@ public final class WhiteClient implements ClientModInitializer {
 				"key.whiteclient.zoom",
 				GLFW.GLFW_KEY_C,
 				KEY_CATEGORY));
+		carKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+				"key.whiteclient.car",
+				GLFW.GLFW_KEY_N,
+				KEY_CATEGORY));
 		CombatTracker.init();
 		// custom crosshair / potion HUD replace the vanilla ones only while they are on
 		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (ctx, tickCounter) -> {
@@ -222,6 +228,16 @@ public final class WhiteClient implements ClientModInitializer {
 	}
 
 	private void onTick(MinecraftClient client) {
+		try {
+			CarEmote car = modules.get(CarEmote.class);
+			while (carKey != null && carKey.wasPressed()) {
+				if (car != null && car.isEnabled() && client.player != null && client.currentScreen == null) {
+					car.toggleCar();
+				}
+			}
+		} catch (Throwable t) {
+			LOGGER.debug("[WHITECLIENT] car key", t);
+		}
 		try {
 			CombatTracker.tick(client);
 		} catch (Throwable t) {

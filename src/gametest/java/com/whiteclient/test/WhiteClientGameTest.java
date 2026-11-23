@@ -208,16 +208,51 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
 				context.waitTicks(10);
 				for (int i = 0; i < 14; i++) {
-					sp.getServer().runCommand("execute as @p at @s run tp @s ^ ^ ^0.22");
+					sp.getServer().runCommand("execute as @p at @s rotated ~ 0 run tp @s ^ ^ ^0.22");
 					context.waitTicks(1);
 				}
 				context.takeScreenshot("gallery_walk_" + pet.toLowerCase(Locale.ROOT));
 			}
+			// ---- car emote: every car, plus driving
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(Pets.class).setEnabled(false);
+				CarEmote ce = WhiteClient.get().modules().get(CarEmote.class);
+				ce.car.set("Sports");
+				ce.start();
+				client.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+			});
+			for (String car : CarEmote.CARS) {
+				context.runOnClient(client -> WhiteClient.get().modules().get(CarEmote.class).car.set(car));
+				context.waitTicks(15);
+				context.takeScreenshot("car_" + car.toLowerCase(Locale.ROOT) + "_front");
+			}
+			context.runOnClient(client -> {
+				WhiteClient.get().modules().get(CarEmote.class).car.set("Sports");
+				client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+			});
+			for (int i = 0; i < 12; i++) {
+				sp.getServer().runCommand("execute as @p at @s rotated ~ 0 run tp @s ^ ^ ^0.3");
+				context.waitTicks(1);
+			}
+			context.takeScreenshot("car_sports_driving_back");
+			sp.getServer().runCommand("time set 15000");
+			context.waitTicks(10);
+			context.takeScreenshot("car_sports_night");
+			sp.getServer().runCommand("time set 6000");
+			context.runOnClient(client -> {
+				client.options.setPerspective(Perspective.FIRST_PERSON);
+			});
+			context.waitTicks(5);
+			context.takeScreenshot("car_sports_first_person");
+			context.runOnClient(client -> WhiteClient.get().modules().get(CarEmote.class).stop());
+			context.waitTicks(15);
+
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();
 				mm.get(Halo.class).setEnabled(true);
 				mm.get(Aura.class).setEnabled(true);
 				mm.get(Wings.class).setEnabled(true);
+				client.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
 			});
 
 			// ---- custom skin from the Wardrobe
