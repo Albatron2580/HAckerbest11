@@ -34,13 +34,9 @@ public final class DiscordIpc {
 	private volatile JsonObject wanted;
 	private volatile boolean dirty = true;
 	private volatile boolean ready;
-	/** Discord refused an image link: send activities without links from then on. */
-	private volatile boolean noLinks;
 	private JsonObject lastSent;
 
 	private Pipe pipe;
-	private byte[] acc = new byte[4096];
-	private int accLen;
 
 	public DiscordIpc(String clientId) {
 		this.clientId = clientId;
@@ -82,10 +78,20 @@ public final class DiscordIpc {
 		dirty = true;
 	}
 
+	/** A short status line for the menu. */
+	public String status() {
+		return status;
+	}
+
+	private volatile String status = "Starting...";
+	private int errors;
+
 	// ------------------------------------------------------------------ loop
+	// Every message is "send, then read Discord's answer" on this one thread. That is the only way that
+	// works reliably with the Windows named pipe (a waiting read there blocks writes from other threads).
 
 	private void loop() {
-		long nextTry = 0, connectedAt = 0, lastSend = 0;
+		long nextTry = 0, lastSend = 0;
 		boolean loggedMissing = false;
 		while (running) {
 			try {
@@ -97,45 +103,64 @@ public final class DiscordIpc {
 					}
 					pipe = Pipe.open();
 					if (pipe == null) {
+						status = "Discord app not found - open the Discord desktop app";
 						if (!loggedMissing) {
 							WhiteClient.LOGGER.info("[WHITECLIENT] Discord app not found, Discord status will connect when it is open");
 							loggedMissing = true;
 						}
-						nextTry = now + 15000;
+						nextTry = now + 10000;
 						continue;
 					}
-					accLen = 0;
+					WhiteClient.LOGGER.info("[WHITECLIENT] Discord pipe found ({}), saying hello", pipe);
+					status = "Connecting to Discord...";
 					ready = false;
 					lastSent = null;
-					connectedAt = now;
 					JsonObject hs = new JsonObject();
 					hs.addProperty("v", 1);
 					hs.addProperty("client_id", clientId);
 					send(OP_HANDSHAKE, hs);
+					// wait for READY
+					for (int i = 0; i < 4 && !ready; i++) {
+						handle(readFrame());
+					}
+					if (!ready) {
+						throw new IOException("Discord did not say READY");
+					}
+					dirty = true;
+					lastSend = 0;
 				}
-				pump();
-				if (!ready && now - connectedAt > 10000) {
-					throw new IOException("no answer from Discord");
-				}
-				if (ready && dirty && now - lastSend > 4000) {
+				// send when something changed, and refresh every minute (also notices a restarted Discord)
+				boolean refresh = now - lastSend > 60000;
+				if ((dirty && now - lastSend > 4000) || refresh) {
 					JsonObject act = wanted;
-					if (act != null && noLinks) {
+					if (act != null && errors >= 1) {
 						act = withoutLinks(act);
 					}
-					sendActivity(act);
-					lastSent = act;
+					if (act != null && errors >= 2) {
+						act = act.deepCopy();
+						act.remove("assets");
+					}
 					dirty = false;
 					lastSend = now;
+					lastSent = act;
+					String nonce = sendActivity(act);
+					// read until Discord answers this message
+					for (int i = 0; i < 6; i++) {
+						Frame f = readFrame();
+						if (handle(f) && nonce.equals(nonceOf(f))) {
+							break;
+						}
+					}
 				}
 				Thread.sleep(250);
 			} catch (InterruptedException e) {
 				break;
 			} catch (Throwable t) {
-				if (ready) {
-					WhiteClient.LOGGER.info("[WHITECLIENT] Discord disconnected ({})", t.getMessage());
-				}
+				String why = t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage();
+				WhiteClient.LOGGER.info("[WHITECLIENT] Discord connection problem: {}", why);
+				status = "Lost Discord (" + why + "), trying again...";
 				closePipe();
-				nextTry = System.currentTimeMillis() + 15000;
+				nextTry = System.currentTimeMillis() + 10000;
 			}
 		}
 		// clear the status when the module is turned off / the game closes
@@ -160,17 +185,19 @@ public final class DiscordIpc {
 		}
 	}
 
-	private void sendActivity(JsonObject activity) throws IOException {
+	private String sendActivity(JsonObject activity) throws IOException {
 		JsonObject args = new JsonObject();
 		args.addProperty("pid", ProcessHandle.current().pid());
 		if (activity != null) {
 			args.add("activity", activity);
 		}
 		JsonObject msg = new JsonObject();
+		String nonce = UUID.randomUUID().toString();
 		msg.addProperty("cmd", "SET_ACTIVITY");
 		msg.add("args", args);
-		msg.addProperty("nonce", UUID.randomUUID().toString());
+		msg.addProperty("nonce", nonce);
 		send(OP_FRAME, msg);
+		return nonce;
 	}
 
 	private static JsonObject withoutLinks(JsonObject activity) {
@@ -189,6 +216,9 @@ public final class DiscordIpc {
 
 	// ------------------------------------------------------------------ framing
 
+	private record Frame(int op, String body, JsonObject json) {
+	}
+
 	private void send(int op, JsonObject json) throws IOException {
 		byte[] body = json.toString().getBytes(StandardCharsets.UTF_8);
 		ByteBuffer b = ByteBuffer.allocate(8 + body.length).order(ByteOrder.LITTLE_ENDIAN);
@@ -196,66 +226,70 @@ public final class DiscordIpc {
 		pipe.write(b.array());
 	}
 
-	private void pump() throws IOException {
-		byte[] in = pipe.readAvailable();
-		if (in.length > 0) {
-			if (accLen + in.length > acc.length) {
-				byte[] n = new byte[Math.max(acc.length * 2, accLen + in.length)];
-				System.arraycopy(acc, 0, n, 0, accLen);
-				acc = n;
-			}
-			System.arraycopy(in, 0, acc, accLen, in.length);
-			accLen += in.length;
+	private Frame readFrame() throws IOException {
+		byte[] head = new byte[8];
+		pipe.readFully(head);
+		ByteBuffer h = ByteBuffer.wrap(head).order(ByteOrder.LITTLE_ENDIAN);
+		int op = h.getInt(), len = h.getInt();
+		if (len < 0 || len > 1 << 20) {
+			throw new IOException("bad message from Discord");
 		}
-		while (accLen >= 8) {
-			ByteBuffer h = ByteBuffer.wrap(acc, 0, 8).order(ByteOrder.LITTLE_ENDIAN);
-			int op = h.getInt(), len = h.getInt();
-			if (len < 0 || len > 1 << 20) {
-				throw new IOException("bad frame");
-			}
-			if (accLen < 8 + len) {
-				break;
-			}
-			String body = new String(acc, 8, len, StandardCharsets.UTF_8);
-			System.arraycopy(acc, 8 + len, acc, 0, accLen - 8 - len);
-			accLen -= 8 + len;
-			handle(op, body);
+		byte[] body = new byte[len];
+		pipe.readFully(body);
+		String text = new String(body, StandardCharsets.UTF_8);
+		JsonObject json = null;
+		try {
+			json = JsonParser.parseString(text).getAsJsonObject();
+		} catch (Throwable ignored) {
 		}
+		return new Frame(op, text, json);
 	}
 
-	private void handle(int op, String body) throws IOException {
-		switch (op) {
+	private static String nonceOf(Frame f) {
+		return f.json() != null && f.json().has("nonce") && !f.json().get("nonce").isJsonNull() ? f.json().get("nonce").getAsString() : "";
+	}
+
+	/** Handles one message; returns true for normal answers. */
+	private boolean handle(Frame f) throws IOException {
+		switch (f.op()) {
 			case OP_PING -> {
-				byte[] b = body.getBytes(StandardCharsets.UTF_8);
-				ByteBuffer f = ByteBuffer.allocate(8 + b.length).order(ByteOrder.LITTLE_ENDIAN);
-				f.putInt(OP_PONG).putInt(b.length).put(b);
-				pipe.write(f.array());
+				byte[] b = f.body().getBytes(StandardCharsets.UTF_8);
+				ByteBuffer out = ByteBuffer.allocate(8 + b.length).order(ByteOrder.LITTLE_ENDIAN);
+				out.putInt(OP_PONG).putInt(b.length).put(b);
+				pipe.write(out.array());
+				return false;
 			}
 			case OP_CLOSE -> {
-				WhiteClient.LOGGER.warn("[WHITECLIENT] Discord closed the connection: {}", body);
-				throw new IOException("closed by Discord");
+				WhiteClient.LOGGER.warn("[WHITECLIENT] Discord closed the connection: {}", f.body());
+				String msg = f.json() != null && f.json().has("message") ? f.json().get("message").getAsString() : "closed";
+				throw new IOException("Discord: " + msg);
 			}
 			case OP_FRAME -> {
-				JsonObject msg;
-				try {
-					msg = JsonParser.parseString(body).getAsJsonObject();
-				} catch (Throwable t) {
-					return;
+				JsonObject msg = f.json();
+				if (msg == null) {
+					return false;
 				}
 				String evt = msg.has("evt") && !msg.get("evt").isJsonNull() ? msg.get("evt").getAsString() : "";
 				if (evt.equals("READY")) {
 					ready = true;
-					dirty = true;
+					status = "Connected - showing Playing WhiteClient";
 					WhiteClient.LOGGER.info("[WHITECLIENT] Discord status connected");
 				} else if (evt.equals("ERROR")) {
-					WhiteClient.LOGGER.warn("[WHITECLIENT] Discord did not accept the status: {}", body);
-					if (!noLinks && lastSent != null && lastSent.toString().contains("\"http")) {
-						noLinks = true; // try again without the skin-head picture link
+					WhiteClient.LOGGER.warn("[WHITECLIENT] Discord did not accept the status: {}", f.body());
+					String m = msg.has("data") && msg.getAsJsonObject("data").has("message")
+							? msg.getAsJsonObject("data").get("message").getAsString() : "error";
+					status = "Discord said: " + m;
+					if (errors < 2) {
+						errors++; // try again with fewer pictures
 						dirty = true;
 					}
+				} else if (ready && msg.has("cmd") && "SET_ACTIVITY".equals(msg.get("cmd").getAsString())) {
+					status = "Connected - showing Playing WhiteClient";
 				}
+				return true;
 			}
 			default -> {
+				return false;
 			}
 		}
 	}
@@ -263,7 +297,7 @@ public final class DiscordIpc {
 	// ------------------------------------------------------------------ pipes
 
 	private interface Pipe {
-		byte[] readAvailable() throws IOException;
+		void readFully(byte[] into) throws IOException;
 
 		void write(byte[] data) throws IOException;
 
@@ -274,7 +308,7 @@ public final class DiscordIpc {
 			for (int i = 0; i < 10; i++) {
 				if (windows) {
 					try {
-						return new WindowsPipe(new RandomAccessFile("\\\\?\\pipe\\discord-ipc-" + i, "rw"));
+						return new WindowsPipe(new RandomAccessFile("\\\\?\\pipe\\discord-ipc-" + i, "rw"), i);
 					} catch (Throwable ignored) {
 					}
 				} else {
@@ -286,8 +320,7 @@ public final class DiscordIpc {
 						try {
 							SocketChannel ch = SocketChannel.open(StandardProtocolFamily.UNIX);
 							ch.connect(UnixDomainSocketAddress.of(p));
-							ch.configureBlocking(false);
-							return new UnixPipe(ch);
+							return new UnixPipe(ch, p.toString());
 						} catch (Throwable ignored) {
 						}
 					}
@@ -313,16 +346,10 @@ public final class DiscordIpc {
 		}
 	}
 
-	private record WindowsPipe(RandomAccessFile file) implements Pipe {
+	private record WindowsPipe(RandomAccessFile file, int index) implements Pipe {
 		@Override
-		public byte[] readAvailable() throws IOException {
-			long n = file.length(); // bytes waiting in the pipe
-			if (n <= 0) {
-				return new byte[0];
-			}
-			byte[] b = new byte[(int) Math.min(n, 1 << 20)];
-			file.readFully(b);
-			return b;
+		public void readFully(byte[] into) throws IOException {
+			file.readFully(into);
 		}
 
 		@Override
@@ -334,44 +361,40 @@ public final class DiscordIpc {
 		public void close() throws IOException {
 			file.close();
 		}
+
+		@Override
+		public String toString() {
+			return "discord-ipc-" + index;
+		}
 	}
 
-	private record UnixPipe(SocketChannel channel) implements Pipe {
+	private record UnixPipe(SocketChannel channel, String path) implements Pipe {
 		@Override
-		public byte[] readAvailable() throws IOException {
-			ByteBuffer buf = ByteBuffer.allocate(8192);
-			java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-			while (true) {
-				buf.clear();
-				int r = channel.read(buf);
-				if (r < 0) {
+		public void readFully(byte[] into) throws IOException {
+			ByteBuffer b = ByteBuffer.wrap(into);
+			while (b.hasRemaining()) {
+				if (channel.read(b) < 0) {
 					throw new IOException("Discord closed the pipe");
 				}
-				if (r == 0) {
-					break;
-				}
-				out.write(buf.array(), 0, r);
 			}
-			return out.toByteArray();
 		}
 
 		@Override
 		public void write(byte[] data) throws IOException {
 			ByteBuffer b = ByteBuffer.wrap(data);
-			long until = System.currentTimeMillis() + 2000;
 			while (b.hasRemaining()) {
-				if (channel.write(b) == 0) {
-					if (System.currentTimeMillis() > until) {
-						throw new IOException("Discord is not reading");
-					}
-					Thread.onSpinWait();
-				}
+				channel.write(b);
 			}
 		}
 
 		@Override
 		public void close() throws IOException {
 			channel.close();
+		}
+
+		@Override
+		public String toString() {
+			return path;
 		}
 	}
 }

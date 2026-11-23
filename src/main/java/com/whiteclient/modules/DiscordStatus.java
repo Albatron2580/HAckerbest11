@@ -5,7 +5,9 @@ import com.whiteclient.WhiteClient;
 import com.whiteclient.discord.DiscordIpc;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
+import com.whiteclient.setting.ActionSetting;
 import com.whiteclient.setting.BoolSetting;
+import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.setting.TextSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ServerInfo;
@@ -19,6 +21,8 @@ public class DiscordStatus extends Module {
 	/** The WhiteClient app on Discord: its name is what Discord shows after "Playing". */
 	public static final String APP_ID = "1574503180992249856";
 
+	public final InfoSetting statusInfo = add(new InfoSetting("Status", () -> ipc == null ? "Off" : ipc.status()));
+	public final ActionSetting reconnect = add(new ActionSetting("Discord", () -> "Reconnect", this::restart));
 	public final BoolSetting showServer = add(new BoolSetting("Show Server Name", true));
 	public final BoolSetting showWorld = add(new BoolSetting("Show World / Dimension", true));
 	public final BoolSetting showHead = add(new BoolSetting("Show Your Skin Head", true));
@@ -51,6 +55,17 @@ public class DiscordStatus extends Module {
 		if (ipc != null) {
 			ipc.stop(); // clears the status in Discord
 			ipc = null;
+		}
+	}
+
+	private void restart() {
+		if (ipc != null) {
+			ipc.stop();
+			ipc = null;
+		}
+		tick = 0;
+		if (isEnabled()) {
+			ensure();
 		}
 	}
 
