@@ -205,8 +205,8 @@ public class CarEmote extends Module {
 				double rx = -Math.cos(r), rz = -Math.sin(r), fx = -Math.sin(r), fz = Math.cos(r);
 				cx = pos.x + rx * side - fx * 0.7;
 				cz = pos.z + rz * side - fz * 0.7;
-				cy = pos.y;
 				yaw = body + 20f;
+				cy = settle(mc, cx, cz, yaw, pos.y);
 			} else {
 				cx = pos.x;
 				cy = pos.y;
@@ -232,6 +232,43 @@ public class CarEmote extends Module {
 		cx = pos.x;
 		cy = pos.y;
 		cz = pos.z;
+	}
+
+	/** Ground height for a parked car: the highest ground under its four wheels (so it never sinks into a hill). */
+	private double settle(MinecraftClient mc, double x, double z, float carYaw, double nearY) {
+		float[] wheels = switch (car.get()) {
+			case "Pickup" -> new float[]{0.9f, 1.85f};
+			case "Kart" -> new float[]{0.66f, 0.7f};
+			default -> new float[]{0.85f, 1.45f};
+		};
+		double r = Math.toRadians(carYaw);
+		double c = Math.cos(r), sn = Math.sin(r);
+		double best = Double.NEGATIVE_INFINITY;
+		for (int sx = -1; sx <= 1; sx += 2) {
+			for (int sz = -1; sz <= 1; sz += 2) {
+				double lx = sx * wheels[0], lz = sz * wheels[1];
+				double wx = x - c * lx - sn * lz, wz = z - sn * lx + c * lz;
+				best = Math.max(best, groundAt(mc, wx, wz, nearY));
+			}
+		}
+		if (!Double.isFinite(best)) {
+			return nearY;
+		}
+		return Math.max(nearY - 3, Math.min(nearY + 2, best));
+	}
+
+	private static double groundAt(MinecraftClient mc, double x, double z, double nearY) {
+		net.minecraft.util.math.BlockPos.Mutable m = new net.minecraft.util.math.BlockPos.Mutable();
+		int bx = MathHelper.floor(x), bz = MathHelper.floor(z);
+		int top = MathHelper.floor(nearY + 2.2);
+		for (int yy = top; yy >= top - 7; yy--) {
+			m.set(bx, yy, bz);
+			net.minecraft.util.shape.VoxelShape shape = mc.world.getBlockState(m).getCollisionShape(mc.world, m);
+			if (!shape.isEmpty()) {
+				return yy + shape.getMax(net.minecraft.util.math.Direction.Axis.Y);
+			}
+		}
+		return nearY;
 	}
 
 	private float wheelRadius() {

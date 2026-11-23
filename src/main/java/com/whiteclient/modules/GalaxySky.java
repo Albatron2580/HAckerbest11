@@ -88,7 +88,7 @@ public class GalaxySky extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		int count = stars.getInt();
+		int count = FpsBoost.lighter() ? Math.max(100, stars.getInt() * 3 / 5) : stars.getInt();
 		if (builtFor != count) {
 			build(count);
 		}

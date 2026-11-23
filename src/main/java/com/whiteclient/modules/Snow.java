@@ -56,7 +56,7 @@ public class Snow extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		int n = amount.getInt();
+		int n = FpsBoost.lighter() ? Math.max(20, amount.getInt() * 3 / 5) : amount.getInt();
 		if (px.length != n) {
 			resize(n);
 		}

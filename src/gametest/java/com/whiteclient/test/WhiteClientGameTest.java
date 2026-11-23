@@ -541,6 +541,10 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new ClickGuiScreen(null).openSearch("pet"));
 			context.waitTicks(15);
 			context.takeScreenshot("menu_search");
+			// floating browser window (without the MCEF Modern engine it offers the download + quick links)
+			context.setScreen(() -> new com.whiteclient.gui.BrowserScreen(null, WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class)));
+			context.waitTicks(10);
+			context.takeScreenshot("browser_window");
 			context.setScreen(() -> null);
 			context.runOnClient(client -> TargetESP.forcedTarget = null);
 			sp.getServer().runCommand("kill @e[type=husk]");

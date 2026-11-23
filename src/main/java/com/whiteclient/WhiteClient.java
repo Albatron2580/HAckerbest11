@@ -72,6 +72,7 @@ public final class WhiteClient implements ClientModInitializer {
 	private KeyBinding menuKey;
 	private KeyBinding zoomKey;
 	private KeyBinding carKey;
+	private KeyBinding browserKey;
 	public static final KeyBinding.Category KEY_CATEGORY = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
 	private boolean openMenuNextTick;
 	private final long startNanos = System.nanoTime();
@@ -130,6 +131,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Ambience());
 		modules.register(new BlockOutline());
 		modules.register(new Zoom());
+		modules.register(new FpsBoost());
 		modules.register(new HandView());
 		// Music
 		modules.register(new Spotify());
@@ -143,6 +145,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new CustomCrosshair());
 		modules.register(new LowHealth());
 		modules.register(new Notifications());
+		modules.register(new Browser());
 		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
@@ -188,6 +191,10 @@ public final class WhiteClient implements ClientModInitializer {
 		carKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.whiteclient.car",
 				GLFW.GLFW_KEY_N,
+				KEY_CATEGORY));
+		browserKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+				"key.whiteclient.browser",
+				GLFW.GLFW_KEY_B,
 				KEY_CATEGORY));
 		CombatTracker.init();
 		// custom crosshair / potion HUD replace the vanilla ones only while they are on
@@ -244,6 +251,12 @@ public final class WhiteClient implements ClientModInitializer {
 			CombatTracker.tick(client);
 		} catch (Throwable t) {
 			LOGGER.debug("[WHITECLIENT] combat tick", t);
+		}
+		while (browserKey != null && browserKey.wasPressed()) {
+			Browser br = modules.get(Browser.class);
+			if (br != null && br.isEnabled() && client.currentScreen == null) {
+				br.open();
+			}
 		}
 		while (menuKey.wasPressed()) {
 			if (client.currentScreen == null) {

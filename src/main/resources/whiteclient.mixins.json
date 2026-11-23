@@ -11,6 +11,7 @@
 		"MinecraftClientMixin",
 		"EntityRenderManagerMixin",
 		"MouseMixin",
+		"DrawContextInvoker",
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin"
 	],

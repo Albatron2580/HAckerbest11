@@ -1,6 +1,7 @@
 {
 	"key.whiteclient.zoom": "Zoom (WHITECLIENT)",
   "key.whiteclient.car": "Car Emote (WHITECLIENT)",
+  "key.whiteclient.browser": "Browser window (WHITECLIENT)",
   "key.whiteclient.menu": "Open WHITECLIENT menu",
 	"key.category.whiteclient.main": "WHITECLIENT"
 }

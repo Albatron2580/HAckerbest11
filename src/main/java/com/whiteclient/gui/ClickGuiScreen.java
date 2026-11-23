@@ -368,7 +368,7 @@ public class ClickGuiScreen extends Screen {
 		}
 
 		// small buttons
-		String[] labels = {"Wardrobe", "Search", "Theme", "Support"};
+		String[] labels = {"Wardrobe", "Browser", "Search", "Theme", "Support"};
 		float sw = 48, sh = 32, sg = 8;
 		float sx0 = cx - (labels.length * sw + (labels.length - 1) * sg) / 2f;
 		float sy = y0 + cs + 22;
@@ -384,8 +384,9 @@ public class ClickGuiScreen extends Screen {
 			float icx = x + sw / 2f, icy = y - h + 11;
 			switch (i) {
 				case 0 -> Icons.shirt(ctx, icx, icy, 9, ic);
-				case 1 -> Icons.search(ctx, icx, icy, 9, ic);
-				case 2 -> Icons.palette(ctx, icx, icy, 9, ic, Colors.argb(th.card.rgb(), si));
+				case 1 -> Icons.globe(ctx, icx, icy, 9, ic);
+				case 2 -> Icons.search(ctx, icx, icy, 9, ic);
+				case 3 -> Icons.palette(ctx, icx, icy, 9, ic, Colors.argb(th.card.rgb(), si));
 				default -> Icons.heart(ctx, icx, icy, 9, ic);
 			}
 			UiFont.drawScaled(ctx, textRenderer, labels[i], icx - UiFont.width(textRenderer, labels[i]) * 0.36f, y - h + 20, 0.72f, Colors.argb(th.text.rgb(), si));
@@ -394,10 +395,17 @@ public class ClickGuiScreen extends Screen {
 				switch (idx) {
 					case 0 -> client.setScreen(new WardrobeScreen(this));
 					case 1 -> {
+						com.whiteclient.modules.Browser br = com.whiteclient.modules.Browser.get();
+						if (br != null) {
+							com.whiteclient.browser.WebView.startEngine();
+							client.setScreen(new BrowserScreen(this, br));
+						}
+					}
+					case 2 -> {
 						searching = true;
 						search = "";
 					}
-					case 2 -> {
+					case 3 -> {
 						themePage = true;
 						selected = null;
 						go(View.WINDOW);

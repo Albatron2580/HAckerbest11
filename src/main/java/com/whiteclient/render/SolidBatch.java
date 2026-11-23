@@ -7,6 +7,12 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
 
 import java.util.Arrays;
@@ -26,6 +32,9 @@ public final class SolidBatch {
 	private static RenderLayer layer;
 	private static boolean triangles;
 	private static boolean resolved;
+	/** Entity format (writes depth, so rain / glow / other things behind the model are hidden properly). */
+	private static boolean entityFormat;
+	private static final Identifier WHITE = Identifier.of(WhiteClient.MOD_ID, "dynamic/solid_white");
 
 	private void ensure() {
 		if (count >= order.length) {
@@ -76,6 +85,26 @@ public final class SolidBatch {
 			return;
 		}
 		resolved = true;
+		try {
+			NativeImageBackedTexture white = new NativeImageBackedTexture(() -> "whiteclient_solid_white", 4, 4, false);
+			NativeImage img = white.getImage();
+			for (int y = 0; y < 4; y++) {
+				for (int x = 0; x < 4; x++) {
+					img.setColorArgb(x, y, 0xFFFFFFFF);
+				}
+			}
+			white.upload();
+			MinecraftClient.getInstance().getTextureManager().registerTexture(WHITE, white);
+			RenderLayer l = RenderLayers.entityTranslucent(WHITE);
+			if (l.getVertexFormat() == VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL && l.getDrawMode() == VertexFormat.DrawMode.QUADS) {
+				layer = l;
+				entityFormat = true;
+				WhiteClient.LOGGER.info("[WHITECLIENT] solid layer: {} (entity, depth)", l);
+				return;
+			}
+		} catch (Throwable t) {
+			WhiteClient.LOGGER.warn("[WHITECLIENT] entity solid layer unavailable, using debug quads", t);
+		}
 		try {
 			RenderLayer l = RenderLayers.debugQuads();
 			if (l.getVertexFormat() == VertexFormats.POSITION_COLOR) {
@@ -134,6 +163,13 @@ public final class SolidBatch {
 
 	private static void emit(VertexConsumer vc, Matrix4f m, float x1, float y1, float z1, int c1, float x2, float y2, float z2, int c2,
 							 float x3, float y3, float z3, int c3, float x4, float y4, float z4, int c4) {
+		if (entityFormat) {
+			ent(vc, m, x1, y1, z1, c1);
+			ent(vc, m, x2, y2, z2, c2);
+			ent(vc, m, x3, y3, z3, c3);
+			ent(vc, m, x4, y4, z4, c4);
+			return;
+		}
 		if (triangles) {
 			vc.vertex(m, x1, y1, z1).color(c1);
 			vc.vertex(m, x2, y2, z2).color(c2);
@@ -147,5 +183,10 @@ public final class SolidBatch {
 			vc.vertex(m, x3, y3, z3).color(c3);
 			vc.vertex(m, x4, y4, z4).color(c4);
 		}
+	}
+
+	private static void ent(VertexConsumer vc, Matrix4f m, float x, float y, float z, int c) {
+		vc.vertex(m, x, y, z).color(c).texture(0.5f, 0.5f).overlay(OverlayTexture.DEFAULT_UV)
+				.light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 1f, 0f);
 	}
 }
