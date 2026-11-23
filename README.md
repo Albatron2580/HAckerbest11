@@ -1,4 +1,4 @@
-# WHITECLIENT 1.6.1 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.7.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -9,7 +9,7 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | Cosmetics | **Wings** | Spiky white glowing wings, also on other players |
 | Cosmetics | **Aura** | Soft white glow over your player + sparkles |
 | Cosmetics | **Block Trail** | Glowing squares on the blocks you walk over |
-| Cosmetics | **Pets** | A pet floating next to you: glowing Jellyfish (kwal), Wisp, Butterfly or a Dog, Cat, Fox, Parrot, Bee, Allay, Axolotl, Frog, Rabbit, Panda, Chicken, Bat, Vex. Only you see it; it can't be hit or push you |
+| Cosmetics | **Pets** | A glowing pet made of light that moves like a real animal: Dog, Cat, Fox and Hamster walk next to you and sit when you stop, Bunny hops, Bird flies and lands on your shoulder, Bee buzzes in loops, Fish swims around you, plus Butterfly, Jellyfish (kwal) and Wisp. Only you see it |
 | Cosmetics | **China Hat** | Glowing cone hat on your head (also on others) |
 | Cosmetics | **Trail** | Glowing light ribbon / sparkles behind you |
 | Cosmetics | **Jump Circles** | Glowing rings on the ground when you jump and land |
@@ -81,7 +81,7 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.6.1.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.7.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 ## Build from source
 Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.

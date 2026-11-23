@@ -444,7 +444,7 @@ public class WardrobeScreen extends Screen {
 		Render2D.roundRect(ctx, listX, y0, listW, 26, 8, th.card(0.6f));
 		Icons.paw(ctx, listX + 14, y0 + 13, 9, th.text());
 		UiFont.draw(ctx, textRenderer, "Pet", listX + 26, y0 + 9, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "floats next to you · only you see it", listX + 48, y0 + 10, 0.75f, th.sub());
+		UiFont.drawScaled(ctx, textRenderer, "made of light · only you see it", listX + 48, y0 + 10, 0.75f, th.sub());
 		drawToggle(ctx, listX + listW - 30, y0 + 7.5f, anim("petOn", pets.isEnabled() ? 1f : 0f, dt));
 		listHit(listX + listW - 34, y0, 34, 26, pets::toggle);
 
@@ -464,8 +464,7 @@ public class WardrobeScreen extends Screen {
 			float h = anim("pet" + type, hover ? 1f : 0f, dt);
 			Render2D.roundRect(ctx, x, y - h, card, 34, 8, sel ? th.accent(0.92f) : th.card(0.55f + 0.35f * h));
 			int col = sel ? th.onAccent() : th.text();
-			boolean glow = type.equals("Jellyfish") || type.equals("Wisp") || type.equals("Butterfly");
-			if (glow) {
+			if (!Pets.isGround(type)) {
 				Icons.sparkle(ctx, x + card / 2f, y - h + 12, 8, col);
 			} else {
 				Icons.paw(ctx, x + card / 2f, y - h + 12, 8, col);
@@ -480,7 +479,7 @@ public class WardrobeScreen extends Screen {
 		}
 		int rows = (types.length + cols - 1) / cols;
 		float end = gy + rows * (34 + gap);
-		float after = wrapped(ctx, "Name, side, height & glow colours: Right Shift → Cosmetics → Pets.", listX, end + 2, listW, 0.78f, th.sub());
+		float after = wrapped(ctx, "Name, size, side, colours and sitting / shoulder landing: Right Shift → Cosmetics → Pets.", listX, end + 2, listW, 0.78f, th.sub());
 		return after - y0 + 6;
 	}
 

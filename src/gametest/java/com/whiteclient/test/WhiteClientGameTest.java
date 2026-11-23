@@ -200,8 +200,18 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			});
 			for (String pet : Pets.TYPES) {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
-				context.waitTicks(20);
+				context.waitTicks(pet.equals("Bird") ? 70 : 55);
 				context.takeScreenshot("gallery_pet_" + pet.toLowerCase(Locale.ROOT));
+			}
+			// pets following you while you walk
+			for (String pet : new String[]{"Dog", "Bunny", "Bird"}) {
+				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
+				context.waitTicks(10);
+				for (int i = 0; i < 14; i++) {
+					sp.getServer().runCommand("execute as @p at @s run tp @s ^ ^ ^0.22");
+					context.waitTicks(1);
+				}
+				context.takeScreenshot("gallery_walk_" + pet.toLowerCase(Locale.ROOT));
 			}
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();

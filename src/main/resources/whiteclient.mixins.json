@@ -9,8 +9,6 @@
 		"HeldItemRendererMixin",
 		"MinecraftClientMixin",
 		"MouseMixin",
-		"PetEntityMixin",
-		"PetLivingEntityMixin",
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin"
 	],
