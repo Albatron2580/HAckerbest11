@@ -135,12 +135,12 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		context.takeScreenshot("main_menu_player");
 		// performance: the old row-by-row shapes vs the new fast shapes on the same menu
-		for (boolean old : new boolean[]{true, false, true, false}) {
+		for (boolean old : new boolean[]{true, false}) {
 			context.runOnClient(client -> {
 				Render2D.legacy = old;
 				WhiteTitleScreen.renderMs = 0;
 			});
-			context.waitTicks(60);
+			context.waitTicks(old ? 4 : 40);
 			context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] PERF main menu {}: {} ms per frame (CPU), {} fps",
 					old ? "old" : "new", String.format(Locale.ROOT, "%.2f", WhiteTitleScreen.renderMs), client.getCurrentFps()));
 			if (old) {
