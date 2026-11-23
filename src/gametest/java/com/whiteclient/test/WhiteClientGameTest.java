@@ -639,6 +639,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			sp.getServer().runCommand("tp @p ~ ~ ~ 0 5");
 			context.waitTicks(10);
 			context.takeScreenshot("nametag_logo");
+			context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] whiteclient flag synced by the server: {}", NameLogo.ownFlagSynced()));
 			context.runOnClient(client -> client.options.setPerspective(Perspective.FIRST_PERSON));
 
 			fakeOtherClient = true;

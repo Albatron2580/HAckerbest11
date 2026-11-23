@@ -30,7 +30,7 @@ public abstract class PlayerListHudMixin {
 			} catch (NoSuchMethodException e) {
 				id = (UUID) profile.getClass().getMethod("getId").invoke(profile);
 			}
-			if (mc.player.getUuid().equals(id)) {
+			if (mc.player.getUuid().equals(id) || (NameLogo.showOthers() && NameLogo.isKnownUser(id))) {
 				cir.setReturnValue(NameLogo.decorate(cir.getReturnValue()));
 			}
 		} catch (Throwable ignored) {

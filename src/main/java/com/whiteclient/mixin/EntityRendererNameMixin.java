@@ -9,13 +9,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Puts the WHITECLIENT logo in front of your own name tag. */
+/** Puts the WHITECLIENT logo in front of your own name tag and the name tags of other WhiteClient users. */
 @Mixin(EntityRenderer.class)
 public abstract class EntityRendererNameMixin {
 	@Inject(method = "getDisplayName(Lnet/minecraft/entity/Entity;)Lnet/minecraft/text/Text;", at = @At("RETURN"), cancellable = true, require = 0)
 	private void whiteclient$logo(Entity entity, CallbackInfoReturnable<Text> cir) {
 		try {
-			if (NameLogo.active() && NameLogo.isSelf(entity)) {
+			if (NameLogo.active() && (NameLogo.isSelf(entity) || (NameLogo.showOthers() && NameLogo.isUser(entity)))) {
 				cir.setReturnValue(NameLogo.decorate(cir.getReturnValue()));
 			}
 		} catch (Throwable ignored) {
