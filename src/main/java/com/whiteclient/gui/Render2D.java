@@ -14,12 +14,18 @@ public final class Render2D {
 	private Render2D() {
 	}
 
+	/** Test hook: true = the old row-by-row drawing (slow), to compare against the fast shapes. */
+	public static boolean legacy;
+
 	private static int scale() {
 		return Math.max(1, MinecraftClient.getInstance().getWindow().getScaleFactor());
 	}
 
 	public static void roundRect(DrawContext ctx, float x, float y, float w, float h, float radius, int argb) {
 		if (w <= 0 || h <= 0 || (argb >>> 24) == 0) {
+			return;
+		}
+		if (!legacy && Shapes.roundRect(ctx, x, y, w, h, radius, argb)) {
 			return;
 		}
 		int s = scale();
@@ -117,6 +123,9 @@ public final class Render2D {
 	/** Anti-aliased rounded outline (only the ring is drawn, so it works over translucent fills). */
 	public static void roundRectOutline(DrawContext ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
 		if (w <= 0 || h <= 0 || (argb >>> 24) == 0) {
+			return;
+		}
+		if (!legacy && Shapes.roundRectOutline(ctx, x, y, w, h, radius, thickness, argb)) {
 			return;
 		}
 		int s = scale();
@@ -242,6 +251,9 @@ public final class Render2D {
 	}
 
 	public static void circle(DrawContext ctx, float cx, float cy, float r, int argb) {
+		if (!legacy && Shapes.circle(ctx, cx, cy, r, argb)) {
+			return;
+		}
 		roundRect(ctx, cx - r, cy - r, r * 2, r * 2, r, argb);
 	}
 
@@ -329,6 +341,13 @@ public final class Render2D {
 		if (alpha <= 0.01f || r < 4) {
 			return;
 		}
+		if (!legacy && Shapes.ok()) {
+			net.minecraft.util.Identifier[] tex = Shapes.planet();
+			if (tex != null) {
+				bigPlanetFast(ctx, tex, cx, cy, r, time, alpha);
+			}
+			return; // (still being prepared in the background for the first moment)
+		}
 		double tilt = Math.toRadians(-18);
 		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
 		float ra = r * BIG_RING, rb = r * 0.4f;
@@ -368,6 +387,59 @@ public final class Render2D {
 			float half = (float) Math.sqrt(Math.max(0, r * r - (by - cy) * (by - cy))) * 0.92f;
 			roundRect(ctx, cx - half, by, half * 2, r * 0.07f, r * 0.035f, Colors.withAlpha(0xFFFFFF, (int) (alpha * 14)));
 		}
+		// front half of the ring
+		for (int i = 0; i < n; i++) {
+			double a = Math.PI * 2 * i / n + spinOffset;
+			if (Math.sin(a) < 0) {
+				continue;
+			}
+			for (int band = 0; band < 2; band++) {
+				float k = band == 0 ? 1f : 0.86f;
+				float ex = (float) Math.cos(a) * ra * k, ey = (float) Math.sin(a) * rb * k;
+				circle(ctx, cx + ex * cos - ey * sin, cy + ex * sin + ey * cos, dot * (band == 0 ? 1f : 0.7f),
+						Colors.withAlpha(0xFFFFFF, (int) (alpha * (band == 0 ? 0.85f : 0.45f) * 255)));
+			}
+		}
+		// moon
+		double m = time * 0.25;
+		float mx = (float) Math.cos(m) * ra * 1.1f, my = (float) Math.sin(m) * rb * 1.1f;
+		boolean behind = Math.sin(m) < 0 && Math.abs(mx) < r;
+		if (!behind) {
+			float px = cx + mx * cos - my * sin, py = cy + mx * sin + my * cos;
+			float mr = r * 0.12f;
+			circle(ctx, px, py, mr * 1.6f, Colors.withAlpha(0xFFFFFF, (int) (alpha * 20)));
+			circle(ctx, px, py, mr, Colors.withAlpha(0xD9DBE2, (int) (alpha * 255)));
+			circle(ctx, px - mr * 0.25f, py - mr * 0.25f, mr * 0.65f, Colors.withAlpha(0xFFFFFF, (int) (alpha * 255)));
+		}
+	}
+
+	/** {@link #bigPlanet} drawn with the pre-rendered body and glow (a handful of quads instead of thousands). */
+	private static void bigPlanetFast(DrawContext ctx, net.minecraft.util.Identifier[] tex, float cx, float cy, float r, float time, float alpha) {
+		double tilt = Math.toRadians(-18);
+		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
+		float ra = r * BIG_RING, rb = r * 0.4f;
+		int n = Math.max(90, (int) (ra * 1.1f));
+		float dot = Math.max(0.6f, r * 0.022f);
+		float spinOffset = time * 0.05f;
+		int a255 = (int) (Math.min(1f, alpha) * 255);
+		// atmosphere glow
+		Shapes.sprite(ctx, tex[1], 256, cx, cy, r * Shapes.glowExtent() * 128f / 127f, Colors.withAlpha(0xFFFFFF, a255));
+		// back half of the ring
+		for (int i = 0; i < n; i++) {
+			double a = Math.PI * 2 * i / n + spinOffset;
+			if (Math.sin(a) >= 0) {
+				continue;
+			}
+			for (int band = 0; band < 2; band++) {
+				float k = band == 0 ? 1f : 0.86f;
+				float ex = (float) Math.cos(a) * ra * k, ey = (float) Math.sin(a) * rb * k;
+				circle(ctx, cx + ex * cos - ey * sin, cy + ex * sin + ey * cos, dot * (band == 0 ? 1f : 0.7f),
+						Colors.withAlpha(0xFFFFFF, (int) (alpha * (band == 0 ? 0.35f : 0.2f) * 255)));
+			}
+		}
+		// body
+		int ts = Shapes.planetTexSize();
+		Shapes.sprite(ctx, tex[0], ts, cx, cy, r * (ts / 2f) / (ts / 2f - 2f), Colors.withAlpha(0xFFFFFF, a255));
 		// front half of the ring
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n + spinOffset;

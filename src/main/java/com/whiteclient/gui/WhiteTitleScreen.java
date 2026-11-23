@@ -197,8 +197,21 @@ public class WhiteTitleScreen extends Screen {
 		}
 	}
 
+	/** Average time (ms) the menu takes to build one frame, for the performance test. */
+	public static double renderMs;
+
 	@Override
 	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+		long t0 = System.nanoTime();
+		try {
+			renderMenu(ctx, mouseX, mouseY, delta);
+		} finally {
+			double ms = (System.nanoTime() - t0) / 1.0e6;
+			renderMs = renderMs <= 0 ? ms : renderMs * 0.9 + ms * 0.1;
+		}
+	}
+
+	private void renderMenu(DrawContext ctx, int mouseX, int mouseY, float delta) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;

@@ -2,6 +2,7 @@ package com.whiteclient.test;
 
 import com.whiteclient.WhiteClient;
 import com.whiteclient.gui.ClickGuiScreen;
+import com.whiteclient.gui.Render2D;
 import com.whiteclient.gui.WardrobeScreen;
 import com.whiteclient.gui.WhiteTitleScreen;
 import com.whiteclient.module.Category;
@@ -133,6 +134,20 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> WhiteTitleScreen.debugWalkTime = 5f);
 		context.waitTicks(10);
 		context.takeScreenshot("main_menu_player");
+		// performance: the old row-by-row shapes vs the new fast shapes on the same menu
+		for (boolean old : new boolean[]{true, false, true, false}) {
+			context.runOnClient(client -> {
+				Render2D.legacy = old;
+				WhiteTitleScreen.renderMs = 0;
+			});
+			context.waitTicks(60);
+			context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] PERF main menu {}: {} ms per frame (CPU), {} fps",
+					old ? "old" : "new", String.format(Locale.ROOT, "%.2f", WhiteTitleScreen.renderMs), client.getCurrentFps()));
+			if (old) {
+				context.takeScreenshot("main_menu_old_shapes");
+			}
+		}
+		context.runOnClient(client -> Render2D.legacy = false);
 		context.runOnClient(client -> WhiteTitleScreen.debugWalkTime = Float.NaN);
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
