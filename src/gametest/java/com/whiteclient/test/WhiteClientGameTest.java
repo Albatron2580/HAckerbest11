@@ -168,6 +168,8 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 
 		context.runOnClient(client -> writeTestSkin());
+		// CI draws everything on the CPU: the animated loading-screen background makes chunk loading crawl there
+		context.runOnClient(client -> WhiteClient.get().modules().get(MenuBackground.class).loadingScreens.set(false));
 
 		try (TestSingleplayerContext sp = context.worldBuilder().create()) {
 			sp.getClientWorld().waitForChunksRender();
