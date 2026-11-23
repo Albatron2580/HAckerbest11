@@ -20,6 +20,7 @@ import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
@@ -113,11 +114,50 @@ public final class PauseStyle {
 		}
 		items.sort(Comparator.comparingInt(ClickableWidget::getY).thenComparingInt(ClickableWidget::getX));
 
+		MenuBackground bg = WhiteClient.get().modules().get(MenuBackground.class);
+		// buttons you rarely need: Advancements (still on L), Statistics and Player Reporting
+		if (bg != null && bg.pauseHideExtras.isOn()) {
+			for (ClickableWidget w : List.copyOf(items)) {
+				String key = keyOf(w);
+				if (key.equals("gui.advancements") || key.equals("gui.stats") || key.equals("menu.playerReporting")) {
+					items.remove(w);
+					all.remove(w);
+				}
+			}
+		}
+		// the WHITECLIENT button goes to the bottom (or the top)
+		ClickableWidget clientButton = null;
+		for (ClickableWidget w : items) {
+			if (isClientButton(w)) {
+				clientButton = w;
+				break;
+			}
+		}
+		if (clientButton != null) {
+			items.remove(clientButton);
+			if (bg != null && bg.pauseClientButton.is("Top")) {
+				items.add(0, clientButton);
+			} else {
+				items.add(clientButton);
+			}
+		}
+
 		TextRenderer tr = client.textRenderer;
 		int width = screen.width, height = screen.height;
 		int n = items.size();
 		float bottom = height - 20;
-		int gaps = n > 3 ? 2 : 0;
+		// small gaps that group the menu: after the top button(s), before quitting and before a bottom WHITECLIENT button
+		boolean[] gapAfter = new boolean[n];
+		if (n > 3) {
+			for (int i = 0; i < n - 1; i++) {
+				ClickableWidget a = items.get(i), b = items.get(i + 1);
+				gapAfter[i] = isBack(a) || (i == 0 && isClientButton(a)) || isQuit(b) || isClientButton(b);
+			}
+		}
+		int gaps = 0;
+		for (boolean g : gapAfter) {
+			gaps += g ? 1 : 0;
+		}
 		float gapPx = 5;
 
 		compact = false;
@@ -159,7 +199,7 @@ public final class PauseStyle {
 			ITEMS.put(w, new Item(i, scale, accent));
 			maxW = Math.max(maxW, hw);
 			y += step;
-			if (gaps > 0 && (i == 0 || i == n - 2)) {
+			if (gapAfter[i]) {
 				y += gapPx;
 			}
 		}
@@ -206,6 +246,31 @@ public final class PauseStyle {
 				player = null;
 			}
 		}
+	}
+
+	private static String keyOf(ClickableWidget w) {
+		Text m = w.getMessage();
+		if (m == null) {
+			return "";
+		}
+		if (m.getContent() instanceof TranslatableTextContent t) {
+			return t.getKey();
+		}
+		return m.getString();
+	}
+
+	private static boolean isClientButton(ClickableWidget w) {
+		String label = w.getMessage() == null ? "" : w.getMessage().getString();
+		return ButtonStyle.isAccent(w) || label.equalsIgnoreCase("WHITECLIENT");
+	}
+
+	private static boolean isBack(ClickableWidget w) {
+		return keyOf(w).equals("menu.returnToGame");
+	}
+
+	private static boolean isQuit(ClickableWidget w) {
+		String k = keyOf(w);
+		return k.equals("menu.returnToMenu") || k.equals("menu.disconnect") || k.equals("menu.quit");
 	}
 
 	// ------------------------------------------------------------------ background scene

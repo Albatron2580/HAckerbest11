@@ -16,6 +16,8 @@ public class MenuBackground extends Module {
 	public final NumberSetting intensity = add(new NumberSetting("Intensity", 1.0, 0.3, 2.0, 0.1, "x"));
 	public final BoolSetting titleScreen = add(new BoolSetting("Title Screen", true));
 	public final ModeSetting pauseLayout = add(new ModeSetting("Pause Menu Layout", "Showcase", "Showcase", "Classic"));
+	public final BoolSetting pauseHideExtras = add(new BoolSetting("Hide Advancements, Statistics & Reporting", true).visibleWhen(() -> pauseLayout.is("Showcase")));
+	public final ModeSetting pauseClientButton = add(new ModeSetting("WHITECLIENT Button", "Bottom", "Bottom", "Top").visibleWhen(() -> pauseLayout.is("Showcase")));
 	/** The old full swirl background behind the pause menu (renamed so it starts off for everyone). */
 	public final BoolSetting pauseMenu = add(new BoolSetting("Pause Swirl Background", false));
 	public final BoolSetting clickGui = add(new BoolSetting("Client Menu", false));

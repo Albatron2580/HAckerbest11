@@ -21,7 +21,7 @@ public class DiscordStatus extends Module {
 	/** The WhiteClient app on Discord: its name is what Discord shows after "Playing". */
 	public static final String APP_ID = "1574503180992249856";
 
-	public final InfoSetting statusInfo = add(new InfoSetting("Status", () -> ipc == null ? "Off" : ipc.status()));
+	public final InfoSetting statusInfo = add(new InfoSetting("Status", () -> this.ipc == null ? "Off" : this.ipc.status()));
 	public final ActionSetting reconnect = add(new ActionSetting("Discord", () -> "Reconnect", this::restart));
 	public final BoolSetting showServer = add(new BoolSetting("Show Server Name", true));
 	public final BoolSetting showWorld = add(new BoolSetting("Show World / Dimension", true));
