@@ -28,6 +28,7 @@ import com.whiteclient.modules.MainMenu;
 import com.whiteclient.modules.Spotify;
 import com.whiteclient.music.MusicService;
 import com.whiteclient.render.GlowBatch;
+import com.whiteclient.render.Perf;
 import com.whiteclient.render.WorldContext;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ClientModInitializer;
@@ -258,8 +259,10 @@ public final class WhiteClient implements ClientModInitializer {
 		}
 		for (Module module : modules.all()) {
 			if (module.isEnabled() && !crashed.contains(module)) {
+				long t0 = System.nanoTime();
 				try {
 					module.onTick(client);
+					Perf.add(module.getName() + ":tick", System.nanoTime() - t0);
 				} catch (Throwable t) {
 					fail(module, t);
 				}
@@ -276,8 +279,10 @@ public final class WhiteClient implements ClientModInitializer {
 		HudLayout.begin(context.getScaledWindowWidth(), context.getScaledWindowHeight());
 		for (Module module : modules.all()) {
 			if (module.isEnabled() && !crashed.contains(module)) {
+				long t0 = System.nanoTime();
 				try {
 					module.renderHud(context, tickDelta);
+					Perf.add(module.getName() + ":hud", System.nanoTime() - t0);
 				} catch (Throwable t) {
 					fail(module, t);
 				}
@@ -315,8 +320,10 @@ public final class WhiteClient implements ClientModInitializer {
 		matrices.push();
 		for (Module module : modules.all()) {
 			if (module.isEnabled() && !crashed.contains(module)) {
+				long t0 = System.nanoTime();
 				try {
 					module.renderWorld(ctx);
+					Perf.add(module.getName() + ":world", System.nanoTime() - t0);
 				} catch (Throwable t) {
 					fail(module, t);
 				}
@@ -324,10 +331,14 @@ public final class WhiteClient implements ClientModInitializer {
 		}
 		try {
 			// 1) text & solid stuff, 2) additive glow on top (sorted back to front)
+			long d0 = System.nanoTime();
 			if (consumers instanceof VertexConsumerProvider.Immediate immediate) {
 				immediate.draw();
 			}
+			long d1 = System.nanoTime();
+			Perf.add("draw:solid+text", d1 - d0);
 			glow.draw(consumers, matrices.peek().getPositionMatrix());
+			Perf.add("draw:glow", System.nanoTime() - d1);
 			if (consumers instanceof VertexConsumerProvider.Immediate immediate) {
 				immediate.draw();
 			}

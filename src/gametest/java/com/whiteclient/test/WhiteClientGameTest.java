@@ -3,6 +3,7 @@ package com.whiteclient.test;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.gui.ClickGuiScreen;
 import com.whiteclient.gui.Render2D;
+import com.whiteclient.render.Perf;
 import com.whiteclient.gui.WardrobeScreen;
 import com.whiteclient.gui.WhiteTitleScreen;
 import com.whiteclient.module.Category;
@@ -83,6 +84,13 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private static void perf(ClientGameTestContext context, String label) {
+		context.runOnClient(client -> {
+			WhiteClient.LOGGER.info("[WHITECLIENT] PERF {} | fps {} | {}", label, client.getCurrentFps(), Perf.report(14));
+			Perf.reset();
+		});
 	}
 
 	private static void clearClutter(net.minecraft.client.MinecraftClient client) {
@@ -186,6 +194,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(70);
 			context.takeScreenshot("third_person_lyrics_jellyfish");
+			perf(context, "world default + jellyfish");
 			context.runOnClient(client -> WhiteClient.get().music().setOverride(null, null));
 
 			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
@@ -229,6 +238,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 					});
 					context.waitTicks(80);
 					context.takeScreenshot("rest_" + spot.toLowerCase(Locale.ROOT) + "_" + pet.toLowerCase(Locale.ROOT));
+					perf(context, "pet resting");
 				}
 			}
 			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).rest.set("Shoulder"));
@@ -335,6 +345,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			}
 			context.waitTicks(4);
 			context.takeScreenshot("car_sports_drive");
+			perf(context, "car driving");
 			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
 			context.waitTicks(4);
 			context.takeScreenshot("car_sports_drive_front");
@@ -427,6 +438,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(2);
 			context.takeScreenshot("combat_hits_hud");
+			perf(context, "combat hud");
 			context.runOnClient(client -> {
 				Keystrokes.debugHeld = 0;
 				LowHealth.debugHealth = -1;
@@ -508,6 +520,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> WhiteClient.get().modules().get(Ambience.class).mode.set("Petals"));
 			context.waitTicks(40);
 			context.takeScreenshot("ambience_petals");
+			perf(context, "ambience");
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();
 				for (Class<? extends com.whiteclient.module.Module> c : List.of(Ambience.class, BlockOutline.class, HandView.class, InfoHUD.class,
@@ -554,6 +567,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(120);
 			context.takeScreenshot("rain_fx");
+			perf(context, "rain");
 			context.runOnClient(client -> {
 				WhiteClient.get().modules().get(RainFX.class).always.set(false);
 				client.options.setPerspective(Perspective.FIRST_PERSON);
