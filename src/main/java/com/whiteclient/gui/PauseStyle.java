@@ -163,7 +163,7 @@ public final class PauseStyle {
 				y += gapPx;
 			}
 		}
-		float titleW = compact ? UiFont.width(tr, "WHITECLIENT") + 20 : tr.getWidth(UiFont.title("WHITECLIENT"));
+		float titleW = compact ? UiFont.width(tr, "WHITECLIENT") * 1.1f + 26 : tr.getWidth(UiFont.title("WHITECLIENT"));
 		menuHalf = Math.max(maxW, titleW) / 2f + 10;
 
 		// little round icon buttons, top right (like the main menu)
@@ -289,9 +289,9 @@ public final class PauseStyle {
 		m.translate(0, (1 - li) * 8 + (float) Math.sin(time * 1.2) * 1.0f);
 		if (compact) {
 			float tw = UiFont.width(tr, "WHITECLIENT") * 1.1f;
-			float gx = colX - (tw + 18) / 2f;
-			Render2D.planetLogo(ctx, gx + logoR, logoY, logoR, time, (int) (255 * li));
-			UiFont.drawScaled(ctx, tr, "WHITECLIENT", gx + 18, titleY, 1.1f, Colors.withAlpha(0xFFFFFF, (int) (255 * li)));
+			float gx = colX - (tw + 26) / 2f;
+			Render2D.planetLogo(ctx, gx + 11, logoY, logoR, time, (int) (255 * li));
+			UiFont.drawScaled(ctx, tr, "WHITECLIENT", gx + 26, titleY, 1.1f, Colors.withAlpha(0xFFFFFF, (int) (255 * li)));
 		} else {
 			for (int g = 12; g >= 1; g--) {
 				Render2D.circle(ctx, colX, logoY, logoR * (1.2f + g * 0.22f), Colors.withAlpha(0xFFFFFF, (int) (3 * li)));

@@ -583,6 +583,10 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			sp.getServer().runCommand("tp @p ~ ~ ~ 30 14");
 			context.waitTicks(12);
 			context.takeScreenshot("rain_wet_ground");
+			context.runOnClient(client -> {
+				RainFX r = WhiteClient.get().modules().get(RainFX.class);
+				WhiteClient.LOGGER.info("[WHITECLIENT] wet ground: {} blocks, {} puddle cells", r.debugWetQuads, r.debugPuddleCells);
+			});
 			sp.getServer().runCommand("time set 15500");
 			context.waitTicks(8);
 			context.takeScreenshot("rain_wet_ground_dusk");
