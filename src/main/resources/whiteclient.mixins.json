@@ -5,11 +5,9 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"AbstractClientPlayerEntityMixin",
-		"CameraMixin",
 		"GameRendererMixin",
 		"HeldItemRendererMixin",
 		"MinecraftClientMixin",
-		"EntityRenderManagerMixin",
 		"MouseMixin",
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin"
