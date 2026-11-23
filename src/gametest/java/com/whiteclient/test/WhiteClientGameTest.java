@@ -176,15 +176,39 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
 			context.waitTicks(20);
 			context.takeScreenshot("pet_jellyfish_front");
-			for (String pet : new String[]{"Dog", "Cat", "Butterfly"}) {
-				context.runOnClient(client -> {
-					Pets pets = WhiteClient.get().modules().get(Pets.class);
-					pets.pet.set(pet);
-					pets.name.set(pet.equals("Dog") ? "Buddy" : "");
-				});
+			// ---- gallery: wings on their own, then every pet without other cosmetics in the way
+			context.runOnClient(client -> {
+				var mm = WhiteClient.get().modules();
+				mm.get(Halo.class).setEnabled(false);
+				mm.get(Aura.class).setEnabled(false);
+				mm.get(Pets.class).setEnabled(false);
+				client.getToastManager().clear();
+				client.inGameHud.getChatHud().clear(false);
+				client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+			});
+			context.waitTicks(15);
+			context.takeScreenshot("gallery_wings_back");
+			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
+			context.waitTicks(10);
+			context.takeScreenshot("gallery_wings_front");
+			context.runOnClient(client -> {
+				var mm = WhiteClient.get().modules();
+				mm.get(Wings.class).setEnabled(false);
+				Pets pets = mm.get(Pets.class);
+				pets.name.set("");
+				pets.setEnabled(true);
+			});
+			for (String pet : Pets.TYPES) {
+				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
 				context.waitTicks(20);
-				context.takeScreenshot("pet_" + pet.toLowerCase(Locale.ROOT));
+				context.takeScreenshot("gallery_pet_" + pet.toLowerCase(Locale.ROOT));
 			}
+			context.runOnClient(client -> {
+				var mm = WhiteClient.get().modules();
+				mm.get(Halo.class).setEnabled(true);
+				mm.get(Aura.class).setEnabled(true);
+				mm.get(Wings.class).setEnabled(true);
+			});
 
 			// ---- custom skin from the Wardrobe
 			context.runOnClient(client -> {
