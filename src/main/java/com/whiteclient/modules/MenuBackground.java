@@ -23,6 +23,10 @@ public class MenuBackground extends Module {
 	public final BoolSetting clickGui = add(new BoolSetting("Client Menu", false));
 	public final BoolSetting loadingScreens = add(new BoolSetting("Loading Screens", true));
 	public final BoolSetting otherMenus = add(new BoolSetting("Other Menus", true));
+	public final ModeSetting otherMenusLook = add(new ModeSetting("Other Menus Look", "Planet", "Planet", "Swirl").visibleWhen(() -> otherMenus.isOn()));
+	public final BoolSetting featuredServer = add(new BoolSetting("Featured Server (VexVanilla)", true));
+	/** VexVanilla was put in your server list once (so deleting it from the list sticks). */
+	public final BoolSetting featuredAdded = add(new BoolSetting("Featured Server Added", false).visibleWhen(() -> false));
 	public final BoolSetting pauseCard = add(new BoolSetting("Pause Menu Card", true));
 	public final NumberSetting opacity = add(new NumberSetting("Pause Opacity", 0.92, 0.2, 1.0, 0.01));
 

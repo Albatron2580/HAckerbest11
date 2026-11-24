@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.GameMenuScreen;
+import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -35,6 +36,13 @@ public final class MenuIntegration {
 		Identifier late = Identifier.of(WhiteClient.MOD_ID, "pause_layout");
 		ScreenEvents.AFTER_INIT.addPhaseOrdering(Event.DEFAULT_PHASE, late);
 		ScreenEvents.AFTER_INIT.register(late, (client, screen, w, h) -> {
+			if (screen instanceof MultiplayerScreen mp && FeaturedServer.enabled()) {
+				try {
+					FeaturedServer.setup(client, mp);
+				} catch (Throwable t) {
+					WhiteClient.LOGGER.error("[WHITECLIENT] could not set up the featured server", t);
+				}
+			}
 			if (screen instanceof GameMenuScreen && PauseStyle.enabled()) {
 				try {
 					PauseStyle.layout(client, screen);
@@ -104,8 +112,15 @@ public final class MenuIntegration {
 				if (bg == null || !bg.isEnabled() || !bg.otherMenus.isOn() || MinecraftClient.getInstance().world != null) {
 					return;
 				}
-				MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
-				context.fill(0, 0, s.width, s.height, 0x66000000);
+				if (bg.otherMenusLook.is("Planet")) {
+					MenuScene.draw(context, s, 168);
+				} else {
+					MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
+					context.fill(0, 0, s.width, s.height, 0x66000000);
+				}
+				if (s instanceof MultiplayerScreen mp && FeaturedServer.isCurrent(mp)) {
+					FeaturedServer.draw(context, mp, mouseX, mouseY);
+				}
 			});
 		}
 	}

@@ -167,6 +167,24 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
 
+		// multiplayer: VexVanilla as the featured server, planet background
+		context.setScreen(() -> new net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen(new TitleScreen()));
+		context.waitTicks(60);
+		context.takeScreenshot("multiplayer_featured");
+		context.runOnClient(client -> {
+			if (client.currentScreen instanceof net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen mp) {
+				net.minecraft.client.option.ServerList list = mp.getServerList();
+				WhiteClient.LOGGER.info("[WHITECLIENT] server list: {} entries, first = {}", list.size(),
+						list.size() > 0 ? list.get(0).address : "none");
+			}
+		});
+		// other menus get the same planet look
+		context.setScreen(() -> new net.minecraft.client.gui.screen.option.OptionsScreen(new TitleScreen(), net.minecraft.client.MinecraftClient.getInstance().options));
+		context.waitTicks(20);
+		context.takeScreenshot("options_planet");
+		context.setScreen(TitleScreen::new);
+		context.waitTicks(5);
+
 		context.runOnClient(client -> writeTestSkin());
 		// CI draws everything on the CPU: the animated loading-screen background makes chunk loading crawl there
 		context.runOnClient(client -> WhiteClient.get().modules().get(MenuBackground.class).loadingScreens.set(false));

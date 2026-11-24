@@ -12,6 +12,7 @@
 		"MinecraftClientMixin",
 		"EntityRenderManagerMixin",
 		"MouseMixin",
+		"MultiplayerScreenAccessor",
 		"DrawContextInvoker",
 		"EntityRendererNameMixin",
 		"GameOptionsMixin",
