@@ -204,7 +204,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.takeScreenshot("support_screen");
 		// "update ready" badge on the main menu
 		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady("9.9.9"));
-		context.setScreen(TitleScreen::new);
+		context.setScreen(WhiteTitleScreen::new);
 		context.waitTicks(30);
 		context.takeScreenshot("main_menu_update_ready");
 		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady(null));
