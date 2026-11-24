@@ -168,8 +168,21 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 
 		// multiplayer: VexVanilla as the featured server, planet background
-		context.setScreen(() -> new net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen(new TitleScreen()));
-		context.waitTicks(60);
+		// (the test can't ping real servers, so the servers get a made-up answer before the screen would ping them)
+		context.runOnClient(client -> {
+			net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen mp =
+					new net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen(new TitleScreen());
+			client.setScreen(mp);
+			net.minecraft.client.option.ServerList list = mp.getServerList();
+			for (int i = 0; i < list.size(); i++) {
+				net.minecraft.client.network.ServerInfo info = list.get(i);
+				info.setStatus(net.minecraft.client.network.ServerInfo.Status.valueOf("SUCCESSFUL"));
+				info.label = net.minecraft.text.Text.literal("§bVexVanilla §7- §fSurvival · Events · Community");
+				info.playerCountLabel = net.minecraft.text.Text.literal("42/100");
+				info.ping = 23;
+			}
+		});
+		context.waitTicks(40);
 		context.takeScreenshot("multiplayer_featured");
 		context.runOnClient(client -> {
 			if (client.currentScreen instanceof net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen mp) {
