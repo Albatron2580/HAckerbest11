@@ -59,7 +59,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.12.7";
+	public static final String VERSION = "1.12.8";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -123,7 +123,6 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new KillEffects());
 		modules.register(new DamageNumbers());
 		modules.register(new Hitmarker());
-		modules.register(new TargetHUD());
 		modules.register(new ComboCounter());
 		modules.register(new ReachDisplay());
 		// World

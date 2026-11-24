@@ -1,4 +1,4 @@
-# WHITECLIENT 1.12.7 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.12.8 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -21,7 +21,6 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | PvP | **Kill Effects** | Soul / Lightning / Shockwave / Hearts / Confetti when you kill something |
 | PvP | **Damage Numbers** | Floating damage numbers (gold on crits, green heals). Hidden behind walls |
 | PvP | **Hitmarker** | X on the crosshair when you hit (red on a kill) |
-| PvP | **Target HUD** | Card with your target's head, name, health bar, distance, winning/losing |
 | PvP | **Combo Counter** / **Reach Display** | Hits in a row / distance of your last hit |
 | PvP | **Target ESP** | Effects that spin around the entity you hit / look at: Shackles (glowing chains), Orbit, Spiral, Cards, Ring, Ghosts, Constellation. Visual only |
 | World | **Galaxy Sky** | Twinkling stars + milky way |
