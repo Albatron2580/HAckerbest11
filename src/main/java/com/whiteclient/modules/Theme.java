@@ -21,6 +21,8 @@ public class Theme extends Module {
 	public final NumberSetting opacity = add(new NumberSetting("Panel Opacity", 0.94, 0.5, 1.0, 0.01));
 	public final NumberSetting roundness = add(new NumberSetting("Roundness", 9, 0, 14, 0.5));
 	public final BoolSetting stars = add(new BoolSetting("Home Stars", true));
+	/** Cards fly out of one stack when the menu opens, and back into it when it closes. */
+	public final BoolSetting cardAnimations = add(new BoolSetting("Card Stack Animations", true));
 
 	private static final Theme FALLBACK = new Theme();
 
