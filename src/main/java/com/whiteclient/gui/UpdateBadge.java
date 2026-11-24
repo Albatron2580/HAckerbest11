@@ -19,8 +19,8 @@ public final class UpdateBadge {
 		float scale = 0.85f;
 		float tw = UiFont.width(tr, text) * scale;
 		float w = tw + 30, h = 16;
-		// top middle, between the account / world chip on the left and the icon buttons on the right
-		float x = width / 2f - w / 2f, y = 12;
+		// top middle, just under the row with the account / world chip and the icon buttons
+		float x = width / 2f - w / 2f, y = 36;
 		float pulse = 0.5f + 0.5f * (float) Math.sin(time * 3.0);
 		Render2D.roundRect(ctx, x, y, w, h, 8, Colors.argb(0x0B0B10, 0.88f));
 		Render2D.roundRectOutline(ctx, x, y, w, h, 8, 1, Colors.argb(ready ? 0x8BE39A : 0xFFFFFF, 0.35f + 0.3f * pulse));
