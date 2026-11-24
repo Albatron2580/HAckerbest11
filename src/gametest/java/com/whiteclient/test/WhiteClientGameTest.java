@@ -169,6 +169,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 
 		// auto update: ask GitHub for the newest release (no install from a development build)
 		WhiteClient.LOGGER.info("[WHITECLIENT] update check: {}", com.whiteclient.update.AutoUpdater.checkNow(false));
+		WhiteClient.LOGGER.info("[WHITECLIENT] update download test: {}", com.whiteclient.update.AutoUpdater.testDownload("1.12.0"));
 
 		// multiplayer: VexVanilla as the featured server, planet background
 		// (the test can't ping real servers, so the servers get a made-up answer before the screen would ping them)

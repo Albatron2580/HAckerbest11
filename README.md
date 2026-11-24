@@ -1,4 +1,4 @@
-# WHITECLIENT 1.12.0 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.12.1 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -95,7 +95,7 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.12.0.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.12.1.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 The jar includes **MCEF Modern** (LGPL-2.1, by dimaskama) for the in-game browser; see `THIRD_PARTY_NOTICES.txt`.
 

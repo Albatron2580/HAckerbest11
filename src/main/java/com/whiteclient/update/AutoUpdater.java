@@ -1,7 +1,5 @@
 package com.whiteclient.update;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.whiteclient.WhiteClient;
@@ -140,8 +138,7 @@ public final class AutoUpdater {
 	private static HttpRequest.Builder request(String url) {
 		return HttpRequest.newBuilder(URI.create(url))
 				.timeout(Duration.ofSeconds(60))
-				.header("User-Agent", "WHITECLIENT/" + WhiteClient.VERSION)
-				.header("Accept", "application/vnd.github+json");
+				.header("User-Agent", "WHITECLIENT/" + WhiteClient.VERSION);
 	}
 
 	private static void check(boolean install, boolean manual) throws Exception {
@@ -150,39 +147,9 @@ public final class AutoUpdater {
 		}
 		status = "Checking for updates...";
 		HttpClient http = http();
-		HttpResponse<String> res = http.send(request(API).build(), HttpResponse.BodyHandlers.ofString());
-		if (res.statusCode() == 404) {
+		String latest = latestVersion();
+		if (latest == null || compare(latest, WhiteClient.VERSION) <= 0) {
 			status = "Up to date (" + WhiteClient.VERSION + ")";
-			return;
-		}
-		if (res.statusCode() != 200) {
-			throw new IOException("GitHub answered " + res.statusCode());
-		}
-		JsonObject rel = JsonParser.parseString(res.body()).getAsJsonObject();
-		String tag = rel.get("tag_name").getAsString();
-		String latest = tag.startsWith("v") ? tag.substring(1) : tag;
-		if (compare(latest, WhiteClient.VERSION) <= 0) {
-			status = "Up to date (" + WhiteClient.VERSION + ")";
-			return;
-		}
-		String jarName = "whiteclient-" + latest + ".jar";
-		String jarUrl = null, shaUrl = null;
-		JsonArray assets = rel.getAsJsonArray("assets");
-		for (JsonElement e : assets) {
-			JsonObject a = e.getAsJsonObject();
-			String name = a.get("name").getAsString();
-			String url = a.get("browser_download_url").getAsString();
-			if (!url.startsWith(DOWNLOADS)) {
-				continue;
-			}
-			if (name.equals(jarName)) {
-				jarUrl = url;
-			} else if (name.equals(jarName + ".sha256")) {
-				shaUrl = url;
-			}
-		}
-		if (jarUrl == null || shaUrl == null) {
-			status = "WHITECLIENT " + latest + " is out, but its download isn't ready yet";
 			return;
 		}
 		if (!install) {
@@ -197,12 +164,24 @@ public final class AutoUpdater {
 		}
 
 		status = "Downloading WHITECLIENT " + latest + "...";
+		Path target = download(http, latest, updateDir());
+		staged = target;
+		readyVersion = latest;
+		status = "WHITECLIENT " + latest + " is ready: it installs when you close the game";
+		WhiteClient.LOGGER.info("[WHITECLIENT] update {} downloaded, installs when the game closes", latest);
+		toast("WHITECLIENT " + latest + " downloaded", "It installs when you close the game");
+	}
+
+	/** Downloads one released version into a folder and checks it; returns the checked jar. */
+	public static Path download(HttpClient http, String latest, Path dir) throws Exception {
+		String jarName = "whiteclient-" + latest + ".jar";
+		String jarUrl = DOWNLOADS + "v" + latest + "/" + jarName;
+		String shaUrl = jarUrl + ".sha256";
 		String shaText = http.send(request(shaUrl).header("Accept", "*/*").build(), HttpResponse.BodyHandlers.ofString()).body();
 		String expected = shaText.trim().split("\\s+")[0].toLowerCase(Locale.ROOT);
 		if (!expected.matches("[0-9a-f]{64}")) {
 			throw new IOException("bad checksum file");
 		}
-		Path dir = updateDir();
 		Files.createDirectories(dir);
 		Path target = dir.resolve(jarName);
 		if (!(Files.isRegularFile(target) && sha256(target).equals(expected))) {
@@ -220,11 +199,53 @@ public final class AutoUpdater {
 			verifyJar(tmp, latest);
 			Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
 		}
-		staged = target;
-		readyVersion = latest;
-		status = "WHITECLIENT " + latest + " is ready: it installs when you close the game";
-		WhiteClient.LOGGER.info("[WHITECLIENT] update {} downloaded, installs when the game closes", latest);
-		toast("WHITECLIENT " + latest + " downloaded", "It installs when you close the game");
+		return target;
+	}
+
+	/** Downloads and checks a released version into a temporary folder (used by the tests). */
+	public static String testDownload(String version) {
+		try {
+			Path dir = Files.createTempDirectory("whiteclient-update-test");
+			Path jar = download(http(), version, dir);
+			return "ok, " + jar.getFileName() + " (" + Files.size(jar) + " bytes, checksum and contents verified)";
+		} catch (Throwable t) {
+			return "failed: " + t;
+		}
+	}
+
+	/**
+	 * The newest released version. Uses the normal github.com "latest release" link (it just redirects to
+	 * the newest tag, with no API limits); GitHub's API is the fallback. Null when nothing is released.
+	 */
+	private static String latestVersion() throws Exception {
+		try {
+			HttpClient noRedirect = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
+					.followRedirects(HttpClient.Redirect.NEVER).build();
+			HttpResponse<Void> r = noRedirect.send(request("https://github.com/" + REPO + "/releases/latest")
+					.method("HEAD", HttpRequest.BodyPublishers.noBody()).build(),
+					HttpResponse.BodyHandlers.discarding());
+			String loc = r.headers().firstValue("location").orElse("");
+			int i = loc.indexOf("/releases/tag/");
+			if (r.statusCode() / 100 == 3 && i >= 0) {
+				String tag = loc.substring(i + "/releases/tag/".length());
+				return tag.startsWith("v") ? tag.substring(1) : tag;
+			}
+			if (r.statusCode() / 100 == 3 && loc.endsWith("/releases")) {
+				return null; // no release yet
+			}
+		} catch (IOException ignored) {
+			// try the API below
+		}
+		HttpResponse<String> res = http().send(request(API).header("Accept", "application/vnd.github+json").build(),
+				HttpResponse.BodyHandlers.ofString());
+		if (res.statusCode() == 404) {
+			return null;
+		}
+		if (res.statusCode() != 200) {
+			throw new IOException("GitHub answered " + res.statusCode());
+		}
+		String tag = JsonParser.parseString(res.body()).getAsJsonObject().get("tag_name").getAsString();
+		return tag.startsWith("v") ? tag.substring(1) : tag;
 	}
 
 	/** The download must really be WHITECLIENT, with the version it claims, and carry the installer. */
