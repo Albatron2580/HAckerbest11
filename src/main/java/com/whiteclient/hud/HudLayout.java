@@ -47,7 +47,7 @@ public final class HudLayout {
 			y = CURSOR[i] - h;
 			CURSOR[i] = y - 4;
 		} else {
-			y = CURSOR[i];
+			y = i >= 4 ? Math.max(CURSOR[i], CURSOR[i - 4]) : CURSOR[i];
 			CURSOR[i] = y + h + 4;
 		}
 		return new float[]{x, y};
