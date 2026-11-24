@@ -59,7 +59,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.11.0";
+	public static final String VERSION = "1.12.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -151,6 +151,7 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Browser());
 		modules.register(new Cinematic());
 		modules.register(new com.whiteclient.modules.DiscordStatus());
+		modules.register(new com.whiteclient.modules.AutoUpdate());
 		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
@@ -232,6 +233,14 @@ public final class WhiteClient implements ClientModInitializer {
 		HudElementRegistry.addLast(Identifier.of(MOD_ID, "hud"), this::renderHud);
 		WorldRenderEvents.END_MAIN.register(this::renderWorld);
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> config.save());
+		// a downloaded update is installed by a small helper once the game has closed
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			com.whiteclient.modules.AutoUpdate au = modules.get(com.whiteclient.modules.AutoUpdate.class);
+			if (au != null && au.isEnabled() && au.installAuto.isOn()) {
+				com.whiteclient.update.AutoUpdater.onGameClosing();
+			}
+		});
+		com.whiteclient.update.AutoUpdater.startup();
 		MenuIntegration.register();
 		registerCommands();
 

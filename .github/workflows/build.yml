@@ -1,6 +1,9 @@
 name: build
 on: [push, workflow_dispatch]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -42,6 +45,21 @@ jobs:
             [ -f "$c" ] && { echo "==== CRASH $c"; cat "$c"; }
           done
           grep -i "whiteclient" build/run/clientGameTest/logs/latest.log | head -100 || true
+      - name: Publish release (WHITECLIENT's auto update downloads it)
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/whiteclient-build'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(grep '^mod_version' gradle.properties | cut -d= -f2 | tr -d ' \r')
+          jar="build/libs/whiteclient-$ver.jar"
+          shots=$(ls build/run/clientGameTest/screenshots/*.png 2>/dev/null | wc -l)
+          if [ ! -f "$jar" ]; then echo "no jar, not publishing"; exit 0; fi
+          if [ "$shots" -lt 60 ]; then echo "game test did not finish ($shots screenshots), not publishing"; exit 0; fi
+          if gh release view "v$ver" >/dev/null 2>&1; then echo "v$ver is already released"; exit 0; fi
+          (cd build/libs && sha256sum "whiteclient-$ver.jar" > "whiteclient-$ver.jar.sha256")
+          gh release create "v$ver" "$jar" "$jar.sha256" --target "$GITHUB_SHA" --title "WHITECLIENT $ver" \
+            --notes "WHITECLIENT $ver for Minecraft 1.21.11 (Fabric). Put the jar in your mods folder together with Fabric API. WHITECLIENT 1.12.0 and newer update themselves."
+          echo "published v$ver"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
