@@ -33,6 +33,8 @@ public final class DiscordIpc {
 
 	private volatile JsonObject wanted;
 	private volatile boolean dirty = true;
+	/** Send the status again soon (Minecraft came back into focus). */
+	private volatile boolean bump;
 	private volatile boolean ready;
 	private JsonObject lastSent;
 
@@ -66,6 +68,10 @@ public final class DiscordIpc {
 			thread.interrupt();
 			thread = null;
 		}
+	}
+
+	public void bump() {
+		bump = true;
 	}
 
 	/** The activity to show; {@code null} clears it. Sent when it changes (Discord allows ~5 updates per 20 s). */
@@ -130,8 +136,11 @@ public final class DiscordIpc {
 					lastSend = 0;
 				}
 				// send when something changed, and refresh every minute (also notices a restarted Discord)
-				boolean refresh = now - lastSend > 60000;
-				if ((dirty && now - lastSend > 4000) || refresh) {
+				// Discord shows the most recently focused / updated app first, so keep WhiteClient fresh:
+				// re-send every 15 s and right after you click back into Minecraft (well inside Discord's limit of 5 per 20 s)
+				boolean refresh = now - lastSend > 15000 || bump;
+				if ((dirty || refresh) && now - lastSend > 4000) {
+					bump = false;
 					JsonObject act = wanted;
 					if (act != null && errors >= 1) {
 						act = withoutLinks(act);

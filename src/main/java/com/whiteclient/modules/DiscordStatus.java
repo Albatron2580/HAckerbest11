@@ -34,6 +34,7 @@ public class DiscordStatus extends Module {
 	private final long gameStart = System.currentTimeMillis() / 1000L;
 	private long worldStart;
 	private boolean wasInWorld;
+	private boolean wasFocused;
 	private int tick;
 
 	public DiscordStatus() {
@@ -79,6 +80,11 @@ public class DiscordStatus extends Module {
 	@Override
 	public void onTick(MinecraftClient mc) {
 		ensure();
+		boolean focused = mc.isWindowFocused();
+		if (focused && !wasFocused) {
+			ipc.bump(); // back in Minecraft: put WhiteClient on top again
+		}
+		wasFocused = focused;
 		boolean inWorld = mc.world != null;
 		if (inWorld && !wasInWorld) {
 			worldStart = System.currentTimeMillis() / 1000L;
