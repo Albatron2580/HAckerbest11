@@ -63,10 +63,9 @@ public final class AutoUpdater {
 	/** A short line for the menus, or null when there is nothing to say. */
 	public static String badge() {
 		if (readyVersion != null) {
-			return "WHITECLIENT " + readyVersion + " is ready - it installs when you close the game";
+			return "Update " + readyVersion + " ready · installs when you close the game";
 		}
-		String s = status;
-		return s.startsWith("Downloading") ? s : null;
+		return status.startsWith("Downloading") ? "Downloading update..." : null;
 	}
 
 	private static Path updateDir() {
