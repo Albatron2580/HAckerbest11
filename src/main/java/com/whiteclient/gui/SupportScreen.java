@@ -49,7 +49,7 @@ public class SupportScreen extends Screen {
 			opened = System.nanoTime();
 		}
 		cardW = Math.min(310, width - 30);
-		cardH = 196;
+		cardH = 208;
 		cardX = width / 2f - cardW / 2f;
 		cardY = Math.max(10, height / 2f - cardH / 2f - 6);
 
