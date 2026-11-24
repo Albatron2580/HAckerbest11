@@ -71,7 +71,7 @@ public final class ButtonStyle {
 		float op = settings.opacity.getFloat();
 		Render2D.roundRect(ctx, x, y, width, height, r, w.active ? Colors.argb(0x0B0B10, op) : Colors.argb(0x0B0B10, op * 0.5f));
 		float v = (float) Math.max(0, Math.min(1, value));
-		float knobW = 6;
+		float knobW = 4;
 		float kx = x + 2 + v * (width - 4 - knobW);
 		// filled part up to the knob
 		if (kx + knobW / 2f > x + 2) {
@@ -80,7 +80,7 @@ public final class ButtonStyle {
 		if (settings.border.isOn()) {
 			Render2D.roundRectOutline(ctx, x, y, width, height, r, 1, Colors.argb(0xFFFFFF, 0.16f + 0.3f * h));
 		}
-		Render2D.roundRect(ctx, kx, y + 2, knobW, height - 4, Math.min(3, (height - 4) / 2f), Colors.argb(0xFFFFFF, w.active ? 0.75f + 0.25f * h : 0.35f));
+		Render2D.roundRect(ctx, kx, y + 3, knobW, height - 6, Math.min(2, (height - 6) / 2f), Colors.argb(0xFFFFFF, w.active ? 0.45f + 0.3f * h : 0.25f));
 		net.minecraft.client.font.TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 		ctx.drawCenteredTextWithShadow(tr, w.getMessage(), Math.round(x + width / 2f), Math.round(y + (height - 8) / 2f),
 				w.active ? 0xFFFFFFFF : 0xFFA0A0A8);
