@@ -1,4 +1,4 @@
-# WHITECLIENT 1.12.3 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.12.4 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -50,7 +50,7 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | World | **FPS Boost** | One click faster video settings: no clouds, no entity shadows, fewer particles, fast biome blend, unlocked FPS, no vignette, lighter client effects. Turn it off and your own settings come back |
 | Menu | **Main Menu** | WHITECLIENT title screen. **Showcase** layout (default): big planet logo + text menu on the left, your player on grey silk curtains on the right with little planets floating by. **Centered** layout: the older centred buttons |
 | Menu | **Menu Background** | Animated white energy (or silk / aurora / mono) on the title screen and loading screens. **Pause Menu Layout → Showcase** (default): the pause menu looks like the main menu: the big planet on the left, the logo and a clean text menu in the middle, your player on the right, and your world stays visible behind it |
-| Menu | **Multiplayer** | **VexVanilla.net** is the featured main server: a big card at the top with its icon, message, players online, ping and a **Play** button, and it is kept first in your server list (added once; delete it from the list and it stays deleted). Turn the card off with **Menu Background → Featured Server** |
+| Menu | **Multiplayer** | **VexVanilla.net** is the partnered main server: a big card at the top with its icon, message, players online, ping and a **Play** button, and it is kept first in your server list (added once; delete it from the list and it stays deleted). Turn the card off with **Menu Background → Featured Server** |
 | Menu | **Planet Menus** | Multiplayer, singleplayer, options and the other menus get the main-menu look: silk background, the big planet and small planets drifting by, with rounded buttons and sliders everywhere |
 | Menu | **Inventory Theme** | Every inventory (chests, furnaces, crafting, creative...) in the WHITECLIENT colours: dark panels, dark slots, white edges, your own opacity, light titles |
 | Menu | **Rounded Buttons** | Rounded see-through buttons on the title + pause screen |
@@ -96,7 +96,7 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.12.3.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Put `whiteclient-1.12.4.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
 
 The jar includes **MCEF Modern** (LGPL-2.1, by dimaskama) for the in-game browser; see `THIRD_PARTY_NOTICES.txt`.
 

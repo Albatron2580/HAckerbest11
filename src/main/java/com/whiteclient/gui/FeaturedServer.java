@@ -28,14 +28,17 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * VexVanilla as the main server of the multiplayer screen: a big card at the top with its icon, message,
+ * VexVanilla as the main server of the multiplayer screen: a big "partnered" card at the top with its icon, message,
  * players and ping and a Play button, and the server kept first in your server list.
  */
 public final class FeaturedServer {
 	public static final String NAME = "VexVanilla";
 	public static final String ADDRESS = "vexvanilla.net";
 	private static final Identifier ICON = Identifier.of(WhiteClient.MOD_ID, "featured_server_icon");
-	private static final int CARD_H = 50;
+	private static final int CARD_H = 58;
+	/** Same width vanilla uses for server messages, so their lines (and centring spaces) break the same way. */
+	private static final int MOTD_W = 236;
+	private static final int PLAY_W = 64;
 
 	private static MultiplayerScreen screen;
 	private static ServerInfo info;
@@ -133,13 +136,13 @@ public final class FeaturedServer {
 		layout.refreshPositions();
 		acc.whiteclient$serverListWidget().position(s.width, layout);
 
-		w = Math.min(340, s.width - 24);
+		w = Math.min(440, s.width - 20);
 		h = CARD_H;
 		x = s.width / 2f - w / 2f;
 		y = 30;
 		final ServerInfo target = info;
 		ButtonWidget play = ButtonWidget.builder(Text.literal("Play"), b -> acc.whiteclient$connect(target))
-				.dimensions(Math.round(x + w - 10 - 58), Math.round(y + (h - 20) / 2f), 58, 20).build();
+				.dimensions(Math.round(x + w - 10 - PLAY_W), Math.round(y + 9), PLAY_W, 20).build();
 		ButtonStyle.markAccent(play);
 		Screens.getButtons(s).add(play);
 	}
@@ -183,31 +186,36 @@ public final class FeaturedServer {
 			Render2D.planetLogo(ctx, ix + 16, iy + 16, 8, time, 255);
 		}
 
-		// name, FEATURED tag and the server's message
+		// name and PARTNERED tag
 		float tx = ix + 42;
 		UiFont.drawScaled(ctx, tr, NAME, tx, y + 8, 1.15f, 0xFFFFFFFF);
 		float nw = UiFont.width(tr, NAME) * 1.15f;
-		String tag = "FEATURED";
+		String tag = "PARTNERED";
 		float tagW = UiFont.width(tr, tag) * 0.8f + 10;
 		Render2D.roundRect(ctx, tx + nw + 6, y + 8, tagW, 11, 5.5f, 0x33FFFFFF);
 		UiFont.drawScaled(ctx, tr, tag, tx + nw + 11, y + 10, 0.8f, 0xFFEDEDF2);
 
-		float statusW = 0;
+		// players and ping under the Play button (right column), so nothing overlaps
 		String status = statusText();
+		float rightEdge = x + w - 10;
+		float colLeft = rightEdge - PLAY_W;
 		if (status != null) {
-			statusW = UiFont.width(tr, status) + 8;
-			float sx = x + w - 10 - 58 - 8 - statusW;
-			UiFont.draw(ctx, tr, status, sx + 4, y + 9, statusColor());
+			float sw = UiFont.width(tr, status) * 0.9f;
+			float sx = Math.min(rightEdge - sw, rightEdge - PLAY_W / 2f - sw / 2f);
+			colLeft = Math.min(colLeft, sx);
+			UiFont.drawScaled(ctx, tr, status, sx, y + 36, 0.9f, statusColor());
 		}
-		int motdW = (int) (x + w - 10 - 58 - 12 - tx);
+
+		// the server's own message, broken into lines exactly like the vanilla server list does
+		int motdW = (int) Math.min(MOTD_W, colLeft - 8 - tx);
 		Text motd = info.label;
 		if (motd != null && !motd.getString().isBlank() && info.getStatus() != null && info.getStatus().name().equals("SUCCESSFUL")) {
 			List<OrderedText> lines = tr.wrapLines(motd, Math.max(40, motdW));
 			for (int i = 0; i < Math.min(2, lines.size()); i++) {
-				ctx.drawText(tr, lines.get(i), Math.round(tx), Math.round(y + 23 + i * 10), 0xFFB0B0BA, false);
+				ctx.drawText(tr, lines.get(i), Math.round(tx), Math.round(y + 24 + i * 10), 0xFFB0B0BA, false);
 			}
 		} else {
-			UiFont.draw(ctx, tr, ADDRESS, tx, y + 26, 0xFF9A9AA6);
+			UiFont.draw(ctx, tr, ADDRESS, tx, y + 27, 0xFF9A9AA6);
 		}
 	}
 

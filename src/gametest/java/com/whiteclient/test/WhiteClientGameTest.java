@@ -181,8 +181,8 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			for (int i = 0; i < list.size(); i++) {
 				net.minecraft.client.network.ServerInfo info = list.get(i);
 				info.setStatus(net.minecraft.client.network.ServerInfo.Status.valueOf("SUCCESSFUL"));
-				info.label = net.minecraft.text.Text.literal("§bVexVanilla §7- §fSurvival · Events · Community");
-				info.playerCountLabel = net.minecraft.text.Text.literal("42/100");
+				info.label = net.minecraft.text.Text.literal("        §b§lVEX VANILLA §8> §b.gg/VexVanilla\n§3                          EU");
+				info.playerCountLabel = net.minecraft.text.Text.literal("89/1000");
 				info.ping = 23;
 			}
 		});
@@ -202,6 +202,10 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new com.whiteclient.gui.SupportScreen(new TitleScreen()));
 		context.waitTicks(20);
 		context.takeScreenshot("support_screen");
+		// connecting / loading screens get the planet look too
+		context.setScreen(() -> new net.minecraft.client.gui.screen.MessageScreen(net.minecraft.text.Text.literal("Encrypting...")));
+		context.waitTicks(10);
+		context.takeScreenshot("connecting_planet");
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
 

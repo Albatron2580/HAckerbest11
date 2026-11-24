@@ -96,8 +96,12 @@ public final class MenuIntegration {
 				if (bg == null || !bg.isEnabled() || !bg.loadingScreens.isOn()) {
 					return;
 				}
-				MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
-				context.fill(0, 0, s.width, s.height, 0x40000000);
+				if (bg.otherMenusLook.is("Planet")) {
+					MenuScene.draw(context, s, 120, false); // same planet look as the other menus (no fade: loading screens follow each other quickly)
+				} else {
+					MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
+					context.fill(0, 0, s.width, s.height, 0x40000000);
+				}
 				float time = WhiteClient.get().time();
 				float r = Math.max(9, Math.min(18, s.height * 0.045f));
 				float ly = Math.max(r * 2.2f, s.height * 0.16f);

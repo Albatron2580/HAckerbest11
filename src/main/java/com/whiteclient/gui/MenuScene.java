@@ -28,6 +28,11 @@ public final class MenuScene {
 
 	/** @param contentHalf half the width of the menu's content column (planets stay outside it) */
 	public static void draw(DrawContext ctx, Screen s, float contentHalf) {
+		draw(ctx, s, contentHalf, true);
+	}
+
+	/** @param fadeIn let the planets fade in when the screen opens */
+	public static void draw(DrawContext ctx, Screen s, float contentHalf, boolean fadeIn) {
 		int width = s.width, height = s.height;
 		float time = WhiteClient.get().time();
 		MenuBackgroundRenderer.draw(ctx, width, height, 1f, BackgroundShader.SILK);
@@ -38,11 +43,11 @@ public final class MenuScene {
 		float br = Math.max(40, Math.min(140, height * 0.25f));
 		float bx = Math.min(width * 0.13f, width / 2f - contentHalf - br * 0.55f);
 		float by = height * 0.62f + (float) Math.sin(time * 0.35f) * 3;
-		float ba = intro(s, 0f);
+		float ba = fadeIn ? intro(s, 0f) : 1f;
 		Render2D.bigPlanet(ctx, bx, by + (1 - ba) * 14, br, time, ba * 0.9f);
 
 		// small planets drifting up both sides
-		float pa = intro(s, 0.15f);
+		float pa = fadeIn ? intro(s, 0.15f) : 1f;
 		float side = Math.max(30, width / 2f - contentHalf);
 		for (int i = 0; i < 9; i++) {
 			float seed = i * 12.9898f + 7.3f;
