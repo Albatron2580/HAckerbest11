@@ -410,7 +410,7 @@ public class ClickGuiScreen extends Screen {
 						selected = null;
 						go(View.WINDOW);
 					}
-					default -> openLink(th.supportLink.get());
+					default -> client.setScreen(new SupportScreen(this));
 				}
 			});
 		}

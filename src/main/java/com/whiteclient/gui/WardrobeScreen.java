@@ -199,7 +199,7 @@ public class WardrobeScreen extends Screen {
 		Render2D.roundRectOutline(ctx, sx, 10, sw, 18, 9, 1, th.accent(0.35f));
 		Icons.heart(ctx, sx + 11, 19, 8, hs ? th.onAccent() : 0xFFFF6B8A);
 		UiFont.draw(ctx, textRenderer, sup, sx + 19, 15, hs ? th.onAccent() : th.text());
-		hit(sx, 10, sw, 18, () -> openLink(th.supportLink.get()));
+		hit(sx, 10, sw, 18, () -> client.setScreen(new SupportScreen(this)));
 		// done
 		String done = "Done";
 		float dw = UiFont.width(textRenderer, done) + 20;

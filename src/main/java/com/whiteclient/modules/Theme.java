@@ -21,7 +21,6 @@ public class Theme extends Module {
 	public final NumberSetting opacity = add(new NumberSetting("Panel Opacity", 0.94, 0.5, 1.0, 0.01));
 	public final NumberSetting roundness = add(new NumberSetting("Roundness", 9, 0, 14, 0.5));
 	public final BoolSetting stars = add(new BoolSetting("Home Stars", true));
-	public final TextSetting supportLink = add(new TextSetting("Support Link", "https://github.com/Albatron2580", 200));
 
 	private static final Theme FALLBACK = new Theme();
 

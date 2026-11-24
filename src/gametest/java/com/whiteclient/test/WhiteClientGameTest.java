@@ -199,6 +199,9 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new net.minecraft.client.gui.screen.option.OptionsScreen(new TitleScreen(), net.minecraft.client.MinecraftClient.getInstance().options));
 		context.waitTicks(20);
 		context.takeScreenshot("options_planet");
+		context.setScreen(() -> new com.whiteclient.gui.SupportScreen(new TitleScreen()));
+		context.waitTicks(20);
+		context.takeScreenshot("support_screen");
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
 

@@ -269,6 +269,7 @@ public class WhiteTitleScreen extends Screen {
 		// ---- icon dock
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> dock = new ArrayList<>();
+		dock.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> client.setScreen(new SupportScreen(this))});
 		dock.add(new Object[]{"Options", (IconPainter) Icons::gear, (Runnable) () -> client.setScreen(new OptionsScreen(this, client.options))});
 		dock.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager()))});
 		dock.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> client.setScreen(new RealmsMainScreen(this))});
@@ -495,6 +496,7 @@ public class WhiteTitleScreen extends Screen {
 		// ---- small icon buttons (top right)
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> icons = new ArrayList<>();
+		icons.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> client.setScreen(new SupportScreen(this))});
 		icons.add(new Object[]{"Wardrobe", (IconPainter) Icons::shirt, (Runnable) () -> client.setScreen(new WardrobeScreen(this))});
 		icons.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager()))});
 		icons.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> client.setScreen(new RealmsMainScreen(this))});

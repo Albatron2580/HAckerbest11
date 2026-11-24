@@ -70,7 +70,10 @@ public final class OrganicMesh {
 	 * (or the front half when the frame is turned). {@code gloss} adds a shiny highlight.
 	 */
 	public void ellipsoid(V3 c, V3 ax, V3 ay, V3 az, float rx, float ry, float rz, int top, int bottom, float gloss, int alpha) {
-		int lat = 7, lon = 14;
+		// level of detail: small or far-away parts (petals, eyes, tiny spheres) need far fewer faces
+		float size = Math.max(rx, Math.max(ry, rz)) / distance(c);
+		int lon = size > 0.12f ? 14 : size > 0.05f ? 12 : size > 0.022f ? 9 : 6;
+		int lat = Math.max(3, lon / 2);
 		V3[][] pos = new V3[lat + 1][lon];
 		V3[][] nor = new V3[lat + 1][lon];
 		int[][] col = new int[lat + 1][lon];
@@ -100,6 +103,11 @@ public final class OrganicMesh {
 		}
 	}
 
+	/** Distance from the camera (positions are camera-relative). */
+	private static float distance(V3 p) {
+		return (float) Math.sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z()) + 0.05f;
+	}
+
 	/** Sphere. */
 	public void sphere(V3 c, float r, int rgb) {
 		ellipsoid(c, new V3(1, 0, 0), V3.UP, new V3(0, 0, 1), r, r, r, rgb);
@@ -125,7 +133,7 @@ public final class OrganicMesh {
 		V3 ref = Math.abs(d.y()) < 0.9f ? V3.UP : new V3(1, 0, 0);
 		V3 e1 = d.cross(ref).normalize();
 		V3 e2 = d.cross(e1).normalize();
-		int sides = 10;
+		int sides = Math.max(ra, rb) / distance(a) > 0.03f ? 10 : 6;
 		V3[] pa = new V3[sides], pb = new V3[sides], na = new V3[sides];
 		for (int i = 0; i < sides; i++) {
 			double an = Math.PI * 2 * i / sides;

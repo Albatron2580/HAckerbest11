@@ -324,7 +324,7 @@ public class RainFX extends Module {
 					continue;
 				}
 				float mat = wMat[i];
-				float ry = ctx.ry(top + 0.01f), rd = ctx.ry(top + 0.004f);
+				float ry = ctx.ry(top + 0.01f);
 				float ax = ctx.rx(x0), az = ctx.rz(z0), bxx = ax + 1, bzz = az + 1;
 				int k00 = gz * (WN + 1) + gx, k10 = k00 + 1, k01 = k00 + WN + 1, k11 = k01 + 1;
 				float ga = groundA * mat;
@@ -333,12 +333,6 @@ public class RainFX extends Module {
 				int c11 = wetCol(bxx, ry, bzz, p, x0 + 1, z0 + 1, reach, wNoise[k11], ga, sky, cLight[k11] * warmW);
 				int c01 = wetCol(ax, ry, bzz, p, x0, z0 + 1, reach, wNoise[k01], ga, sky, cLight[k01] * warmW);
 				g.quad(ax, ry, az, c00, bxx, ry, az, c10, bxx, ry, bzz, c11, ax, ry, bzz, c01);
-				// wet ground is a little darker than dry ground
-				float fd = edgeFade(p, x0 + 0.5, z0 + 0.5, reach) * wetness * 0.16f;
-				if (fd > 0.004f) {
-					int d = Colors.argb(0x06080C, fd);
-					puddleBase.quad(ax, rd, az, d, ax, rd, bzz, d, bxx, rd, bzz, d, bxx, rd, az, d, 0f, 1f, 0f);
-				}
 				quads++;
 
 				// little glints of light catching the water
@@ -377,6 +371,27 @@ public class RainFX extends Module {
 		int k00 = gz * (WN + 1) + gx;
 		float l00 = cLight[k00], l10 = cLight[k00 + 1], l01 = cLight[k00 + WN + 1], l11 = cLight[k00 + WN + 2];
 		int cells = 0;
+		// a block that is completely under water is one quad instead of SUB x SUB small ones
+		boolean full = true;
+		for (int sz = 0; sz <= SUB && full; sz++) {
+			for (int sx = 0; sx <= SUB; sx++) {
+				if (mask(pNoise[(gz * SUB + sz) * PN + gx * SUB + sx], th) < 0.999f) {
+					full = false;
+					break;
+				}
+			}
+		}
+		if (full) {
+			float ax = ctx.rx(x0), az = ctx.rz(z0), bx = ax + 1, bz = az + 1;
+			int dark = Colors.argb(0x04060A, 0.58f * wetness);
+			puddleBase.quad(ax, yb, az, dark, ax, yb, bz, dark, bx, yb, bz, dark, bx, yb, az, dark, 0f, 1f, 0f);
+			int c00 = puddleCol(ax, ys, az, p, x0, z0, reach, 1f, alpha, sky, l00 * warmW);
+			int c10 = puddleCol(bx, ys, az, p, x0 + 1, z0, reach, 1f, alpha, sky, l10 * warmW);
+			int c11 = puddleCol(bx, ys, bz, p, x0 + 1, z0 + 1, reach, 1f, alpha, sky, l11 * warmW);
+			int c01 = puddleCol(ax, ys, bz, p, x0, z0 + 1, reach, 1f, alpha, sky, l01 * warmW);
+			g.quad(ax, ys, az, c00, bx, ys, az, c10, bx, ys, bz, c11, ax, ys, bz, c01);
+			return 1;
+		}
 		for (int sz = 0; sz < SUB; sz++) {
 			for (int sx = 0; sx < SUB; sx++) {
 				int px = gx * SUB + sx, pz = gz * SUB + sz;
