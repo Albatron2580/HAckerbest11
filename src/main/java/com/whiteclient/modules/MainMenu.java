@@ -5,7 +5,6 @@ import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ModeSetting;
 
-/** Replaces the vanilla title screen with the WHITECLIENT main menu. */
 public class MainMenu extends Module {
 	public final ModeSetting layout = add(new ModeSetting("Layout", "Showcase", "Showcase", "Centered"));
 	public final ModeSetting background = add(new ModeSetting("Background", "Silk", "Silk", "Energy", "Panorama"));

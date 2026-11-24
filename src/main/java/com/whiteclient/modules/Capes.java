@@ -10,7 +10,6 @@ import com.whiteclient.setting.TextSetting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 
-/** Free WHITECLIENT capes (client-side: only you see them). Needs "Cape" on in Skin Customization. */
 public class Capes extends Module {
 	public final ModeSetting design = add(new ModeSetting("Cape", "White", CapeTextures.DESIGNS));
 	public final TextSetting customFile = add(new TextSetting("Custom File", "", 64).visibleWhen(() -> design.is("Custom")));
@@ -31,7 +30,6 @@ public class Capes extends Module {
 		return wc == null ? null : wc.modules().get(Capes.class);
 	}
 
-	/** Texture id to wear, or null. */
 	public Identifier texture() {
 		if (design.is("Custom")) {
 			String f = customFile.get().trim();

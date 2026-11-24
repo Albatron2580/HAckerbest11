@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Synced lyrics from LRCLIB (free, no account needed). */
 public final class LyricsService {
 	static final String USER_AGENT = "WHITECLIENT/" + WhiteClient.VERSION + " (Minecraft mod; github.com/Albatron2580)";
 	private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -35,7 +34,6 @@ public final class LyricsService {
 		return t;
 	});
 
-	/** Cached lyrics, or null while loading (the first call starts the download). */
 	public Lyrics get(NowPlaying np) {
 		if (np == null || np.title() == null || np.title().isBlank()) {
 			return Lyrics.NONE;
@@ -90,7 +88,6 @@ public final class LyricsService {
 		return null;
 	}
 
-	/** Removes " - Remastered 2011", "(feat. X)" etc. for a fuzzier second search. */
 	static String cleanTitle(String title) {
 		String t = title.replaceAll("\\s*[(\\[][^)\\]]*[)\\]]", "");
 		int dash = t.indexOf(" - ");
@@ -102,7 +99,6 @@ public final class LyricsService {
 
 	private Lyrics fetch(NowPlaying np) throws Exception {
 		String artist = np.artist() == null ? "" : np.artist();
-		// 1) exact match (needs album + duration)
 		if (np.album() != null && !np.album().isBlank() && np.durationMs() > 0) {
 			HttpResponse<String> r = call("https://lrclib.net/api/get?artist_name=" + enc(artist)
 					+ "&track_name=" + enc(np.title()) + "&album_name=" + enc(np.album())
@@ -114,7 +110,6 @@ public final class LyricsService {
 				}
 			}
 		}
-		// 2) search, pick the synced result with the closest duration
 		for (String title : new String[]{np.title(), cleanTitle(np.title())}) {
 			HttpResponse<String> r = call("https://lrclib.net/api/search?track_name=" + enc(title) + "&artist_name=" + enc(artist));
 			if (r.statusCode() != 200) {

@@ -9,7 +9,6 @@ import net.minecraft.entity.player.SkinTextures;
 
 import java.util.function.Supplier;
 
-/** A 3D player model for menus (uses the vanilla skin widget) that can walk and idle. */
 public final class SkinPreview {
 	private final PlayerSkinWidget widget;
 
@@ -42,10 +41,6 @@ public final class SkinPreview {
 		}
 	}
 
-	/**
-	 * Poses arms and legs. {@code walk} 0..1 blends from idle to walking,
-	 * {@code phase} advances the walk cycle, {@code time} drives the idle sway.
-	 */
 	public void pose(float phase, float walk, float time) {
 		PlayerEntityModel[] models;
 		try {

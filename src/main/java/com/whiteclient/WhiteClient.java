@@ -94,7 +94,6 @@ public final class WhiteClient implements ClientModInitializer {
 		return config;
 	}
 
-	/** Smooth animation clock in seconds. */
 	public float time() {
 		return (System.nanoTime() - startNanos) / 1.0e9f;
 	}
@@ -104,7 +103,6 @@ public final class WhiteClient implements ClientModInitializer {
 		com.whiteclient.gui.Shapes.prewarm();
 		instance = this;
 
-		// Visuals
 		modules.register(new Halo());
 		modules.register(new Wings());
 		modules.register(new Aura());
@@ -125,7 +123,6 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Hitmarker());
 		modules.register(new ComboCounter());
 		modules.register(new ReachDisplay());
-		// World
 		modules.register(new GalaxySky());
 		modules.register(new Snow());
 		modules.register(new RainFX());
@@ -135,10 +132,8 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new FpsBoost());
 		modules.register(new TimeChanger());
 		modules.register(new HandView());
-		// Music
 		modules.register(new Spotify());
 		modules.register(new Text3D());
-		// HUD
 		modules.register(new Watermark());
 		modules.register(new InfoHUD());
 		modules.register(new Keystrokes());
@@ -151,7 +146,6 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Cinematic());
 		modules.register(new com.whiteclient.modules.DiscordStatus());
 		modules.register(new com.whiteclient.modules.AutoUpdate());
-		// Menu
 		modules.register(new MenuBackground());
 		modules.register(new ModsButton());
 		modules.register(new MenuButtons());
@@ -164,14 +158,12 @@ public final class WhiteClient implements ClientModInitializer {
 		config = new ConfigManager(modules);
 		config.load();
 		if (config.loadedVersion() < 3) {
-			// 1.5: new showcase main menu with silk background
 			MainMenu mm = modules.get(MainMenu.class);
 			mm.layout.reset();
 			mm.background.reset();
 			config.save();
 		}
 		if (config.loadedVersion() < 2) {
-			// 1.2: everything switched to the white theme
 			modules.get(MenuBackground.class).color.reset();
 			modules.get(Halo.class).color.reset();
 			config.save();
@@ -203,7 +195,6 @@ public final class WhiteClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_B,
 				KEY_CATEGORY));
 		CombatTracker.init();
-		// custom crosshair / potion HUD replace the vanilla ones only while they are on
 		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (ctx, tickCounter) -> {
 			CustomCrosshair ch = modules.get(CustomCrosshair.class);
 			if (ch != null && ch.isEnabled() && !crashed.contains(ch)) {
@@ -232,7 +223,6 @@ public final class WhiteClient implements ClientModInitializer {
 		HudElementRegistry.addLast(Identifier.of(MOD_ID, "hud"), this::renderHud);
 		WorldRenderEvents.END_MAIN.register(this::renderWorld);
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> config.save());
-		// a downloaded update is installed by a small helper once the game has closed
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			com.whiteclient.modules.AutoUpdate au = modules.get(com.whiteclient.modules.AutoUpdate.class);
 			if (au != null && au.isEnabled() && au.installAuto.isOn()) {
@@ -357,7 +347,6 @@ public final class WhiteClient implements ClientModInitializer {
 			}
 		}
 		try {
-			// 1) text & solid stuff, 2) additive glow on top (sorted back to front)
 			long d0 = System.nanoTime();
 			if (consumers instanceof VertexConsumerProvider.Immediate immediate) {
 				immediate.draw();
@@ -385,7 +374,7 @@ public final class WhiteClient implements ClientModInitializer {
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
 				ClientCommandManager.literal("whiteclient")
 						.executes(ctx -> {
-							openMenuNextTick = true; // chat closes first, open on the next tick
+							openMenuNextTick = true;
 							return 1;
 						})
 						.then(ClientCommandManager.literal("text")

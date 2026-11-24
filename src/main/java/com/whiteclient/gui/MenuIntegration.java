@@ -20,7 +20,6 @@ import net.minecraft.text.TranslatableTextContent;
 
 import java.util.List;
 
-/** Pause-menu "Mods" button and animated menu backgrounds. */
 public final class MenuIntegration {
 	private MenuIntegration() {
 	}
@@ -32,7 +31,6 @@ public final class MenuIntegration {
 			}
 		});
 		ScreenEvents.AFTER_INIT.register(MenuIntegration::afterInit);
-		// lay the pause menu out last, after every other mod had the chance to add its buttons
 		Identifier late = Identifier.of(WhiteClient.MOD_ID, "pause_layout");
 		ScreenEvents.AFTER_INIT.addPhaseOrdering(Event.DEFAULT_PHASE, late);
 		ScreenEvents.AFTER_INIT.register(late, (client, screen, w, h) -> {
@@ -97,7 +95,7 @@ public final class MenuIntegration {
 					return;
 				}
 				if (bg.otherMenusLook.is("Planet")) {
-					MenuScene.draw(context, s, 120, false); // same planet look as the other menus (no fade: loading screens follow each other quickly)
+					MenuScene.draw(context, s, 120, false);
 				} else {
 					MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
 					context.fill(0, 0, s.width, s.height, 0x40000000);
@@ -137,13 +135,11 @@ public final class MenuIntegration {
 				|| s instanceof net.minecraft.client.gui.screen.DisconnectedScreen;
 	}
 
-	/** Option / world / server list menus outside a world (not our own screens, they have their own looks). */
 	private static boolean isPlainMenu(Screen s) {
 		String pkg = s.getClass().getName();
 		return !(s instanceof TitleScreen) && !pkg.startsWith("com.whiteclient") && pkg.startsWith("net.minecraft");
 	}
 
-	/** A dark rounded card behind the pause menu buttons. */
 	private static void drawButtonCard(net.minecraft.client.gui.DrawContext ctx, Screen s) {
 		List<ClickableWidget> buttons = Screens.getButtons(s);
 		float x0 = Float.MAX_VALUE, y0 = Float.MAX_VALUE, x1 = -Float.MAX_VALUE, y1 = -Float.MAX_VALUE;
@@ -189,7 +185,7 @@ public final class MenuIntegration {
 	private static void addModsButton(Screen screen) {
 		List<ClickableWidget> buttons = Screens.getButtons(screen);
 		if (buttons.isEmpty()) {
-			return; // F3+Esc pause without menu
+			return;
 		}
 		ClickableWidget feedback = null;
 		ClickableWidget bugs = null;
@@ -216,7 +212,6 @@ public final class MenuIntegration {
 		Screen parent = screen;
 
 		if (feedback != null && !otherModsButton) {
-			// vanilla layout: the feedback / bug report row becomes one wide button
 			int x = feedback.getX();
 			int y = feedback.getY();
 			int h = feedback.getHeight();
@@ -234,7 +229,6 @@ public final class MenuIntegration {
 			return;
 		}
 
-		// Another client/mod (NoRisk, ModMenu...) owns that row: open up a new full-width row above "Options..."
 		ClickableWidget widthRef = back != null ? back : options;
 		if (options != null && widthRef != null) {
 			int insertY = options.getY();
@@ -258,7 +252,6 @@ public final class MenuIntegration {
 			return;
 		}
 
-		// Unknown layout - compact button in the corner.
 		String text = otherModsButton ? "WHITECLIENT" : label;
 		int w = MinecraftClient.getInstance().textRenderer.getWidth(text) + 16;
 		ButtonWidget ours = ButtonWidget.builder(Text.literal(text),

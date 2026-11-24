@@ -17,10 +17,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Remembers what you hit (only for drawing effects / HUD): last target, reach, combo and kills.
- * Purely client-side bookkeeping — it never changes how you attack.
- */
 public final class CombatTracker {
 	public interface HitListener {
 		void onHit(LivingEntity target, Vec3d hitPos, boolean crit);
@@ -78,7 +74,6 @@ public final class CombatTracker {
 		});
 	}
 
-	/** Also used by the screenshot tests. */
 	public static void hit(PlayerEntity player, LivingEntity target) {
 		long now = System.currentTimeMillis();
 		lastHit = target;
@@ -110,7 +105,6 @@ public final class CombatTracker {
 		}
 	}
 
-	/** Called every client tick: kill detection and combo reset when you get hit. */
 	public static void tick(MinecraftClient mc) {
 		if (mc.player == null || mc.world == null) {
 			synchronized (RECENT) {
@@ -122,7 +116,7 @@ public final class CombatTracker {
 		}
 		int hurt = mc.player.hurtTime;
 		if (hurt > lastPlayerHurt && hurt >= 8) {
-			combo = 0; // you got hit -> combo broken
+			combo = 0;
 		}
 		lastPlayerHurt = hurt;
 		long now = System.currentTimeMillis();

@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Adds WHITECLIENT's flag (an unused skin-layer bit) to the settings sent to the server, so other WhiteClient users can see you use it too. */
 @Mixin(GameOptions.class)
 public abstract class GameOptionsMixin {
 	@Inject(method = "getSyncedOptions", at = @At("RETURN"), cancellable = true, require = 0)

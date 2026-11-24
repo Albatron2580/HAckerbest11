@@ -20,11 +20,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
-/**
- * Glowing light creatures that float along with you: the Jellyfish ("kwal"), a Manta Ray that glides
- * in loops and a little Star Whale. When you stand still they drift over your head.
- * Only you can see them (they are drawn, not real entities), so they never affect gameplay.
- */
 public class Pets extends Module {
 	public static final String[] TYPES = {"Jellyfish", "Manta Ray", "Star Whale"};
 
@@ -40,7 +35,6 @@ public class Pets extends Module {
 	public final BoolSetting overHead = add(new BoolSetting("Float Over You When Still", true));
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.3, 2.0, 0.05, "x"));
 
-	// simulation state (20 ticks per second), interpolated when drawing
 	private double x, y, z, px, py, pz, vx, vy, vz;
 	private float yaw, pyaw, phase, pphase, perchAmt, pperch;
 	private int still;
@@ -54,12 +48,10 @@ public class Pets extends Module {
 		super("Pets", "A glowing jellyfish, manta ray or star whale that floats with you", Category.COSMETICS, false);
 	}
 
-	/** Pets are drawn, not entities; kept for code that skips pets. */
 	public static boolean isPet(Entity e) {
 		return false;
 	}
 
-	/** None of the light creatures walk (kept for the Wardrobe icons). */
 	public static boolean isGround(String type) {
 		return false;
 	}
@@ -68,8 +60,6 @@ public class Pets extends Module {
 	protected void onDisable() {
 		init = false;
 	}
-
-	// ------------------------------------------------------------------ colours
 
 	private int c1() {
 		if (!natural.isOn()) {
@@ -93,9 +83,6 @@ public class Pets extends Module {
 		};
 	}
 
-	// ------------------------------------------------------------------ simulation
-
-	/** The spot over your head (world coordinates). */
 	private static double[] overHead(PlayerEntity p, float td, double lift) {
 		Vec3d pos = p.getLerpedPos(td);
 		float sc = p.getScale() * 0.9375f;
@@ -103,7 +90,6 @@ public class Pets extends Module {
 		return new double[]{pos.x, pos.y + (sneak ? 1.55 : 1.9) * sc + lift, pos.z};
 	}
 
-	/** How far over your head it floats: high enough to stay clear of your name tag. */
 	private double lift() {
 		return switch (pet.get()) {
 			case "Manta Ray" -> 0.82;
@@ -152,7 +138,6 @@ public class Pets extends Module {
 		boolean rest = overHead.isOn() && still > 40 && !player.isSpectator();
 		switch (pet.get()) {
 			case "Manta Ray" -> {
-				// glides in slow loops around its spot
 				tx += Math.cos(t * 0.55) * 0.55;
 				tz += Math.sin(t * 0.55) * 0.55;
 				ty += Math.sin(t * 0.9) * 0.16;
@@ -161,7 +146,6 @@ public class Pets extends Module {
 				flapRate = 0.16f;
 			}
 			case "Star Whale" -> {
-				// swims a slow circle around you, a little higher up
 				double ang = t * 0.28 * sideSign;
 				tx = pl.x + Math.cos(ang) * d * 1.35;
 				tz = pl.z + Math.sin(ang) * d * 1.35;
@@ -170,7 +154,7 @@ public class Pets extends Module {
 				damp = 0.16;
 				flapRate = 0.09f;
 			}
-			default -> { // jellyfish
+			default -> {
 				ty += Math.sin(t * 0.8) * 0.18;
 				tx += Math.sin(t * 0.3) * 0.2;
 				tz += Math.cos(t * 0.35) * 0.2;
@@ -222,8 +206,6 @@ public class Pets extends Module {
 		};
 	}
 
-	// ------------------------------------------------------------------ drawing
-
 	@Override
 	public void renderWorld(WorldContext ctx) {
 		if (!init || ctx.client.player == null) {
@@ -235,7 +217,6 @@ public class Pets extends Module {
 		float lyaw = pyaw + MathHelper.wrapDegrees(yaw - pyaw) * td;
 		float pr = MathHelper.lerp(td, pperch, perchAmt);
 		if (pr > 0.001f) {
-			// follow your head exactly (no lag) while floating over you
 			double[] spot = overHead(player, td, lift());
 			lx = MathHelper.lerp(pr, lx, spot[0]);
 			ly = MathHelper.lerp(pr, ly, spot[1]);
@@ -243,7 +224,6 @@ public class Pets extends Module {
 		}
 		float ph = MathHelper.lerp(td, pphase, phase);
 		V3 base = new V3(ctx.rx(lx), ctx.ry(ly), ctx.rz(lz));
-		// in first person, hide it when it is right in front of the camera
 		float camDist = base.length();
 		float a = glow.getFloat() * fade;
 		if (!ctx.thirdPerson() && camDist < 1.2f) {
@@ -278,7 +258,6 @@ public class Pets extends Module {
 		}
 	}
 
-	/** Manta ray made of light: wide flapping wings, a ridge of light down the back and a long whip tail. */
 	private void manta(GlowBatch g, V3 c, float yawDeg, float ph, float t, float s, int c1, int c2, float a) {
 		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
 		float span = 0.62f * s, len = 0.36f * s;
@@ -301,7 +280,6 @@ public class Pets extends Module {
 						trail.x(), trail.y(), trail.z(), fill, prevTrail.x(), prevTrail.y(), prevTrail.z(), fill);
 				prevLead.line(g, lead, 0.065f * s, Colors.mix(c1, 0xFFFFFF, 0.25f), a);
 				prevTrail.line(g, trail, 0.045f * s, Colors.mix(c1, c2, 0.5f), 0.75f * a);
-				// ribs of light across the wing
 				if (k % 2 == 0) {
 					lead.line(g, trail, 0.03f * s, Colors.mix(c1, c2, x), 0.45f * a);
 				}
@@ -312,14 +290,11 @@ public class Pets extends Module {
 				prevLead = lead;
 				prevTrail = trail;
 			}
-			// cephalic fins (the little "horns" in front)
 			V3 h0 = nose.add(r, side * 0.05f * s);
 			h0.line(g, h0.add(f, 0.07f * s).add(r, side * 0.025f * s).add(u, -0.02f * s), 0.03f * s, c1, 0.8f * a);
 			g.disc(nose.x() + r.x() * side * 0.045f * s, nose.y() + 0.01f * s, nose.z() + r.z() * side * 0.045f * s, 0.015f * s, 0xFFFFFF, a, 6);
 		}
-		// glowing ridge down the back
 		nose.line(g, tailRoot, 0.07f * s, Colors.mix(c1, 0xFFFFFF, 0.4f), 0.9f * a);
-		// long whip tail
 		V3 prev = tailRoot;
 		for (int k = 1; k <= 7; k++) {
 			float sway = (float) Math.sin(ph * 2.2f - k * 0.6f) * 0.03f * s * k;
@@ -330,7 +305,6 @@ public class Pets extends Module {
 		g.disc(c.x(), c.y(), c.z(), 0.55f * s, c1, 0.12f * a, 14);
 	}
 
-	/** A small star whale: rings of light for a body, a beating tail fluke, flippers and twinkling stars on its back. */
 	private void whale(GlowBatch g, V3 c, float yawDeg, float ph, float t, float s, int c1, int c2, float a) {
 		V3 f = V3.forward(yawDeg), r = V3.right(yawDeg), u = V3.UP;
 		float L = 0.85f * s;
@@ -338,7 +312,7 @@ public class Pets extends Module {
 		V3[][] pts = new V3[rings][seg];
 		V3[] centres = new V3[rings];
 		for (int i = 0; i < rings; i++) {
-			float x = i / (float) (rings - 1); // 0 head .. 1 tail
+			float x = i / (float) (rings - 1);
 			float rad = 0.17f * s * (float) Math.sin(Math.PI * (0.12f + 0.82f * (1f - x * x * 0.85f)) ) * (1f - 0.75f * x * x);
 			rad = Math.max(0.02f * s, rad);
 			float bend = (float) Math.sin(ph * 2.0f - x * 2.4f) * 0.06f * s * x * x;
@@ -360,12 +334,10 @@ public class Pets extends Module {
 				}
 			}
 		}
-		// soft light inside the body
 		for (int i = 0; i < rings - 1; i++) {
 			float x = i / (float) (rings - 1);
 			g.disc(centres[i].x(), centres[i].y(), centres[i].z(), 0.2f * s * (1f - 0.7f * x), Colors.mix(c1, 0xFFFFFF, 0.3f), 0.22f * a, 10);
 		}
-		// tail fluke
 		V3 end = centres[rings - 1];
 		float beat = (float) Math.sin(ph * 2.0f - 2.6f) * 0.08f * s;
 		for (int side = -1; side <= 1; side += 2) {
@@ -375,12 +347,10 @@ public class Pets extends Module {
 			g.quad(end.x(), end.y(), end.z(), fill, tip.x(), tip.y(), tip.z(), fill, back.x(), back.y(), back.z(), fill, back.x(), back.y(), back.z(), fill);
 			end.line(g, tip, 0.035f * s, c1, 0.85f * a);
 			tip.line(g, back, 0.03f * s, c2, 0.6f * a);
-			// flippers
 			V3 root = centres[2].add(r, side * 0.1f * s).add(u, -0.06f * s);
 			float paddle = (float) Math.sin(ph * 1.3f + side) * 0.03f * s;
 			root.line(g, root.add(r, side * 0.14f * s).add(f, -0.06f * s).add(u, -0.05f * s + paddle), 0.04f * s, c1, 0.75f * a);
 		}
-		// eye + stars on the back
 		V3 eye = centres[1].add(r, 0.12f * s).add(u, 0.02f * s);
 		V3 eye2 = centres[1].add(r, -0.12f * s).add(u, 0.02f * s);
 		g.disc(eye.x(), eye.y(), eye.z(), 0.018f * s, 0xFFFFFF, a, 6);
@@ -398,7 +368,6 @@ public class Pets extends Module {
 		return new V3(a.x() + (b.x() - a.x()) * t, a.y() + (b.y() - a.y()) * t, a.z() + (b.z() - a.z()) * t);
 	}
 
-	/** A glowing jellyfish ("kwal"): pulsing bell + flowing tentacles. */
 	private void jellyfish(GlowBatch g, V3 c, float t, float s, int c1, int c2, float a) {
 		float pulse = 0.5f + 0.5f * (float) Math.sin(t * 2.6);
 		float bellR = (0.27f + 0.035f * pulse) * s;

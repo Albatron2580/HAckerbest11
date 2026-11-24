@@ -14,7 +14,6 @@ import net.minecraft.client.gui.DrawContext;
 
 import java.util.Locale;
 
-/** Shows how far away your last hit was. */
 public class ReachDisplay extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Right", HudLayout.POSITIONS));
 	public final BoolSetting always = add(new BoolSetting("Always Show", false));

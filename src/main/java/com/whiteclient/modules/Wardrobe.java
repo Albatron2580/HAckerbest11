@@ -25,10 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/**
- * Custom skins from PNG files in {@code config/whiteclient/skins}. Free, client-side only:
- * you see the skin on yourself (other players keep seeing your normal skin).
- */
 public class Wardrobe extends Module {
 	public final TextSetting skin = add(new TextSetting("Skin", "", 64));
 	public final BoolSetting slim = add(new BoolSetting("Slim Arms", false));
@@ -54,7 +50,6 @@ public class Wardrobe extends Module {
 		return p;
 	}
 
-	/** Skin file names without ".png", sorted. */
 	public static List<String> available() {
 		List<String> out = new ArrayList<>();
 		try (Stream<Path> s = Files.list(folder())) {
@@ -73,7 +68,6 @@ public class Wardrobe extends Module {
 		return FAILED.get(name);
 	}
 
-	/** Forget cached textures so edited PNGs are picked up again. */
 	public static void reload() {
 		MinecraftClient mc = MinecraftClient.getInstance();
 		for (Identifier id : LOADED.values()) {
@@ -87,7 +81,6 @@ public class Wardrobe extends Module {
 		FAILED.clear();
 	}
 
-	/** The real texture to draw for a skin file (for face icons), or null. */
 	public static Identifier texturePathFor(String name) {
 		Identifier id = texture(name);
 		return id == null ? null : texturePath(id);
@@ -105,7 +98,6 @@ public class Wardrobe extends Module {
 		return b.toString();
 	}
 
-	/** Loads (once) and returns the texture id for a skin file, or null if it can't be used. */
 	public static Identifier texture(String name) {
 		if (name == null || name.isBlank()) {
 			return null;
@@ -138,7 +130,6 @@ public class Wardrobe extends Module {
 		}
 	}
 
-	/** Old 64x32 skins: copy the right arm / leg to the left side like vanilla does. */
 	private static NativeImage upgradeLegacy(NativeImage old) {
 		NativeImage img = new NativeImage(64, 64, true);
 		for (int y = 0; y < 32; y++) {
@@ -148,17 +139,16 @@ public class Wardrobe extends Module {
 		}
 		for (int y = 16; y < 32; y++) {
 			for (int x = 0; x < 16; x++) {
-				img.setColorArgb(x + 16, y + 32, old.getColorArgb(x, y)); // leg
+				img.setColorArgb(x + 16, y + 32, old.getColorArgb(x, y));
 			}
 			for (int x = 40; x < 56; x++) {
-				img.setColorArgb(x - 8, y + 32, old.getColorArgb(x, y)); // arm
+				img.setColorArgb(x - 8, y + 32, old.getColorArgb(x, y));
 			}
 		}
 		old.close();
 		return img;
 	}
 
-	/** Swaps the body texture for the chosen custom skin and adds the chosen WHITECLIENT cape. */
 	public static SkinTextures apply(SkinTextures original) {
 		if (original == null) {
 			return null;

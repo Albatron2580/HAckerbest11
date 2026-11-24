@@ -5,12 +5,10 @@ import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 
-/** Text floating in the world that always faces the camera. */
 public final class WorldText {
 	private WorldText() {
 	}
 
-	/** Draws centred text at camera-relative x/y/z. Depth tested (hidden behind walls). */
 	public static void draw(WorldContext ctx, float x, float y, float z, String text, float scale, int argb, boolean shadow) {
 		TextRenderer tr = ctx.client.textRenderer;
 		MatrixStack ms = ctx.matrices;

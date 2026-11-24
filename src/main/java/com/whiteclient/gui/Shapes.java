@@ -18,11 +18,6 @@ import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Fast versions of the rounded UI shapes. Instead of filling every pixel row separately (thousands of draw
- * calls for one big circle), shapes are drawn with a few textured quads: pre-rendered anti-aliased discs,
- * rings and corner pieces, plus a pre-rendered planet. This keeps the main menu smooth.
- */
 public final class Shapes {
 	private Shapes() {
 	}
@@ -31,7 +26,6 @@ public final class Shapes {
 	private static final int[] DISC_SIZES = {16, 32, 64, 128, 256, 512};
 	private static final Identifier[] DISCS = new Identifier[DISC_SIZES.length];
 	private static boolean discsReady;
-	/** Exact-size corner textures (filled: thickness 0, outline: thickness > 0), keyed by radius / thickness. */
 	private static final Map<Long, Identifier> CORNERS = new LinkedHashMap<>(64, 0.75f, true);
 	private static int cornerId;
 	private static final int MAX_CORNERS = 160;
@@ -47,9 +41,6 @@ public final class Shapes {
 		}
 	}
 
-	// ------------------------------------------------------------------ textures
-
-	/** Texture with selectable filtering (linear for scaled sprites). */
 	private static final class ShapeTexture extends NativeImageBackedTexture {
 		private final boolean linear;
 		private GpuSampler sampler;
@@ -91,7 +82,6 @@ public final class Shapes {
 		return id;
 	}
 
-	/** Anti-aliased coverage (4x4 samples per pixel) of a ring between radius ri and ro around (c, c). */
 	private static int[] ringPixels(int size, float c, float ro, float ri) {
 		int[] px = new int[size * size];
 		for (int y = 0; y < size; y++) {
@@ -145,13 +135,10 @@ public final class Shapes {
 		return id;
 	}
 
-	// ------------------------------------------------------------------ shapes
-
 	private static int scale() {
 		return Math.max(1, MinecraftClient.getInstance().getWindow().getScaleFactor());
 	}
 
-	/** Circle at sub-pixel position and size (one textured quad). */
 	public static boolean circle(DrawContext ctx, float cx, float cy, float r, int argb) {
 		if (failed) {
 			return false;
@@ -178,7 +165,6 @@ public final class Shapes {
 		}
 	}
 
-	/** Draws a square n x n texture centred at (cx, cy) with half size {@code half} (GUI units). */
 	static void sprite(DrawContext ctx, Identifier id, int n, float cx, float cy, float half, int argb) {
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
@@ -188,7 +174,6 @@ public final class Shapes {
 		m.popMatrix();
 	}
 
-	/** Filled rounded rectangle: a few fills + four corner pieces (all in physical pixels). */
 	public static boolean roundRect(DrawContext ctx, float x, float y, float w, float h, float radius, int argb) {
 		if (failed) {
 			return false;
@@ -232,7 +217,6 @@ public final class Shapes {
 		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, c, x1 - r, y1 - r, r, r, r, r, r, r, n, n, argb);
 	}
 
-	/** Rounded outline: four straight strips + four ring corners. */
 	public static boolean roundRectOutline(DrawContext ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
 		if (failed) {
 			return false;
@@ -246,7 +230,7 @@ public final class Shapes {
 			int t = Math.max(1, Math.round(thickness * s));
 			int r = Math.min(Math.round(radius * s), Math.min(x1 - x0, y1 - y0) / 2);
 			if (r < t || x1 - x0 < 2 * t || y1 - y0 < 2 * t) {
-				return false; // tiny or very thick: let the exact slow path handle it
+				return false;
 			}
 			Matrix3x2fStack m = ctx.getMatrices();
 			m.pushMatrix();
@@ -268,21 +252,17 @@ public final class Shapes {
 		}
 	}
 
-	// ------------------------------------------------------------------ big planet (pre-rendered)
-
 	private static final int PLANET_TEX = 768;
 	private static final float GLOW_EXTENT = 1.48f;
 	private static CompletableFuture<int[][]> planetJob;
 	private static Identifier planetBody, planetGlow;
 
-	/** Starts rendering the planet textures in the background (call early, e.g. at startup). */
 	public static void prewarm() {
 		if (planetJob == null) {
 			planetJob = CompletableFuture.supplyAsync(() -> new int[][]{planetBodyPixels(PLANET_TEX), planetGlowPixels(256)});
 		}
 	}
 
-	/** Planet body (shaded sphere + soft bands) and atmosphere glow textures, or null while they are being made. */
 	static Identifier[] planet() {
 		if (failed) {
 			return null;
@@ -313,10 +293,6 @@ public final class Shapes {
 		return GLOW_EXTENT;
 	}
 
-	/**
-	 * Same look as the old layered planet (dark base, lit towards the top left, three faint bands),
-	 * but as one smooth gradient. The planet radius is (size / 2 - 2) pixels.
-	 */
 	private static int[] planetBodyPixels(int size) {
 		int[] out = new int[size * size];
 		float rad = size / 2f - 2f, c = size / 2f;
@@ -335,7 +311,6 @@ public final class Shapes {
 				if (cover <= 0f) {
 					continue;
 				}
-				// largest t where the pixel is still inside the shifted, shrinking light layer
 				float lo = 0f, hi = 1f;
 				for (int it = 0; it < 14; it++) {
 					float t = (lo + hi) / 2f;
@@ -370,14 +345,13 @@ public final class Shapes {
 		return out;
 	}
 
-	/** Soft white atmosphere around the planet: strongest at the surface, gone at GLOW_EXTENT radii. */
 	private static int[] planetGlowPixels(int size) {
 		int[] out = new int[size * size];
 		float c = size / 2f, ext = size / 2f - 1f;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
 				float dx = x + 0.5f - c, dy = y + 0.5f - c;
-				float d = (float) Math.sqrt(dx * dx + dy * dy) / ext * GLOW_EXTENT; // in planet radii
+				float d = (float) Math.sqrt(dx * dx + dy * dy) / ext * GLOW_EXTENT;
 				float layers = Math.max(0f, Math.min(10f, (GLOW_EXTENT - d) / 0.045f));
 				float a = 1f - (float) Math.pow(1f - 6f / 255f, layers);
 				out[y * size + x] = (Math.round(a * 255) << 24) | 0xFFFFFF;

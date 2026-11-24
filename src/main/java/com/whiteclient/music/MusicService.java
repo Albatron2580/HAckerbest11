@@ -13,7 +13,6 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
 
-/** Background poller: what is playing on Spotify right now (+ lyrics and cover). */
 public final class MusicService {
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build();
 
@@ -49,7 +48,6 @@ public final class MusicService {
 		return o != null ? o : current;
 	}
 
-	/** Fake "now playing" for previews and automated tests (null clears it). */
 	public void setOverride(NowPlaying np, Lyrics lyrics) {
 		this.override = np;
 		this.overrideLyrics = lyrics;
@@ -59,7 +57,6 @@ public final class MusicService {
 		return status;
 	}
 
-	/** Lyrics for the current song: null = still loading, {@link Lyrics#NONE} = none found. */
 	public Lyrics lyrics() {
 		if (override != null) {
 			return overrideLyrics == null ? Lyrics.NONE : overrideLyrics;
@@ -201,7 +198,6 @@ public final class MusicService {
 			}
 		}
 		if (images != null && !images.isEmpty()) {
-			// images are sorted big -> small; take the smallest that is still >= 64px
 			for (JsonElement img : images) {
 				JsonObject io = img.getAsJsonObject();
 				int w = io.has("width") && !io.get("width").isJsonNull() ? io.get("width").getAsInt() : 640;
@@ -210,7 +206,6 @@ public final class MusicService {
 				}
 			}
 		}
-		// progress was measured somewhere during the request; use the midpoint
 		long sampled = (sent + now) / 2;
 		status = playing ? "Playing" : "Paused";
 		return new NowPlaying(id == null ? title : id, title, artist, album == null ? "" : album, duration, progress,

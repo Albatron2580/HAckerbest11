@@ -6,15 +6,10 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import org.joml.Matrix3x2fStack;
 
-/**
- * 2D helpers for the white/black UI. Rounded shapes are drawn row by row in
- * physical pixels with anti-aliased edges, so they stay smooth at any GUI scale.
- */
 public final class Render2D {
 	private Render2D() {
 	}
 
-	/** Test hook: true = the old row-by-row drawing (slow), to compare against the fast shapes. */
 	public static boolean legacy;
 
 	private static int scale() {
@@ -80,7 +75,6 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	/** Horizontal span [left, right] of a rounded rect at physical row centre cy, or null if outside. */
 	private static float[] span(float X, float Y, float W, float H, float R, float cy) {
 		if (cy < Y || cy > Y + H || W <= 0 || H <= 0) {
 			return null;
@@ -97,7 +91,6 @@ public final class Render2D {
 		return new float[]{X + inset, X + W - inset};
 	}
 
-	/** Fills [l, r] on one physical row with anti-aliased ends. */
 	private static void fillSpan(DrawContext ctx, float l, float r, int py, int argb) {
 		if (r <= l) {
 			return;
@@ -120,7 +113,6 @@ public final class Render2D {
 		}
 	}
 
-	/** Anti-aliased rounded outline (only the ring is drawn, so it works over translucent fills). */
 	public static void roundRectOutline(DrawContext ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
 		if (w <= 0 || h <= 0 || (argb >>> 24) == 0) {
 			return;
@@ -156,7 +148,6 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	/** Vertical gradient inside a rounded rect (top colour -> bottom colour). */
 	public static void roundRectGradient(DrawContext ctx, float x, float y, float w, float h, float radius, int topArgb, int bottomArgb) {
 		if (w <= 0 || h <= 0) {
 			return;
@@ -181,10 +172,6 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	/**
-	 * Filled polygon (any shape, even-odd rule) with anti-aliased left/right edges.
-	 * {@code pts} = x0,y0,x1,y1,... in GUI coordinates.
-	 */
 	public static void polygon(DrawContext ctx, float[] pts, int argb) {
 		int n = pts.length / 2;
 		if (n < 3 || (argb >>> 24) == 0) {
@@ -222,7 +209,6 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	/** Thick line segment as a polygon. */
 	public static void line(DrawContext ctx, float x1, float y1, float x2, float y2, float width, int argb) {
 		float dx = x2 - x1, dy = y2 - y1;
 		float len = (float) Math.sqrt(dx * dx + dy * dy);
@@ -233,7 +219,6 @@ public final class Render2D {
 		polygon(ctx, new float[]{x1 + nx, y1 + ny, x2 + nx, y2 + ny, x2 - nx, y2 - ny, x1 - nx, y1 - ny}, argb);
 	}
 
-	/** Horizontal gradient (left colour -> right colour) made of thin vertical strips. */
 	public static void hGradient(DrawContext ctx, float x, float y, float w, float h, int left, int right) {
 		int steps = Math.max(2, Math.min(64, (int) w));
 		for (int i = 0; i < steps; i++) {
@@ -244,7 +229,6 @@ public final class Render2D {
 		}
 	}
 
-	/** Rounded rectangle with a 1px border (border drawn behind the fill). */
 	public static void roundRectBordered(DrawContext ctx, float x, float y, float w, float h, float radius, int fill, int border) {
 		roundRect(ctx, x - 1, y - 1, w + 2, h + 2, radius + 1, border);
 		roundRect(ctx, x, y, w, h, radius, fill);
@@ -257,7 +241,6 @@ public final class Render2D {
 		roundRect(ctx, cx - r, cy - r, r * 2, r * 2, r, argb);
 	}
 
-	/** Soft drop shadow made from stacked translucent rounded rects. */
 	public static void shadow(DrawContext ctx, float x, float y, float w, float h, float radius, int layers, int alpha) {
 		for (int i = layers; i >= 1; i--) {
 			float a = alpha / (float) layers;
@@ -265,7 +248,6 @@ public final class Render2D {
 		}
 	}
 
-	/** iOS-like toggle switch. {@code t} is the animation progress 0 (off) .. 1 (on). */
 	public static void toggle(DrawContext ctx, float x, float y, float t) {
 		float w = 20, h = 11;
 		int track = Colors.mixArgb(0xFF2A2A33, 0xFFF2F2F5, t);
@@ -283,7 +265,6 @@ public final class Render2D {
 		ctx.drawText(tr, s, Math.round(cx - tr.getWidth(s) / 2f), Math.round(y), color, false);
 	}
 
-	/** Text drawn at a custom scale (e.g. 0.75 for small captions). */
 	public static void textScaled(DrawContext ctx, TextRenderer tr, String s, float x, float y, float scale, int color) {
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
@@ -293,14 +274,12 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	/** Big planet logo: white planet with a tilted dotted ring and a small orbiting moon. */
 	public static void planetLogo(DrawContext ctx, float cx, float cy, float r, float time, int alpha) {
 		double tilt = Math.toRadians(-20);
 		float ra = r * 1.95f, rb = r * 0.52f;
 		float dot = Math.max(0.45f, r * 0.085f);
 		int n = 70;
 		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
-		// back half of the ring
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n;
 			if (Math.sin(a) >= 0) {
@@ -311,10 +290,8 @@ public final class Render2D {
 		}
 		circle(ctx, cx, cy, r * 1.25f, Colors.withAlpha(0xFFFFFF, (int) (alpha * 0.06f)));
 		circle(ctx, cx, cy, r, Colors.withAlpha(0xFFFFFF, alpha));
-		// soft shadow on the planet's lower right
 		circle(ctx, cx + r * 0.28f, cy + r * 0.3f, r * 0.62f, Colors.withAlpha(0xD8DCE6, (int) (alpha * 0.55f)));
 		circle(ctx, cx - r * 0.12f, cy - r * 0.12f, r * 0.7f, Colors.withAlpha(0xFFFFFF, alpha));
-		// front half of the ring
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n;
 			if (Math.sin(a) < 0) {
@@ -330,11 +307,6 @@ public final class Render2D {
 		}
 	}
 
-	/**
-	 * A big shaded planet with the dotted logo ring, for backgrounds. The body is opaque (lit from the
-	 * top left), the ring passes behind and in front of it, and a small moon orbits slowly.
-	 */
-	/** Ring half-width of {@link #bigPlanet} relative to the planet radius (moon orbits at 1.1x this). */
 	public static final float BIG_RING = 1.55f;
 
 	public static void bigPlanet(DrawContext ctx, float cx, float cy, float r, float time, float alpha) {
@@ -346,7 +318,7 @@ public final class Render2D {
 			if (tex != null) {
 				bigPlanetFast(ctx, tex, cx, cy, r, time, alpha);
 			}
-			return; // (still being prepared in the background for the first moment)
+			return;
 		}
 		double tilt = Math.toRadians(-18);
 		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
@@ -354,11 +326,9 @@ public final class Render2D {
 		int n = Math.max(90, (int) (ra * 1.1f));
 		float dot = Math.max(0.6f, r * 0.022f);
 		float spinOffset = time * 0.05f;
-		// atmosphere glow
 		for (int g = 10; g >= 1; g--) {
 			circle(ctx, cx, cy, r * (1f + g * 0.045f), Colors.withAlpha(0xFFFFFF, (int) (alpha * 6)));
 		}
-		// back half of the ring (inner faint band + dots)
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n + spinOffset;
 			if (Math.sin(a) >= 0) {
@@ -371,7 +341,6 @@ public final class Render2D {
 						Colors.withAlpha(0xFFFFFF, (int) (alpha * (band == 0 ? 0.35f : 0.2f) * 255)));
 			}
 		}
-		// body: dark base with lighter layers shifted toward the light
 		int dark = 0x1D1E23, light = 0xB7BAC4;
 		int layers = 40;
 		for (int i = 0; i <= layers; i++) {
@@ -381,13 +350,11 @@ public final class Render2D {
 			int col = Colors.mix(dark, light, (float) Math.pow(t, 1.25));
 			circle(ctx, cx - off, cy - off, rr, Colors.withAlpha(col, (int) (alpha * 255)));
 		}
-		// soft bands across the surface (gas giant look)
 		for (int b = 0; b < 3; b++) {
 			float by = cy - r * 0.35f + b * r * 0.32f;
 			float half = (float) Math.sqrt(Math.max(0, r * r - (by - cy) * (by - cy))) * 0.92f;
 			roundRect(ctx, cx - half, by, half * 2, r * 0.07f, r * 0.035f, Colors.withAlpha(0xFFFFFF, (int) (alpha * 14)));
 		}
-		// front half of the ring
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n + spinOffset;
 			if (Math.sin(a) < 0) {
@@ -400,7 +367,6 @@ public final class Render2D {
 						Colors.withAlpha(0xFFFFFF, (int) (alpha * (band == 0 ? 0.85f : 0.45f) * 255)));
 			}
 		}
-		// moon
 		double m = time * 0.25;
 		float mx = (float) Math.cos(m) * ra * 1.1f, my = (float) Math.sin(m) * rb * 1.1f;
 		boolean behind = Math.sin(m) < 0 && Math.abs(mx) < r;
@@ -413,7 +379,6 @@ public final class Render2D {
 		}
 	}
 
-	/** {@link #bigPlanet} drawn with the pre-rendered body and glow (a handful of quads instead of thousands). */
 	private static void bigPlanetFast(DrawContext ctx, net.minecraft.util.Identifier[] tex, float cx, float cy, float r, float time, float alpha) {
 		double tilt = Math.toRadians(-18);
 		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
@@ -422,9 +387,7 @@ public final class Render2D {
 		float dot = Math.max(0.6f, r * 0.022f);
 		float spinOffset = time * 0.05f;
 		int a255 = (int) (Math.min(1f, alpha) * 255);
-		// atmosphere glow
 		Shapes.sprite(ctx, tex[1], 256, cx, cy, r * Shapes.glowExtent() * 128f / 127f, Colors.withAlpha(0xFFFFFF, a255));
-		// back half of the ring
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n + spinOffset;
 			if (Math.sin(a) >= 0) {
@@ -437,10 +400,8 @@ public final class Render2D {
 						Colors.withAlpha(0xFFFFFF, (int) (alpha * (band == 0 ? 0.35f : 0.2f) * 255)));
 			}
 		}
-		// body
 		int ts = Shapes.planetTexSize();
 		Shapes.sprite(ctx, tex[0], ts, cx, cy, r * (ts / 2f) / (ts / 2f - 2f), Colors.withAlpha(0xFFFFFF, a255));
-		// front half of the ring
 		for (int i = 0; i < n; i++) {
 			double a = Math.PI * 2 * i / n + spinOffset;
 			if (Math.sin(a) < 0) {
@@ -453,7 +414,6 @@ public final class Render2D {
 						Colors.withAlpha(0xFFFFFF, (int) (alpha * (band == 0 ? 0.85f : 0.45f) * 255)));
 			}
 		}
-		// moon
 		double m = time * 0.25;
 		float mx = (float) Math.cos(m) * ra * 1.1f, my = (float) Math.sin(m) * rb * 1.1f;
 		boolean behind = Math.sin(m) < 0 && Math.abs(mx) < r;
@@ -466,14 +426,11 @@ public final class Render2D {
 		}
 	}
 
-	/** Small white planet-with-ring logo. */
 	public static void logo(DrawContext ctx, float cx, float cy, float size, float time) {
 		float r = size * 0.42f;
-		// ring behind
 		roundRect(ctx, cx - size * 0.95f, cy - size * 0.16f, size * 1.9f, size * 0.32f, size * 0.16f, 0x55FFFFFF);
 		circle(ctx, cx, cy, r + 0.8f, 0x33FFFFFF);
 		circle(ctx, cx, cy, r, 0xFFFFFFFF);
-		// ring front highlight
 		roundRect(ctx, cx - size * 0.95f, cy + size * 0.02f, size * 1.9f, size * 0.12f, size * 0.06f, 0xCCFFFFFF);
 		float a = time * 1.7f;
 		circle(ctx, cx + (float) Math.cos(a) * size * 0.85f, cy + (float) Math.sin(a) * size * 0.12f, size * 0.09f, 0xFFFFFFFF);

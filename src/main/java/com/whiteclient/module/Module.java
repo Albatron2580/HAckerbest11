@@ -60,7 +60,6 @@ public abstract class Module {
 		}
 	}
 
-	/** Called after a module is toggled from the menus (used for notifications). */
 	public static java.util.function.Consumer<Module> toggleListener;
 
 	public void toggle() {
@@ -79,15 +78,12 @@ public abstract class Module {
 	protected void onDisable() {
 	}
 
-	/** Called every client tick (20/s) while enabled. */
 	public void onTick(MinecraftClient client) {
 	}
 
-	/** Called every frame while enabled, after the world's main pass. Coordinates are camera-relative. */
 	public void renderWorld(WorldContext ctx) {
 	}
 
-	/** Called every frame while enabled to draw on the HUD. */
 	public void renderHud(DrawContext context, float tickDelta) {
 	}
 }

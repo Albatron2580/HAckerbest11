@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-/** Light, readable container titles on the dark themed inventories. */
 @Mixin(HandledScreen.class)
 public abstract class HandledScreenMixin {
 	@ModifyArg(method = "drawForeground", at = @At(value = "INVOKE",

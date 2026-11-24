@@ -9,12 +9,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Tiny helper that runs on its own after you close Minecraft: it waits for the game to exit, removes the old
- * WHITECLIENT jar and puts the new one in your mods folder. Only plain Java, no Minecraft classes.
- *
- * <p>Arguments: game pid, old jar, downloaded new jar, where the new jar goes.
- */
 public final class Swap {
 	private Swap() {
 	}
@@ -43,7 +37,6 @@ public final class Swap {
 			log("new jar missing: " + staged);
 			return;
 		}
-		// Windows can keep the old jar locked for a moment after the game closes
 		boolean removed = false;
 		for (int i = 0; i < 120 && !removed; i++) {
 			try {

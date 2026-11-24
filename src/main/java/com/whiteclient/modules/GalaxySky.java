@@ -12,7 +12,6 @@ import com.whiteclient.setting.NumberSetting;
 
 import java.util.Random;
 
-/** Twinkling stars and a milky-way band painted over the sky. */
 public class GalaxySky extends Module {
 	public final NumberSetting stars = add(new NumberSetting("Stars", 500, 100, 2000, 50));
 	public final NumberSetting brightness = add(new NumberSetting("Brightness", 1.2, 0.2, 2.0, 0.05, "x"));
@@ -55,7 +54,6 @@ public class GalaxySky extends Module {
 			float sz = 0.5f + (float) Math.pow(r.nextFloat(), 6) * 2.2f;
 			starData[i] = new float[]{d.x(), d.y(), d.z(), sz, r.nextFloat() * 100f, 0.6f + r.nextFloat() * 2f, c};
 		}
-		// milky way: stars concentrated around a great circle that passes high overhead
 		V3 n = new V3(0.35f, 0.25f, 0.9f).normalize();
 		V3 a = n.cross(V3.UP).normalize();
 		V3 b = n.cross(a).normalize();

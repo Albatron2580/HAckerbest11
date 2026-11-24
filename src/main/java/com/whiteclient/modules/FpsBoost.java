@@ -12,10 +12,6 @@ import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.particle.ParticlesMode;
 
-/**
- * FPS Boost: switches the heavy vanilla video settings to fast ones (and puts your own settings back
- * when you turn it off). Pure settings, nothing hacky.
- */
 public class FpsBoost extends Module {
 	public final BoolSetting clouds = add(new BoolSetting("No Clouds", true));
 	public final BoolSetting shadows = add(new BoolSetting("No Entity Shadows", true));
@@ -24,7 +20,6 @@ public class FpsBoost extends Module {
 	public final BoolSetting unlock = add(new BoolSetting("Unlock FPS (VSync Off)", true));
 	public final BoolSetting vignette = add(new BoolSetting("No Vignette", true));
 	public final BoolSetting effects = add(new BoolSetting("Lighter Client Effects", true));
-	/** Your own video settings from before the boost, so they can be put back. */
 	private final TextSetting saved = add(new TextSetting("Saved Settings", "", 4000).visibleWhen(() -> false));
 
 	private int timer;
@@ -33,7 +28,6 @@ public class FpsBoost extends Module {
 		super("FPS Boost", "Faster video settings in one click (turn off to get yours back)", Category.WORLD, true);
 	}
 
-	/** True when WHITECLIENT should draw its own effects a bit lighter (fewer particles / glows). */
 	public static boolean lighter() {
 		WhiteClient wc = WhiteClient.get();
 		if (wc == null) {

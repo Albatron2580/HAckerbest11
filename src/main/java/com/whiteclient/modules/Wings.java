@@ -14,7 +14,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
-/** Spiky glowing line-art wings on your back. */
 public class Wings extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting size = add(new NumberSetting("Size", 1.0, 0.4, 2.0, 0.05, "x"));
@@ -27,7 +26,6 @@ public class Wings extends Module {
 	public final BoolSetting others = add(new BoolSetting("Show On Others", true));
 	public final NumberSetting range = add(new NumberSetting("Others Range", 48, 8, 128, 4));
 
-	/** Wing outline in (outward, up) units; index 0 is the root. */
 	private static final float[][] SHAPE = {
 			{0.04f, 0.06f},
 			{0.30f, 0.38f}, {0.62f, 0.62f}, {0.95f, 0.80f}, {1.24f, 0.93f},
@@ -38,7 +36,6 @@ public class Wings extends Module {
 			{0.43f, -0.08f}, {0.36f, -0.37f},
 			{0.22f, -0.12f}, {0.05f, -0.10f}
 	};
-	/** Indices of the spike tips (for the feather lines). */
 	private static final int[] TIPS = {4, 6, 8, 10, 12, 14};
 
 	public Wings() {
@@ -87,19 +84,16 @@ public class Wings extends Module {
 
 	private void drawWing(GlowBatch g, V3[] pts, int rgb, float intensity, float s) {
 		float width = 0.075f * (0.6f + 0.4f * s);
-		// outline (closed)
 		for (int i = 0; i < pts.length; i++) {
 			V3 a = pts[i];
 			V3 b = pts[(i + 1) % pts.length];
 			a.line(g, b, width, rgb, intensity);
 		}
-		// feather spines from the root to every spike tip
 		if (feathers.isOn()) {
 			for (int tip : TIPS) {
 				pts[0].line(g, pts[tip], width * 0.7f, rgb, intensity * 0.35f);
 			}
 		}
-		// faint membrane fill (triangle fan from the root)
 		float f = fill.getFloat();
 		if (f > 0.001f) {
 			int c = Colors.argb(rgb, f);

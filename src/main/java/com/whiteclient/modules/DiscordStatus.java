@@ -16,9 +16,7 @@ import net.minecraft.world.World;
 
 import java.util.UUID;
 
-/** Shows "Playing WhiteClient" with the logo, where you are and how long you have been playing on your Discord profile. */
 public class DiscordStatus extends Module {
-	/** The WhiteClient app on Discord: its name is what Discord shows after "Playing". */
 	public static final String APP_ID = "1574503180992249856";
 
 	public final InfoSetting statusInfo = add(new InfoSetting("Status", () -> this.ipc == null ? "Off" : this.ipc.status()));
@@ -54,7 +52,7 @@ public class DiscordStatus extends Module {
 	@Override
 	protected void onDisable() {
 		if (ipc != null) {
-			ipc.stop(); // clears the status in Discord
+			ipc.stop();
 			ipc = null;
 		}
 	}
@@ -82,7 +80,7 @@ public class DiscordStatus extends Module {
 		ensure();
 		boolean focused = mc.isWindowFocused();
 		if (focused && !wasFocused) {
-			ipc.bump(); // back in Minecraft: put WhiteClient on top again
+			ipc.bump();
 		}
 		wasFocused = focused;
 		boolean inWorld = mc.world != null;
@@ -101,7 +99,6 @@ public class DiscordStatus extends Module {
 		try {
 			ipc.setActivity(build(mc));
 		} catch (Throwable t) {
-			// never break the game for a status
 		}
 	}
 
@@ -165,7 +162,6 @@ public class DiscordStatus extends Module {
 		return act;
 	}
 
-	/** Discord wants 2..128 characters. */
 	private static String fit(String s) {
 		if (s.length() > 128) {
 			s = s.substring(0, 125) + "...";

@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.UUID;
 
-/** The logo in front of your name in the Tab player list. */
 @Mixin(PlayerListHud.class)
 public abstract class PlayerListHudMixin {
 	@Inject(method = "getPlayerName", at = @At("RETURN"), cancellable = true, require = 0)

@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Hand View: moves / scales the first-person item. */
 @Mixin(HeldItemRenderer.class)
 public abstract class HeldItemRendererMixin {
 	@Inject(method = "renderFirstPersonItem", at = @At("HEAD"), require = 0)

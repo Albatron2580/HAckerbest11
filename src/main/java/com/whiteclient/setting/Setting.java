@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 
 import java.util.function.BooleanSupplier;
 
-/** A single configurable value of a module. */
 public abstract class Setting<T> {
 	private final String name;
 	private final T defaultValue;

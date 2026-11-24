@@ -26,10 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-/**
- * Big extruded 3D words that pop up one by one - synced to your Spotify lyrics,
- * or your own text.
- */
 public class Text3D extends Module {
 	public final ModeSetting source = add(new ModeSetting("Source", "Spotify Lyrics", "Spotify Lyrics", "Custom Text"));
 	public final TextSetting message = add(new TextSetting("Custom Text", "Welcome to WHITECLIENT the best visuals", 160).onChange(this::restart));
@@ -57,10 +53,9 @@ public class Text3D extends Module {
 	private static final float EXIT_TIME = 0.45f;
 	private static final int MAX_ROW_CHARS = 16;
 
-	/** One line / group of words on screen. */
 	private static final class Group {
 		final List<String> words = new ArrayList<>();
-		final List<Float> appear = new ArrayList<>(); // seconds after creation
+		final List<Float> appear = new ArrayList<>();
 		final List<Float> tilt = new ArrayList<>();
 		String subtitle;
 		float created;
@@ -76,13 +71,11 @@ public class Text3D extends Module {
 	private final List<Group> groups = new ArrayList<>();
 	private float lastTime = -1;
 
-	// custom text state
 	private List<String> customWords = new ArrayList<>();
 	private int customIndex;
 	private float customNextAt = -1;
 	private boolean customFinished;
 
-	// lyrics state
 	private String lastTrack;
 	private int lastLine = Integer.MIN_VALUE;
 
@@ -137,8 +130,6 @@ public class Text3D extends Module {
 		return g;
 	}
 
-	// ------------------------------------------------------------------ sources
-
 	@Override
 	public void renderWorld(WorldContext ctx) {
 		float now = ctx.time;
@@ -174,7 +165,6 @@ public class Text3D extends Module {
 		}
 	}
 
-	/** @return true when music is playing (so the custom idle text should not show) */
 	private boolean updateLyrics(WorldContext ctx, float now) {
 		WhiteClient wc = WhiteClient.get();
 		NowPlaying np = wc.music().current();
@@ -209,7 +199,7 @@ public class Text3D extends Module {
 			return true;
 		}
 		if (lyrics == null || lyrics.isEmpty() || !np.positionKnown()) {
-			return true; // title only
+			return true;
 		}
 		long pos = np.positionMs() + offset;
 		int idx = lyrics.indexAt(pos);
@@ -228,7 +218,7 @@ public class Text3D extends Module {
 		Lyrics.Line line = lyrics.lines().get(idx);
 		List<String> words = split(fmt(line.text()));
 		if (words.isEmpty()) {
-			return true; // instrumental gap
+			return true;
 		}
 		long lineEnd = lyrics.endOf(idx);
 		long dur = Math.max(400, Math.min(lineEnd - line.timeMs(), 7000));
@@ -283,8 +273,6 @@ public class Text3D extends Module {
 		return out;
 	}
 
-	// ------------------------------------------------------------------ placement
-
 	private static double cameraToPlayer(WorldContext ctx) {
 		if (!ctx.thirdPerson() || ctx.client.player == null) {
 			return 0;
@@ -296,7 +284,6 @@ public class Text3D extends Module {
 		return Math.min(12, Math.sqrt(dx * dx + dy * dy + dz * dz));
 	}
 
-	/** Where new text should float: in front of the camera, a little above the crosshair. */
 	private Vec3d targetAnchor(WorldContext ctx, boolean randomSide) {
 		Vec3d cam = ctx.cam;
 		double yaw = Math.toRadians(ctx.client.gameRenderer.getCamera().getYaw());
@@ -308,8 +295,6 @@ public class Text3D extends Module {
 		double up = height.get() * (d / 6.0) + (randomSide ? random.nextDouble() * 0.6 : 0);
 		return new Vec3d(cam.x + fx * d + rx * sideOff, cam.y + fy * d + up, cam.z + fz * d + rz * sideOff);
 	}
-
-	// ------------------------------------------------------------------ drawing
 
 	private static float pop(float t) {
 		if (t <= 0) {
@@ -330,7 +315,6 @@ public class Text3D extends Module {
 		float t = now - g.created;
 		int n = g.words.size();
 
-		// current (karaoke) word = the newest one that has appeared
 		g.highlight = -1;
 		if (g.lyrics) {
 			for (int i = 0; i < n; i++) {
@@ -340,7 +324,6 @@ public class Text3D extends Module {
 			}
 		}
 
-		// rows of at most MAX_ROW_CHARS characters
 		List<int[]> rows = new ArrayList<>();
 		int start = 0, chars = 0;
 		for (int i = 0; i < n; i++) {

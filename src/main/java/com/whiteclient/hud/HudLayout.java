@@ -1,9 +1,5 @@
 package com.whiteclient.hud;
 
-/**
- * Stacks HUD boxes per screen corner so the HUD modules never overlap each other.
- * Reset every frame; modules ask for a spot in registration order.
- */
 public final class HudLayout {
 	public static final String[] POSITIONS = {"Top Left", "Top Right", "Bottom Left", "Bottom Right", "Left", "Right"};
 	private static final float[] CURSOR = new float[6];
@@ -33,7 +29,6 @@ public final class HudLayout {
 		return i == 2 || i == 3;
 	}
 
-	/** Marks space as used by something drawn outside the layout (Spotify card, watermark). */
 	public static void reserve(String pos, float y1, float y2) {
 		int i = index(pos);
 		if (bottom(i)) {
@@ -43,7 +38,6 @@ public final class HudLayout {
 		}
 	}
 
-	/** Returns the top-left corner {x, y} for a box of w x h at a position. */
 	public static float[] place(String pos, float w, float h) {
 		int i = index(pos);
 		boolean right = i == 1 || i == 3 || i == 5;

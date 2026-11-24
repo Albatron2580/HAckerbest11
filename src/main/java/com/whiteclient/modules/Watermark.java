@@ -15,7 +15,6 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import org.joml.Matrix3x2fStack;
 
-/** Dark pill at the top of the screen: logo / name / ping / FPS. */
 public class Watermark extends Module {
 	public final TextSetting name = add(new TextSetting("Name", "whiteclient", 24));
 	public final ModeSetting position = add(new ModeSetting("Position", "Top Center", "Top Center", "Top Left", "Top Right"));
@@ -26,7 +25,6 @@ public class Watermark extends Module {
 
 	private float shownFps = -1;
 
-	/** Last drawn bounds in GUI coordinates (used so other HUD parts can avoid overlapping it). */
 	public static float boundsX1, boundsX2, boundsY2;
 	public static long boundsFrameMs;
 

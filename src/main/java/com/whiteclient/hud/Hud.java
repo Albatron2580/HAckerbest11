@@ -4,7 +4,6 @@ import com.whiteclient.gui.Render2D;
 import com.whiteclient.render.Colors;
 import net.minecraft.client.gui.DrawContext;
 
-/** Shared look of the in-game HUD boxes (same as the watermark and Spotify card). */
 public final class Hud {
 	public static final int TEXT = 0xFFFFFFFF;
 	public static final int SUB = 0xFFA8A8B4;

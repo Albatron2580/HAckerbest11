@@ -1,6 +1,5 @@
 package com.whiteclient.render;
 
-/** Compact 3D simplex noise (based on Stefan Gustavson's public-domain reference). Output ~[-1, 1]. */
 public final class Noise {
 	private static final int[][] GRAD3 = {
 			{1, 1, 0}, {-1, 1, 0}, {1, -1, 0}, {-1, -1, 0},

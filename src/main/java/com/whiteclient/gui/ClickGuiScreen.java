@@ -36,10 +36,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 
-/**
- * The WHITECLIENT menu (Right Shift).
- * Home: big category cards. Window: draggable / resizable panel with sidebar, module list and settings.
- */
 public class ClickGuiScreen extends Screen {
 	private enum View { HOME, WINDOW }
 
@@ -48,7 +44,6 @@ public class ClickGuiScreen extends Screen {
 	private static final int FOOTER = 18;
 	private static final int ROW = 22;
 
-	// window geometry survives reopening
 	private static float winX = Float.NaN, winY, winW = 470, winH = 290;
 	private static Category lastCategory = Category.COSMETICS;
 
@@ -68,19 +63,15 @@ public class ClickGuiScreen extends Screen {
 	private long opened = System.nanoTime();
 	private long lastFrame = System.nanoTime();
 	private float viewSwitch = 1f;
-	/** When the start page cards started getting shoved out of their stack. */
 	private long dealAt = System.nanoTime();
-	/** Set while the start page plays its closing animation. */
 	private long closingAt;
 
-	// scrolling (0 = list / home results, 1 = settings column)
 	private final float[] scroll = new float[2];
 	private final float[] scrollTarget = new float[2];
 	private final float[] maxScroll = new float[2];
 	private final float[][] scrollArea = new float[2][4];
 
-	// interactions
-	private int dragMode; // 1 move window, 2 resize window
+	private int dragMode;
 	private double dragDx, dragDy;
 	private NumberSetting slider;
 	private float sliderX, sliderW;
@@ -110,7 +101,6 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
-	/** Opens straight into the window on a category with one module selected. */
 	public ClickGuiScreen(Screen parent, Category category, Module expand) {
 		this(parent);
 		this.view = View.WINDOW;
@@ -118,7 +108,6 @@ public class ClickGuiScreen extends Screen {
 		this.selected = expand;
 	}
 
-	/** Opens the Theme page (optionally with the accent colour picker open). */
 	public ClickGuiScreen openTheme(boolean picker) {
 		view = View.WINDOW;
 		themePage = true;
@@ -129,7 +118,6 @@ public class ClickGuiScreen extends Screen {
 		return this;
 	}
 
-	/** Opens the home page in search mode with a query. */
 	public ClickGuiScreen openSearch(String query) {
 		view = View.HOME;
 		searching = true;
@@ -168,7 +156,7 @@ public class ClickGuiScreen extends Screen {
 	@Override
 	public void close() {
 		if (animations() && view == View.HOME && !searching && closingAt == 0) {
-			closingAt = System.nanoTime(); // cards go back into their stack first, render() closes for real
+			closingAt = System.nanoTime();
 			return;
 		}
 		finishClose();
@@ -183,8 +171,6 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
-	// ------------------------------------------------------------------ helpers
-
 	private float anim(Object key, float target, float dt, float speed) {
 		float v = anims.getOrDefault(key, target);
 		v += (target - v) * Math.min(1f, dt * speed);
@@ -195,14 +181,11 @@ public class ClickGuiScreen extends Screen {
 		return v;
 	}
 
-	// ------------------------------------------------------------------ card stack animations
-
 	private static boolean animations() {
 		Theme th = Theme.get();
 		return th == null || th.cardAnimations.isOn();
 	}
 
-	/** 0..1 progress of a card that is shoved out {@code delay} s after the menu opened, taking {@code dur} s. */
 	private float dealT(float delay, float dur) {
 		if (!animations()) {
 			return 1f;
@@ -211,7 +194,6 @@ public class ClickGuiScreen extends Screen {
 		return Math.max(0f, Math.min(1f, t));
 	}
 
-	/** 0..1 while closing. */
 	private float closeK() {
 		if (closingAt == 0) {
 			return 0f;
@@ -219,22 +201,18 @@ public class ClickGuiScreen extends Screen {
 		return Math.max(0f, Math.min(1f, (System.nanoTime() - closingAt) / 1.0e9f / 0.24f));
 	}
 
-	/** Cards fade out at the very end of closing, once they are back in their stack. */
 	private float closeFade() {
 		return 1f - Math.max(0f, Math.min(1f, (closeK() - 0.6f) / 0.4f));
 	}
 
-	/** Part of a shove spent sliding; the rest is the bump into place. */
 	private static final float SLIDE = 0.6f;
 
-	/** How far along its slide a card is: a hard push, then table friction, still moving a bit when it hits its spot. */
 	private static float slide(float t) {
 		float u = Math.min(1f, t / SLIDE);
 		float w = 1f - u;
 		return 0.22f * u + 0.78f * (1f - w * w * w);
 	}
 
-	/** The bump when a card hits its spot: a few px past it, then it springs back and settles. 0 before the hit. */
 	private static float impact(float t) {
 		if (t <= SLIDE || t >= 1f) {
 			return 0f;
@@ -243,7 +221,6 @@ public class ClickGuiScreen extends Screen {
 		return (float) (Math.sin(v * Math.PI * 1.5) * (1 - v) * (1 - v));
 	}
 
-	/** Squash right at the hit (0..1). */
 	private static float squash(float t) {
 		if (t <= SLIDE || t >= 1f) {
 			return 0f;
@@ -252,12 +229,10 @@ public class ClickGuiScreen extends Screen {
 		return (float) Math.sin(Math.PI * Math.min(1f, v * 2.4f)) * (1f - v);
 	}
 
-	/** Shove order: the outer cards go first so every next card lands against one that is already there. */
 	private static int shoveRank(int i, int n) {
 		return 2 * Math.min(i, n - 1 - i) + (i * 2 > n - 1 ? 1 : 0);
 	}
 
-	/** The inner neighbour that lands against card i later (it nudges card i outwards), or -1. */
 	private static int pusherOf(int i, int n) {
 		float c = (n - 1) / 2f;
 		int j = i < c ? i + 1 : i - 1;
@@ -267,13 +242,6 @@ public class ClickGuiScreen extends Screen {
 		return j;
 	}
 
-	/**
-	 * Draws the next thing as a card shoved off a stack at (sx, sy) into its own place (centre fx, fy):
-	 * a hard push, it slides and slows down like on a table, bumps into its spot (a few px past, then back),
-	 * squashes a little on the hit and straightens out from its crooked spot in the stack.
-	 * {@code nudge} moves an already placed card outwards for a moment when its neighbour lands against it.
-	 * When the menu closes everything is pulled back into the stack.
-	 */
 	private void shoveCard(DrawContext ctx, float fx, float fy, float sx, float sy, float t, float stackTilt, float nudge) {
 		float dx = fx - sx, dy = fy - sy;
 		float len = (float) Math.sqrt(dx * dx + dy * dy);
@@ -325,8 +293,6 @@ public class ClickGuiScreen extends Screen {
 		return WhiteClient.get().modules().byCategory(c);
 	}
 
-	// ------------------------------------------------------------------ rendering
-
 	@Override
 	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
 		Theme th = Theme.get();
@@ -343,7 +309,6 @@ public class ClickGuiScreen extends Screen {
 
 	private void drawNightSky(DrawContext ctx, float alpha) {
 		float t = WhiteClient.get().time();
-		// aurora wisps: soft horizontal bands that wave slowly
 		for (int band = 0; band < 3; band++) {
 			int slices = 48;
 			float baseY = height * (0.18f + band * 0.09f);
@@ -364,7 +329,6 @@ public class ClickGuiScreen extends Screen {
 			float tw = 0.4f + 0.6f * (0.5f + 0.5f * (float) Math.sin(t * 1.5 + stars[i * 3 + 2]));
 			ctx.fill(Math.round(x), Math.round(y), Math.round(x) + 1, Math.round(y) + 1, Colors.argb(0xFFFFFF, tw * alpha * 0.8f));
 		}
-		// two mountain layers
 		for (int layer = 0; layer < 2; layer++) {
 			int cols = 120;
 			int color = layer == 0 ? Colors.argb(0x15151B, alpha) : Colors.argb(0x0B0B10, alpha);
@@ -402,8 +366,6 @@ public class ClickGuiScreen extends Screen {
 		super.render(ctx, mouseX, mouseY, deltaTicks);
 	}
 
-	// ------------------------------------------------------------------ HOME
-
 	private void categoryIcon(DrawContext ctx, Category c, float cx, float cy, float s, int col, int cut) {
 		switch (c) {
 			case COSMETICS -> Icons.sparkle(ctx, cx, cy, s, col);
@@ -422,7 +384,6 @@ public class ClickGuiScreen extends Screen {
 		float t = WhiteClient.get().time();
 		float cx = width / 2f;
 
-		// title
 		String title = "WHITECLIENT";
 		float titleY = Math.max(22, height * 0.17f);
 		float tw = textRenderer.getWidth(UiFont.title(title));
@@ -440,7 +401,6 @@ public class ClickGuiScreen extends Screen {
 			return;
 		}
 
-		// category cards
 		List<Category> cats = new ArrayList<>();
 		for (Category c : Category.values()) {
 			if (c.listed()) {
@@ -453,7 +413,6 @@ public class ClickGuiScreen extends Screen {
 		float x0 = cx - rowW / 2f;
 		float y0 = titleY + 40;
 		float r = th.roundness.getFloat();
-		// all cards start in one stack in the middle and get shoved out into their places, outer cards first
 		float stackX = cx, stackY = y0 + cs / 2f;
 		int n = cats.size();
 		Integer[] order = new Integer[n];
@@ -464,7 +423,6 @@ public class ClickGuiScreen extends Screen {
 			rank[i] = shoveRank(i, n);
 			tOf[i] = dealT(0.05f + rank[i] * 0.075f, 0.42f);
 		}
-		// placed cards first, then the stack (next card on top), the card that is moving on top of everything
 		java.util.Arrays.sort(order, (p, q) -> {
 			int gp = tOf[p] >= 1f ? 0 : tOf[p] <= 0f ? 1 : 2, gq = tOf[q] >= 1f ? 0 : tOf[q] <= 0f ? 1 : 2;
 			if (gp != gq) {
@@ -511,12 +469,10 @@ public class ClickGuiScreen extends Screen {
 			});
 		}
 
-		// small buttons
 		String[] labels = {"Wardrobe", "Browser", "Search", "Theme", "Support"};
 		float sw = 48, sh = 32, sg = 8;
 		float sx0 = cx - (labels.length * sw + (labels.length - 1) * sg) / 2f;
 		float sy = y0 + cs + 22;
-		// the small buttons have their own stack in the middle of their row and go right after the cards
 		float[] btT = new float[labels.length];
 		for (int i = 0; i < labels.length; i++) {
 			btT[i] = dealT(0.05f + n * 0.075f + shoveRank(i, labels.length) * 0.07f, 0.38f);
@@ -629,8 +585,6 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
-	// ------------------------------------------------------------------ WINDOW
-
 	private void drawWindow(DrawContext ctx, int mx, int my, float dt) {
 		Theme th = Theme.get();
 		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
@@ -648,7 +602,6 @@ public class ClickGuiScreen extends Screen {
 		Render2D.roundRect(ctx, x, y, w, h, r, th.panel());
 		Render2D.roundRectOutline(ctx, x, y, w, h, r, 1, th.accent(0.14f));
 
-		// ---- sidebar
 		Render2D.roundRect(ctx, x, y, SIDEBAR, h, r, Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), th.opacity.getFloat()));
 		ctx.fill((int) (x + SIDEBAR - r), (int) y, (int) (x + SIDEBAR), (int) (y + h), Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), th.opacity.getFloat()));
 		ctx.fill((int) (x + SIDEBAR), (int) (y + 8), (int) (x + SIDEBAR) + 1, (int) (y + h - 8), th.accent(0.08f));
@@ -718,7 +671,6 @@ public class ClickGuiScreen extends Screen {
 			});
 			sy += 19;
 		}
-		// account
 		if (h > 230) {
 			String name = client.getSession().getUsername();
 			Render2D.roundRect(ctx, x + 6, y + h - FOOTER - 24, SIDEBAR - 12, 20, 6, th.card(0.7f));
@@ -735,7 +687,6 @@ public class ClickGuiScreen extends Screen {
 			UiFont.draw(ctx, textRenderer, shown, x + 26, y + h - FOOTER - 18, th.text());
 		}
 
-		// ---- header
 		float cx0 = x + SIDEBAR + 10;
 		float cw = w - SIDEBAR - 20;
 		String crumb = themePage ? "Client" : "Modules";
@@ -755,7 +706,6 @@ public class ClickGuiScreen extends Screen {
 		hit(hb, y + 6, 16, 16, null, null, (a, b, btn) -> go(View.HOME));
 		ctx.fill((int) cx0, (int) (y + HEADER), (int) (cx0 + cw), (int) (y + HEADER) + 1, th.accent(0.08f));
 
-		// ---- content
 		float top = y + HEADER + 6;
 		float bottom = y + h - FOOTER - 4;
 		float ka = k;
@@ -769,7 +719,6 @@ public class ClickGuiScreen extends Screen {
 			drawModuleList(ctx, cx0, top, cw, bottom - top, mx, my, dt, 2);
 		}
 
-		// ---- footer: drag & resize handles (like a floating window)
 		float fy = y + h - FOOTER;
 		ctx.fill((int) (x + SIDEBAR), (int) fy, (int) (x + w - 6), (int) fy + 1, th.accent(0.06f));
 		boolean hd = in(mx, my, x + SIDEBAR + 4, fy, 60, FOOTER);
@@ -847,8 +796,6 @@ public class ClickGuiScreen extends Screen {
 		int onKnob = Theme.lum(th.toggleOn.rgb()) > 0.6f ? 0xFF0E0E12 : 0xFFFFFFFF;
 		Render2D.circle(ctx, knobX, y + h / 2f, 3.6f, Colors.mixArgb(0xFF8C8C98, onKnob, t));
 	}
-
-	// ------------------------------------------------------------------ settings
 
 	private float settingHeight(Setting<?> s) {
 		if (s instanceof NumberSetting) {
@@ -1000,7 +947,6 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
-	/** HSV of a colour; keeps the last hue for greys so dragging saturation doesn't jump to red. */
 	private float[] hsvOf(ColorSetting c) {
 		float[] hsv = Colors.toHsv(c.rgb());
 		if (hsv[1] < 0.01f || hsv[2] < 0.01f) {
@@ -1066,8 +1012,6 @@ public class ClickGuiScreen extends Screen {
 		hues.put(picking, hsv[0]);
 		picking.set(Colors.hsv(hsv[0], hsv[1], hsv[2]));
 	}
-
-	// ------------------------------------------------------------------ input
 
 	private void commitEdit() {
 		if (editing != null) {
@@ -1224,7 +1168,6 @@ public class ClickGuiScreen extends Screen {
 			return true;
 		}
 		if (view == View.HOME && s != null && !s.isBlank()) {
-			// start typing on the home page = search
 			searching = true;
 			search = s;
 			return true;

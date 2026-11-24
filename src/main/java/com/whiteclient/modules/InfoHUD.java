@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** A tidy info panel: coordinates, direction, speed, CPS, FPS, ping, clock and day. */
 public class InfoHUD extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Top Left", HudLayout.POSITIONS));
 	public final BoolSetting coords = add(new BoolSetting("Coordinates", true));

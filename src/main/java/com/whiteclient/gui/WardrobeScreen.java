@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/** Wardrobe: free custom skins, cosmetics and pets with a 3D preview. No pay-to-win, ever. */
 public class WardrobeScreen extends Screen {
 	private enum Tab { SKINS, COSMETICS, PETS }
 
@@ -56,7 +55,6 @@ public class WardrobeScreen extends Screen {
 		this.parent = parent;
 	}
 
-	/** 0 = skins, 1 = cosmetics, 2 = pets. */
 	public void showTab(int index) {
 		tab = Tab.values()[Math.max(0, Math.min(Tab.values().length - 1, index))];
 		scroll = scrollTarget = 0;
@@ -139,7 +137,6 @@ public class WardrobeScreen extends Screen {
 		Theme th = Theme.get();
 		ctx.fillGradient(0, 0, width, height, th.bg(0.985f), Colors.argb(Colors.shade(th.background.rgb(), 1.7f), 0.99f));
 		float t = WhiteClient.get().time();
-		// soft light behind the model
 		float cx = panelX() + panelW() / 2f, cy = height * 0.48f;
 		for (int i = 6; i >= 1; i--) {
 			float r = i * 18;
@@ -158,13 +155,11 @@ public class WardrobeScreen extends Screen {
 		float open = Math.min(1f, (now - opened) / 3.0e8f);
 		float k = 1f - (1f - open) * (1f - open);
 
-		// ---- header
 		Render2D.roundRect(ctx, 16, 10, 20, 20, 6, th.card(0.8f));
 		Icons.shirt(ctx, 26, 20, 10, th.text());
 		UiFont.drawScaled(ctx, textRenderer, "Wardrobe", 42, 10, 1.25f, th.text());
 		UiFont.drawScaled(ctx, textRenderer, "Everything is free  ·  no pay-to-win", 42, 23, 0.75f, th.sub());
 
-		// ---- preview card (model is drawn by the widget, after this)
 		float px = panelX(), pw = panelW(), py = 40, ph = height - 64;
 		Render2D.roundRect(ctx, px, py, pw, ph, 10, th.card(0.45f * k));
 		Render2D.roundRectOutline(ctx, px, py, pw, ph, 10, 1, th.accent(0.1f));
@@ -172,7 +167,6 @@ public class WardrobeScreen extends Screen {
 		UiFont.drawCentered(ctx, textRenderer, name, px + pw / 2f, py + 4, th.text());
 		UiFont.drawScaled(ctx, textRenderer, "drag to rotate", px + pw / 2f - UiFont.width(textRenderer, "drag to rotate") * 0.36f, py + ph - 11, 0.72f, th.sub());
 
-		// ---- tabs
 		float rx = px + pw + 14, rw = width - rx - 16;
 		String[] tabs = {"Skins", "Cosmetics", "Pets"};
 		float tx = rx;
@@ -190,7 +184,6 @@ public class WardrobeScreen extends Screen {
 			});
 			tx += tw + 6;
 		}
-		// support button (top right)
 		String sup = "Support";
 		float sw = UiFont.width(textRenderer, sup) + 26;
 		float sx = width - 16 - sw;
@@ -200,7 +193,6 @@ public class WardrobeScreen extends Screen {
 		Icons.heart(ctx, sx + 11, 19, 8, hs ? th.onAccent() : 0xFFFF6B8A);
 		UiFont.draw(ctx, textRenderer, sup, sx + 19, 15, hs ? th.onAccent() : th.text());
 		hit(sx, 10, sw, 18, () -> client.setScreen(new SupportScreen(this)));
-		// done
 		String done = "Done";
 		float dw = UiFont.width(textRenderer, done) + 20;
 		float dx = sx - 6 - dw;
@@ -209,7 +201,6 @@ public class WardrobeScreen extends Screen {
 		UiFont.draw(ctx, textRenderer, done, dx + 10, 15, th.text());
 		hit(dx, 10, dw, 18, this::close);
 
-		// ---- content
 		listX = rx;
 		listY = py + 26;
 		listW = rw;
@@ -225,7 +216,6 @@ public class WardrobeScreen extends Screen {
 		scrollTarget = Math.max(0, Math.min(maxScroll, scrollTarget));
 		UiFont.drawScaled(ctx, textRenderer, "Custom skins are only visible to you.  Esc to go back.", rx, height - 14, 0.75f, Colors.mulAlpha(th.sub(), 0.8f));
 
-		// ---- 3D model (walks a tiny bit in place while idle)
 		if (preview != null) {
 			float t = WhiteClient.get().time();
 			preview.pose(0, 0, t);
@@ -233,7 +223,6 @@ public class WardrobeScreen extends Screen {
 		super.render(ctx, mouseX, mouseY, delta);
 	}
 
-	/** A click area inside the scrolling list, clipped to the visible part. */
 	private void listHit(float x, float y, float w, float h, Runnable r) {
 		float y1 = Math.max(y, listY), y2 = Math.min(y + h, listY + listH);
 		if (y2 > y1) {
@@ -306,7 +295,6 @@ public class WardrobeScreen extends Screen {
 		}
 		int rows = (items.size() + cols - 1) / cols;
 		float by = y0 + rows * (card + 14 + gap) + 4;
-		// action buttons
 		String[] labels = {"Open Skins Folder", "Reload", "Slim Arms: " + (w != null && w.slim.isOn() ? "On" : "Off")};
 		float bx = listX;
 		for (int i = 0; i < labels.length; i++) {
@@ -343,7 +331,6 @@ public class WardrobeScreen extends Screen {
 		return ty - y0 + 10;
 	}
 
-	/** Word-wrapped small text; returns the y below the last line. */
 	private float wrapped(DrawContext ctx, String text, float x, float y, float maxW, float scale, int color) {
 		String[] words = text.split(" ");
 		StringBuilder line = new StringBuilder();
@@ -395,7 +382,6 @@ public class WardrobeScreen extends Screen {
 				float t = anim("on" + m.getName(), m.isEnabled() ? 1f : 0f, dt);
 				drawToggle(ctx, listX + listW - 30, y + 12, t);
 				listHit(listX + listW - 34, y, 34, rowH - 4, m::toggle);
-				// first colour of the module as quick swatches
 				ColorSetting color = null;
 				for (Setting<?> s : m.getSettings()) {
 					if (s instanceof ColorSetting c) {
@@ -418,7 +404,6 @@ public class WardrobeScreen extends Screen {
 						listHit(sx - 1, y + 11, 12, 13, () -> cs.set(p));
 					}
 				}
-				// open full settings
 				String more = "Settings";
 				float mw = UiFont.width(textRenderer, more) * 0.75f + 12;
 				float mxp = sx - 10 - mw;
@@ -440,7 +425,6 @@ public class WardrobeScreen extends Screen {
 		if (pets == null) {
 			return 0;
 		}
-		// on/off row
 		Render2D.roundRect(ctx, listX, y0, listW, 26, 8, th.card(0.6f));
 		Icons.paw(ctx, listX + 14, y0 + 13, 9, th.text());
 		UiFont.draw(ctx, textRenderer, "Pet", listX + 26, y0 + 9, th.text());

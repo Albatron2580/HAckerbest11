@@ -15,7 +15,6 @@ import net.minecraft.util.math.BlockPos;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
-/** Glowing squares on every block you walk over, fading out behind you. */
 public class BlockTrail extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting duration = add(new NumberSetting("Duration", 4.0, 0.5, 15.0, 0.5, "s"));

@@ -19,11 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-/**
- * Talks to the Discord desktop app over its local IPC pipe (the same way every game shows
- * "Playing ..."), so no extra library is needed. Nothing leaves your PC except to the Discord app.
- * Runs on its own background thread and quietly retries when Discord is closed.
- */
 public final class DiscordIpc {
 	private static final int OP_HANDSHAKE = 0, OP_FRAME = 1, OP_CLOSE = 2, OP_PING = 3, OP_PONG = 4;
 
@@ -33,7 +28,6 @@ public final class DiscordIpc {
 
 	private volatile JsonObject wanted;
 	private volatile boolean dirty = true;
-	/** Send the status again soon (Minecraft came back into focus). */
 	private volatile boolean bump;
 	private volatile boolean ready;
 	private JsonObject lastSent;
@@ -74,7 +68,6 @@ public final class DiscordIpc {
 		bump = true;
 	}
 
-	/** The activity to show; {@code null} clears it. Sent when it changes (Discord allows ~5 updates per 20 s). */
 	public void setActivity(JsonObject activity) {
 		JsonObject cur = wanted;
 		if (cur == null ? activity == null : cur.equals(activity)) {
@@ -84,17 +77,12 @@ public final class DiscordIpc {
 		dirty = true;
 	}
 
-	/** A short status line for the menu. */
 	public String status() {
 		return status;
 	}
 
 	private volatile String status = "Starting...";
 	private int errors;
-
-	// ------------------------------------------------------------------ loop
-	// Every message is "send, then read Discord's answer" on this one thread. That is the only way that
-	// works reliably with the Windows named pipe (a waiting read there blocks writes from other threads).
 
 	private void loop() {
 		long nextTry = 0, lastSend = 0;
@@ -125,7 +113,6 @@ public final class DiscordIpc {
 					hs.addProperty("v", 1);
 					hs.addProperty("client_id", clientId);
 					send(OP_HANDSHAKE, hs);
-					// wait for READY
 					for (int i = 0; i < 4 && !ready; i++) {
 						handle(readFrame());
 					}
@@ -135,9 +122,6 @@ public final class DiscordIpc {
 					dirty = true;
 					lastSend = 0;
 				}
-				// send when something changed, and refresh every minute (also notices a restarted Discord)
-				// Discord shows the most recently focused / updated app first, so keep WhiteClient fresh:
-				// re-send every 15 s and right after you click back into Minecraft (well inside Discord's limit of 5 per 20 s)
 				boolean refresh = now - lastSend > 15000 || bump;
 				if ((dirty || refresh) && now - lastSend > 4000) {
 					bump = false;
@@ -153,7 +137,6 @@ public final class DiscordIpc {
 					lastSend = now;
 					lastSent = act;
 					String nonce = sendActivity(act);
-					// read until Discord answers this message
 					for (int i = 0; i < 6; i++) {
 						Frame f = readFrame();
 						if (handle(f) && nonce.equals(nonceOf(f))) {
@@ -172,7 +155,6 @@ public final class DiscordIpc {
 				nextTry = System.currentTimeMillis() + 10000;
 			}
 		}
-		// clear the status when the module is turned off / the game closes
 		try {
 			if (pipe != null && ready) {
 				sendActivity(null);
@@ -223,8 +205,6 @@ public final class DiscordIpc {
 		return copy;
 	}
 
-	// ------------------------------------------------------------------ framing
-
 	private record Frame(int op, String body, JsonObject json) {
 	}
 
@@ -258,7 +238,6 @@ public final class DiscordIpc {
 		return f.json() != null && f.json().has("nonce") && !f.json().get("nonce").isJsonNull() ? f.json().get("nonce").getAsString() : "";
 	}
 
-	/** Handles one message; returns true for normal answers. */
 	private boolean handle(Frame f) throws IOException {
 		switch (f.op()) {
 			case OP_PING -> {
@@ -289,7 +268,7 @@ public final class DiscordIpc {
 							? msg.getAsJsonObject("data").get("message").getAsString() : "error";
 					status = "Discord said: " + m;
 					if (errors < 2) {
-						errors++; // try again with fewer pictures
+						errors++;
 						dirty = true;
 					}
 				} else if (ready && msg.has("cmd") && "SET_ACTIVITY".equals(msg.get("cmd").getAsString())) {
@@ -302,8 +281,6 @@ public final class DiscordIpc {
 			}
 		}
 	}
-
-	// ------------------------------------------------------------------ pipes
 
 	private interface Pipe {
 		void readFully(byte[] into) throws IOException;
@@ -345,8 +322,8 @@ public final class DiscordIpc {
 				if (v != null && !v.isBlank()) {
 					Path base = Path.of(v);
 					out.add(base);
-					out.add(base.resolve("app/com.discordapp.Discord")); // Flatpak
-					out.add(base.resolve("snap.discord")); // Snap
+					out.add(base.resolve("app/com.discordapp.Discord"));
+					out.add(base.resolve("snap.discord"));
 					out.add(base.resolve(".flatpak/dev.vencord.Vesktop/xdg-run"));
 				}
 			}

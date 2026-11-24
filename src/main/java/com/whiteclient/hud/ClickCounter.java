@@ -2,7 +2,6 @@ package com.whiteclient.hud;
 
 import net.minecraft.client.MinecraftClient;
 
-/** Counts left / right clicks per second (fed by a mixin on the mouse). */
 public final class ClickCounter {
 	private static final long[] LEFT = new long[64];
 	private static final long[] RIGHT = new long[64];

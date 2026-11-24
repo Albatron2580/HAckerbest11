@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-/** Draws the rounded see-through button background (label is still drawn by vanilla). */
 public final class ButtonStyle {
 	private static final Map<ClickableWidget, Float> HOVER = new WeakHashMap<>();
 	private static final Set<ClickableWidget> ACCENT = Collections.newSetFromMap(new WeakHashMap<>());
@@ -25,7 +24,6 @@ public final class ButtonStyle {
 	private ButtonStyle() {
 	}
 
-	/** Marks a button (our WHITECLIENT button) to get the bright white accent outline. */
 	public static void markAccent(ClickableWidget widget) {
 		ACCENT.add(widget);
 	}
@@ -53,7 +51,6 @@ public final class ButtonStyle {
 		return screen instanceof GameMenuScreen || screen instanceof TitleScreen;
 	}
 
-	/** A rounded track with a filled part and a light knob, and the label in the middle. */
 	public static void drawSlider(DrawContext ctx, ClickableWidget w, double value) {
 		MenuButtons settings = WhiteClient.get().modules().get(MenuButtons.class);
 		long now = System.nanoTime();
@@ -73,7 +70,6 @@ public final class ButtonStyle {
 		float v = (float) Math.max(0, Math.min(1, value));
 		float knobW = 4;
 		float kx = x + 2 + v * (width - 4 - knobW);
-		// filled part up to the knob
 		if (kx + knobW / 2f > x + 2) {
 			Render2D.roundRect(ctx, x + 1, y + 1, kx + knobW / 2f - x - 1, height - 2, Math.max(0, r - 1), Colors.argb(0xFFFFFF, 0.10f + 0.08f * h));
 		}

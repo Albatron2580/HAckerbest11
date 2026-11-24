@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Saves module states and settings to config/whiteclient.json. */
 public final class ConfigManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private final Path file = FabricLoader.getInstance().getConfigDir().resolve("whiteclient.json");
@@ -26,7 +25,6 @@ public final class ConfigManager {
 	private int loadedVersion = CURRENT_VERSION;
 	public static final int CURRENT_VERSION = 3;
 
-	/** Config version found on disk (CURRENT_VERSION when there was no file). */
 	public int loadedVersion() {
 		return loadedVersion;
 	}

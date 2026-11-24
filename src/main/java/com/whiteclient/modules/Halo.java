@@ -12,7 +12,6 @@ import com.whiteclient.render.CosmeticTargets;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
-/** Glowing golden halo with spikes above your head. */
 public class Halo extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting radius = add(new NumberSetting("Radius", 0.34, 0.15, 0.6, 0.01));

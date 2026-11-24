@@ -21,10 +21,6 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
-/**
- * Visual-only effects that spin around the entity you are fighting / looking at.
- * Nothing here changes how you aim or hit — it only draws.
- */
 public class TargetESP extends Module {
 	public static final String[] STYLES = {"Orbit", "Spiral", "Shackles", "Cards", "Ring", "Ghosts", "Constellation"};
 
@@ -40,7 +36,6 @@ public class TargetESP extends Module {
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.2, 2.0, 0.05, "x"));
 	public final NumberSetting hold = add(new NumberSetting("Keep After Hit", 4, 1, 10, 0.5, "s"));
 
-	/** Test hook: force a target (used by the screenshot tests). */
 	public static Entity forcedTarget;
 
 	private Entity shown;
@@ -143,8 +138,6 @@ public class TargetESP extends Module {
 		return new V3(c.x() + (float) Math.cos(ang) * r, c.y(), c.z() + (float) Math.sin(ang) * r);
 	}
 
-	// ------------------------------------------------------------------ styles
-
 	private void orbit(GlowBatch g, V3 base, float r, float h, int c1, int c2, float a) {
 		int orbs = 3;
 		for (int i = 0; i < orbs; i++) {
@@ -152,7 +145,6 @@ public class TargetESP extends Module {
 			float speedMul = 2.4f;
 			float y = h * (0.25f + 0.25f * i) + (float) Math.sin(spin * 1.7 + i * 2.1) * 0.12f;
 			int col = i % 2 == 0 ? c1 : c2;
-			// tail
 			int tail = 26;
 			V3 prev = null;
 			for (int k = 0; k <= tail; k++) {
@@ -188,7 +180,6 @@ public class TargetESP extends Module {
 				}
 				prev = pt;
 			}
-			// sparks travelling up the strand
 			for (int s = 0; s < 3; s++) {
 				float u = (float) ((spin * 0.35 + s / 3.0 + strand * 0.17) % 1.0);
 				double ang = u * Math.PI * 2 * turns + spin * 2.2 + strand * Math.PI;
@@ -199,7 +190,6 @@ public class TargetESP extends Module {
 		}
 	}
 
-	/** Glowing chain links wrapped around the target (two crossing chains). */
 	private void shackles(GlowBatch g, V3 base, float r, float h, int c1, int c2, float a) {
 		for (int chain = 0; chain < 2; chain++) {
 			V3 axis = chain == 0 ? new V3(1, 0, 0) : new V3(0, 0, 1);
@@ -217,7 +207,6 @@ public class TargetESP extends Module {
 				V3 tangent = new V3((float) -Math.sin(ang), 0, (float) Math.cos(ang)).rotate(axis, tilt);
 				V3 normal = radial.cross(tangent).normalize();
 				V3 pos = center.add(radial, rr);
-				// alternate the plane of each link like a real chain
 				V3 side = i % 2 == 0 ? normal : radial;
 				float pulse = 0.75f + 0.25f * (float) Math.sin(spin * 4 - i * 0.6);
 				link(g, pos, tangent, side, linkLen, linkLen * 0.52f, col, a * (i % 2 == 0 ? 1f : 0.78f) * pulse);
@@ -231,7 +220,6 @@ public class TargetESP extends Module {
 		V3 prev = null;
 		for (int i = 0; i <= seg; i++) {
 			double t = Math.PI * 2 * i / seg;
-			// a stadium-like loop: flatter on the long sides
 			float ca = (float) Math.cos(t), sa = (float) Math.sin(t);
 			float sx = Math.signum(ca) * (float) Math.pow(Math.abs(ca), 0.7);
 			V3 pt = c.add(along, sx * len * 0.5f).add(side, sa * wid * 0.5f);
@@ -274,7 +262,6 @@ public class TargetESP extends Module {
 			p4.line(g, p1, 0.035f, col, a);
 			g.disc(center.x(), center.y(), center.z(), ch * 0.9f, col, 0.08f * a, 12);
 
-			// suit symbol, facing outwards
 			if (a > 0.15f) {
 				ms.push();
 				V3 tp = center.add(out, 0.01f);
@@ -299,7 +286,7 @@ public class TargetESP extends Module {
 		float y = u * h;
 		int seg = 48;
 		float curtain = 0.55f * Math.abs(vel) + 0.18f;
-		float dir = vel > 0 ? -1 : 1; // trail behind the movement
+		float dir = vel > 0 ? -1 : 1;
 		V3 c = base.add(V3.UP, y);
 		V3 prev = null;
 		for (int i = 0; i <= seg; i++) {
@@ -341,7 +328,6 @@ public class TargetESP extends Module {
 
 	static {
 		for (int i = 0; i < POINTS.length; i++) {
-			// fibonacci sphere
 			float y = 1f - (i + 0.5f) / POINTS.length * 2f;
 			float rad = (float) Math.sqrt(1 - y * y);
 			float th = (float) (i * Math.PI * (3 - Math.sqrt(5)));

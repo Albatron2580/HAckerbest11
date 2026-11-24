@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
 
-/** WHITECLIENT capes: drawn in code (64x32 cape layout) or loaded from config/whiteclient/capes/*.png. */
 public final class CapeTextures {
 	public static final String[] DESIGNS = {"White", "Black", "Galaxy", "Silk", "Sunset", "Aurora", "Custom"};
 	private static final Map<String, Identifier> CACHE = new HashMap<>();
@@ -73,7 +72,6 @@ public final class CapeTextures {
 		return b.toString();
 	}
 
-	/** Texture id (for {@code AssetInfo.TextureAssetInfo}) of a built-in design, or null. */
 	public static Identifier design(String name) {
 		Identifier cached = CACHE.get(name);
 		if (cached != null || FAILED.containsKey(name)) {
@@ -90,7 +88,6 @@ public final class CapeTextures {
 		}
 	}
 
-	/** Texture id of a custom cape PNG, or null. */
 	public static Identifier file(String name) {
 		if (name == null || name.isBlank()) {
 			return null;
@@ -122,8 +119,6 @@ public final class CapeTextures {
 		return id;
 	}
 
-	// ------------------------------------------------------------------ painting
-
 	private static int rgb(int r, int g, int b) {
 		return 0xFF000000 | (Math.max(0, Math.min(255, r)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, b));
 	}
@@ -134,7 +129,6 @@ public final class CapeTextures {
 		return rgb((int) (ar + (br - ar) * t), (int) (ag + (bg - ag) * t), (int) (ab + (bb - ab) * t));
 	}
 
-	/** Base colour for a design at a cape position (u, v in 0..1 from top-left of the cape). */
 	private static int base(String name, float u, float v, int x, int y) {
 		switch (name) {
 			case "Black":
@@ -158,7 +152,6 @@ public final class CapeTextures {
 	}
 
 	private static void paint(NativeImage img, String name) {
-		// cape box: 22x17 at (0,0); elytra: 24x22 at (22,0)
 		for (int y = 0; y < 32; y++) {
 			for (int x = 0; x < 64; x++) {
 				img.setColorArgb(x, y, 0);
@@ -184,7 +177,6 @@ public final class CapeTextures {
 				img.setColorArgb(ex, ey, 0xFFFFFFFF);
 			}
 		}
-		// front face is x 1..10, y 1..16 (the side you see from behind)
 		int fg = switch (name) {
 			case "White", "Silk", "Sunset" -> 0xFF15151B;
 			default -> 0xFFFFFFFF;
@@ -202,7 +194,6 @@ public final class CapeTextures {
 		planet(img, 5.5f, 7.5f, fg);
 	}
 
-	/** Tiny pixel planet with a tilted ring (the WHITECLIENT logo). */
 	private static void planet(NativeImage img, float cx, float cy, int color) {
 		for (int y = 4; y <= 11; y++) {
 			for (int x = 2; x <= 9; x++) {

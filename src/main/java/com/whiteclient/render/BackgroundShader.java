@@ -1,14 +1,9 @@
 package com.whiteclient.render;
 
-/**
- * CPU "shader" for the animated menu backgrounds. Pure Java (no Minecraft classes),
- * runs on a worker thread and fills an ARGB pixel buffer.
- */
 public final class BackgroundShader {
 	public static final int ENERGY = 0;
 	public static final int AURORA = 1;
 	public static final int MONO = 2;
-	/** Soft grey silk curtains folding on the right side (WHITECLIENT showcase menu). */
 	public static final int SILK = 3;
 
 	private BackgroundShader() {
@@ -23,7 +18,6 @@ public final class BackgroundShader {
 		return t * t * (3 - 2 * t);
 	}
 
-	/** Fills {@code out} (w*h ARGB) for time {@code t} seconds. */
 	public static void render(int[] out, int w, int h, double t, int mode, int rgb, float speed, float intensity) {
 		double time = t * speed;
 		float cr = ((rgb >> 16) & 0xFF) / 255f;
@@ -60,7 +54,6 @@ public final class BackgroundShader {
 					double n = Noise.noise(u * 1.1, v * 1.1 - time * 0.04, time * 0.06);
 					double m = Noise.noise(u * 2.1 + 7.3, v * 1.6, time * 0.09);
 					double k = Noise.noise(u * 0.6 - time * 0.02, v * 0.9 + 3.3, time * 0.03);
-					// deep purple -> violet -> pink
 					float a = clamp01(0.45 + 0.45 * n + 0.25 * (1 - v));
 					r = lerp(0.07f, 0.42f, a);
 					g = lerp(0.03f, 0.12f, a);
@@ -69,7 +62,6 @@ public final class BackgroundShader {
 					r = lerp(r, 0.95f, pink * 0.8f);
 					g = lerp(g, 0.38f, pink * 0.6f);
 					b = lerp(b, 0.70f, pink * 0.7f);
-					// soft light streaks
 					float streak = (float) Math.pow(clamp01(1 - Math.abs(Noise.noise(u * 0.9, v * 3.0 + time * 0.05, 4.2)) * 3.0), 3.0) * 0.18f;
 					r += streak;
 					g += streak * 0.8f;
@@ -81,7 +73,6 @@ public final class BackgroundShader {
 					float l = base + ridge * 0.55f + (float) Math.pow(ridge, 14) * 0.6f;
 					r = g = b = l;
 				} else {
-					// ENERGY: domain-warped ridged noise -> glowing veins
 					double wx = Noise.noise(u * 0.55, v * 0.55, time * 0.06) * 0.85;
 					double wy = Noise.noise(u * 0.55 + 5.2, v * 0.55 + 1.3, time * 0.06) * 0.85;
 					double n1 = Noise.noise(u * 1.25 + wx, v * 1.25 + wy, time * 0.11);

@@ -11,10 +11,6 @@ import net.minecraft.client.input.MouseInput;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * A real Chromium web page, provided by the free "MCEF Modern" mod when it is installed.
- * Everything goes through reflection so WHITECLIENT works normally without it.
- */
 public final class WebView {
 	public static final String MCEF_ID = "mcef-modern";
 	public static final String MCEF_PAGE = "https://modrinth.com/mod/mcef-modern";
@@ -30,8 +26,6 @@ public final class WebView {
 		this.browser = browser;
 	}
 
-	// ------------------------------------------------------------------ engine
-
 	public static boolean installed() {
 		try {
 			return FabricLoader.getInstance().isModLoaded(MCEF_ID);
@@ -44,7 +38,6 @@ public final class WebView {
 		return Class.forName("net.dimaskama.mcef.api.MCEFApi");
 	}
 
-	/** Starts the (one time) Chromium download / start-up in the background. */
 	public static void startEngine() {
 		if (!installed() || initialization != null || initError != null) {
 			return;
@@ -88,7 +81,6 @@ public final class WebView {
 		return initError;
 	}
 
-	/** e.g. "Downloading 42%". */
 	public static String progress() {
 		if (initialization == null) {
 			return "Starting";
@@ -117,7 +109,6 @@ public final class WebView {
 		}
 	}
 
-	/** Creates a page (engine must be {@link #ready()}). */
 	public static WebView create(String url) {
 		try {
 			Object apiInstance = future().join();
@@ -129,8 +120,6 @@ public final class WebView {
 			return null;
 		}
 	}
-
-	// ------------------------------------------------------------------ page
 
 	private Object call(String name, Object... args) {
 		try {
@@ -164,7 +153,6 @@ public final class WebView {
 		return null;
 	}
 
-	/** Size of the page in real screen pixels. */
 	public void resize(int w, int h) {
 		w = Math.max(16, w);
 		h = Math.max(16, h);
@@ -178,7 +166,6 @@ public final class WebView {
 	private double zoom = 1.0;
 	private String zoomedFor = "";
 
-	/** Page zoom (1 = 100%). Chromium keeps zoom per website, so it is applied again on a new site. */
 	public void zoom(double z) {
 		String u = url();
 		if (u.isBlank()) {
@@ -211,7 +198,6 @@ public final class WebView {
 		}
 	}
 
-	/** x, y are page pixels. */
 	public void mouseDown(Click click, double x, double y, boolean doubled) {
 		call("onMouseClicked", new Click(x, y, buttonOf(click)), doubled);
 	}

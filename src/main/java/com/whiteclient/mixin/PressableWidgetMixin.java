@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Replaces the grey button texture with the rounded WHITECLIENT style in menus. */
 @Mixin(PressableWidget.class)
 public abstract class PressableWidgetMixin {
 	@Inject(method = "drawButton", at = @At("HEAD"), cancellable = true, require = 0)
@@ -26,11 +25,9 @@ public abstract class PressableWidgetMixin {
 				ci.cancel();
 			}
 		} catch (Throwable ignored) {
-			// never break vanilla buttons
 		}
 	}
 
-	/** The pause menu draws its own (smooth font) labels. */
 	@Inject(method = "drawLabel", at = @At("HEAD"), cancellable = true, require = 0)
 	private void whiteclient$drawLabel(DrawnTextConsumer drawer, CallbackInfo ci) {
 		try {

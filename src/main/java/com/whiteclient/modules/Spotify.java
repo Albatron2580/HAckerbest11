@@ -25,7 +25,6 @@ import net.minecraft.util.Util;
 
 import java.net.URI;
 
-/** Connects Spotify: now-playing card, synced lyrics (also used by 3D Text). */
 public class Spotify extends Module {
 	public static final String DASHBOARD = "https://developer.spotify.com/dashboard";
 
@@ -169,7 +168,6 @@ public class Spotify extends Module {
 		float x = right ? sw / sc - w - 6 : 6;
 		float y = bottom ? sh / sc - h - 6 : 6;
 		if (!bottom && System.currentTimeMillis() - Watermark.boundsFrameMs < 500) {
-			// keep clear of the watermark pill
 			float cx1 = x * sc, cx2 = (x + w) * sc;
 			if (cx1 < Watermark.boundsX2 && cx2 > Watermark.boundsX1 && y * sc < Watermark.boundsY2) {
 				y = Watermark.boundsY2 / sc + 4;
@@ -200,7 +198,6 @@ public class Spotify extends Module {
 		Render2D.text(ctx, tr, fit(tr, np.title(), tw), tx, y + 8, Colors.withAlpha(0xFFFFFF, a));
 		Render2D.textScaled(ctx, tr, fit(tr, np.artist(), tw / 0.8f), tx, y + 19, 0.8f, Colors.withAlpha(0xA8A8B4, a));
 
-		// progress
 		float barY = y + 33;
 		long pos = np.positionMs();
 		float frac = np.durationMs() > 0 ? Math.min(1f, pos / (float) np.durationMs()) : 0f;

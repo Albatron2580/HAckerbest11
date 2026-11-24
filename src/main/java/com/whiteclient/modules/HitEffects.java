@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/** A little burst where you hit something (visual only). */
 public class HitEffects extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Sparks", "Sparks", "Ring", "Stars", "Hearts", "Slash", "Crimson"));
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -130,7 +129,6 @@ public class HitEffects extends Module {
 		}
 	}
 
-	/** A ring facing the camera, built from short ribbons. */
 	static void ringFacing(GlowBatch g, float x, float y, float z, float r, int rgb, float a) {
 		float len = (float) Math.sqrt(x * x + y * y + z * z);
 		if (len < 1.0e-3f) {

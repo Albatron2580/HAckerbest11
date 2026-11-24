@@ -35,18 +35,16 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Locale;
 
-/** Boots the game, makes a world and screenshots every WHITECLIENT feature. Only runs with -Dfabric.client.gametest. */
 public class WhiteClientGameTest implements FabricClientGameTest {
 	private static boolean fakeOtherClient;
 
-	/** A white hoodie test skin so the custom-skin feature shows up in screenshots. */
 	private static void writeTestSkin() {
 		try {
 			final int skin = 0xFFE8C4A8, hair = 0xFF1C1C22, white = 0xFFF4F4F7, black = 0xFF15151A, eye = 0xFF2A5BD7;
 			BufferedImage img = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
 			for (int y = 0; y < 64; y++) {
 				for (int x = 0; x < 64; x++) {
-					int c = 0; // overlays stay transparent
+					int c = 0;
 					if (y < 16 && x < 32) {
 						c = skin;
 						boolean top = y < 8 && x >= 8 && x < 16;
@@ -65,7 +63,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 					} else if (y >= 16 && y < 32 && x >= 16 && x < 40) {
 						c = white;
 						if (x >= 20 && x < 28 && y >= 20 && (x == 23 || x == 24)) {
-							c = black; // zipper
+							c = black;
 						}
 						if (y >= 30) {
 							c = black;
@@ -110,7 +108,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
-		// Simulates another client (like NoRisk) that replaced the feedback row with "NoRisk Client | Mods".
 		Identifier early = Identifier.of("whiteclient-gametest", "early");
 		ScreenEvents.AFTER_INIT.addPhaseOrdering(early, Event.DEFAULT_PHASE);
 		ScreenEvents.AFTER_INIT.register(early, (client, screen, w, h) -> {
@@ -134,7 +131,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.waitForScreen(TitleScreen.class);
 		context.waitTicks(40);
 
-		// WHITECLIENT main menu with the player walking in (the automatic swap is off during tests)
 		context.runOnClient(client -> WhiteTitleScreen.debugWalkTime = 0.9f);
 		context.setScreen(WhiteTitleScreen::new);
 		context.waitTicks(40);
@@ -142,7 +138,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> WhiteTitleScreen.debugWalkTime = 5f);
 		context.waitTicks(10);
 		context.takeScreenshot("main_menu_player");
-		// performance: the old row-by-row shapes vs the new fast shapes on the same menu
 		for (boolean old : new boolean[]{true, false}) {
 			context.runOnClient(client -> {
 				Render2D.legacy = old;
@@ -160,11 +155,9 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
 
-		// new Right Shift menu (works without a world too)
 		context.setScreen(() -> new ClickGuiScreen(null));
 		context.waitTicks(25);
 		context.takeScreenshot("menu_home");
-		// start page: the cards get shoved out of one stack into their places, then the small buttons...
 		context.setScreen(() -> new ClickGuiScreen(null));
 		context.waitTicks(3);
 		context.takeScreenshot("menu_deal_early");
@@ -172,14 +165,12 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.takeScreenshot("menu_deal_late");
 		context.waitTicks(5);
 		context.takeScreenshot("menu_deal_buttons");
-		// ...a category window just opens (no shoving outside the start page) and closes right away...
 		context.setScreen(() -> new ClickGuiScreen(null, Category.HUD, null));
 		context.waitTicks(4);
 		context.takeScreenshot("menu_window_open");
 		context.runOnClient(client -> client.currentScreen.close());
 		context.waitTicks(1);
 		context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] window closed right away: {}", client.currentScreen));
-		// ...and on the start page everything is pulled back into the stack when it closes
 		context.setScreen(() -> new ClickGuiScreen(null));
 		context.waitTicks(40);
 		context.runOnClient(client -> client.currentScreen.close());
@@ -190,12 +181,9 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
 
-		// auto update: ask GitHub for the newest release (no install from a development build)
 		WhiteClient.LOGGER.info("[WHITECLIENT] update check: {}", com.whiteclient.update.AutoUpdater.checkNow(false));
 		WhiteClient.LOGGER.info("[WHITECLIENT] update download test: {}", com.whiteclient.update.AutoUpdater.testDownload("1.12.0"));
 
-		// multiplayer: VexVanilla as the featured server, planet background
-		// (the test can't ping real servers, so the servers get a made-up answer before the screen would ping them)
 		context.runOnClient(client -> {
 			net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen mp =
 					new net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen(new TitleScreen());
@@ -218,21 +206,18 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 						list.size() > 0 ? list.get(0).address : "none");
 			}
 		});
-		// other menus get the same planet look
 		context.setScreen(() -> new net.minecraft.client.gui.screen.option.OptionsScreen(new TitleScreen(), net.minecraft.client.MinecraftClient.getInstance().options));
 		context.waitTicks(20);
 		context.takeScreenshot("options_planet");
 		context.setScreen(() -> new com.whiteclient.gui.SupportScreen(new TitleScreen()));
 		context.waitTicks(20);
 		context.takeScreenshot("support_screen");
-		// "update ready" badge on the main menu
 		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady("9.9.9"));
 		context.setScreen(WhiteTitleScreen::new);
 		context.waitTicks(30);
 		context.takeScreenshot("main_menu_update_ready");
 		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady(null));
 
-		// connecting / loading screens get the planet look too
 		context.setScreen(() -> new net.minecraft.client.gui.screen.MessageScreen(net.minecraft.text.Text.literal("Encrypting...")));
 		context.waitTicks(10);
 		context.takeScreenshot("connecting_planet");
@@ -240,9 +225,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 
 		context.runOnClient(client -> writeTestSkin());
-		// CI draws everything on the CPU: the animated loading-screen background makes chunk loading crawl there
 		context.runOnClient(client -> WhiteClient.get().modules().get(MenuBackground.class).loadingScreens.set(false));
-		// ...and uncapped frames would take the CPU away from the world being generated: cap them for the test
 		context.runOnClient(client -> {
 			WhiteClient.get().modules().get(com.whiteclient.modules.FpsBoost.class).unlock.set(false);
 			client.options.getMaxFps().setValue(30);
@@ -258,7 +241,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.waitTicks(3);
 			}
 
-			// ---- pets + lyrics (third person)
 			context.runOnClient(client -> {
 				Lyrics lyrics = Lyrics.parseLrc("[00:00.00] WHITECLIENT lyrics test\n[00:02.50] words pop up in time\n[00:05.00] with the music playing\n[00:08.00] in your world");
 				WhiteClient.get().music().setOverride(new NowPlaying("test", "Test Song", "WHITECLIENT", "Album", 180_000, 0,
@@ -279,7 +261,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
 			context.waitTicks(20);
 			context.takeScreenshot("pet_jellyfish_front");
-			// ---- gallery: wings on their own, then every pet without other cosmetics in the way
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();
 				mm.get(Halo.class).setEnabled(false);
@@ -307,7 +288,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.waitTicks(45);
 				context.takeScreenshot("gallery_pet_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
-			// standing still: the creature drifts over your head
 			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).overHead.set(true));
 			for (String pet : Pets.TYPES) {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
@@ -315,7 +295,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("pet_over_head_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
 				perf(context, "pet over head");
 			}
-			// following you while you walk
 			for (String pet : new String[]{"Manta Ray", "Star Whale"}) {
 				context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).pet.set(pet));
 				context.waitTicks(10);
@@ -325,7 +304,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				}
 				context.takeScreenshot("gallery_walk_" + pet.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
-			// head wear cosmetics
 			context.runOnClient(client -> {
 				WhiteClient.get().modules().get(Pets.class).setEnabled(false);
 				WhiteClient.get().modules().get(HeadWear.class).setEnabled(true);
@@ -336,7 +314,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("headwear_" + style.toLowerCase(Locale.ROOT).replace(' ', '_'));
 			}
 			context.runOnClient(client -> WhiteClient.get().modules().get(HeadWear.class).setEnabled(false));
-			// your own sky (sunset) + cinematic bars
 			context.runOnClient(client -> {
 				WhiteClient.get().modules().get(TimeChanger.class).setEnabled(true);
 				WhiteClient.get().modules().get(Cinematic.class).setEnabled(true);
@@ -351,7 +328,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			});
 			sp.getServer().runCommand("time set 6000");
 			context.waitTicks(5);
-			// ---- car emote: "Show Off" (car parked next to you) for every car, then driving
 			context.runOnClient(client -> WhiteClient.get().modules().get(Pets.class).setEnabled(false));
 			for (String car : CarEmote.CARS) {
 				context.runOnClient(client -> {
@@ -363,7 +339,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.waitTicks(16);
 				context.takeScreenshot("car_" + car.toLowerCase(Locale.ROOT) + "_showoff");
 			}
-			// sports car from a few more angles (the player turns, the parked car stays)
 			context.runOnClient(client -> {
 				CarEmote ce = WhiteClient.get().modules().get(CarEmote.class);
 				ce.car.set("Sports");
@@ -396,7 +371,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 			context.takeScreenshot("car_sports_night");
 			sp.getServer().runCommand("time set 6000");
-			// drive mode
 			context.runOnClient(client -> {
 				CarEmote ce = WhiteClient.get().modules().get(CarEmote.class);
 				ce.stop();
@@ -448,7 +422,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				client.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
 			});
 
-			// ---- custom skin from the Wardrobe
 			context.runOnClient(client -> {
 				Wardrobe.reload();
 				Wardrobe w = WhiteClient.get().modules().get(Wardrobe.class);
@@ -458,7 +431,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 			context.takeScreenshot("custom_skin_front_wisp");
 
-			// ---- target ESP on a husk in front of the player
 			context.runOnClient(client -> {
 				client.options.setPerspective(Perspective.FIRST_PERSON);
 				WhiteClient.get().modules().get(Pets.class).toggle();
@@ -478,7 +450,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("esp_" + style.toLowerCase(Locale.ROOT));
 			}
 
-			// ---- 1.6 combat visuals: hit effects, damage numbers, target HUD, combo, reach + HUD modules
 			context.runOnClient(client -> {
 				TargetESP.forcedTarget = null;
 				var mm = WhiteClient.get().modules();
@@ -503,7 +474,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> {
 				Keystrokes.debugHeld = 0b10001;
 				LowHealth.debugHealth = 5;
-				WhiteClient.get().modules().get(Trail.class).toggle(); // shows a notification
+				WhiteClient.get().modules().get(Trail.class).toggle();
 				clearClutter(client);
 				attackHusk(client);
 			});
@@ -529,7 +500,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			}
 			sp.getServer().runCommand("kill @e[type=husk]");
 
-			// ---- 1.6 cosmetics: china hat, trail, jump circles, cape
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();
 				mm.get(Halo.class).setEnabled(false);
@@ -557,7 +527,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			context.takeScreenshot("cosmetics_front_hat");
 
-			// ---- 1.6 world: block outline + hand view, zoom, ambience
 			sp.getServer().runCommand("tp @p ~ ~ ~ 30 50");
 			context.runOnClient(client -> {
 				var mm = WhiteClient.get().modules();
@@ -602,7 +571,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			sp.getServer().runCommand("execute as @p at @s run summon husk ^ ^ ^3.2 {NoAI:1b,Silent:1b,PersistenceRequired:1b,Rotation:[210f,0f]}");
 			context.waitTicks(10);
 
-			// ---- menus over the world
 			context.setScreen(() -> new ClickGuiScreen(null, Category.PVP, WhiteClient.get().modules().get(TargetESP.class)));
 			context.waitTicks(20);
 			context.takeScreenshot("menu_pvp_window");
@@ -612,11 +580,9 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new ClickGuiScreen(null).openSearch("pet"));
 			context.waitTicks(15);
 			context.takeScreenshot("menu_search");
-			// floating browser window (without the MCEF Modern engine it offers the download + quick links)
 			context.setScreen(() -> new com.whiteclient.gui.BrowserScreen(null, WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class)));
 			context.waitTicks(10);
 			context.takeScreenshot("browser_window");
-			// with the MCEF Modern engine present (CI installs it only for this test): a real page, then pinned on the HUD
 			if (context.computeOnClient(client -> com.whiteclient.browser.WebView.installed())) {
 				for (int i = 0; i < 120 && !context.computeOnClient(client -> com.whiteclient.browser.WebView.ready()); i++) {
 					context.waitTicks(20);
@@ -636,7 +602,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> TargetESP.forcedTarget = null);
 			sp.getServer().runCommand("kill @e[type=husk]");
 
-			// ---- wardrobe
 			context.setScreen(() -> new WardrobeScreen(null));
 			context.waitTicks(25);
 			context.takeScreenshot("wardrobe_skins");
@@ -649,7 +614,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("wardrobe_pets");
 			context.setScreen(() -> null);
 
-			// ---- rain with ripples + splashes
 			sp.getServer().runCommand("weather rain");
 			sp.getServer().runCommand("tp @p ~ ~ ~ 30 40");
 			context.runOnClient(client -> {
@@ -659,7 +623,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(120);
 			context.takeScreenshot("rain_fx");
 			perf(context, "rain");
-			// wet, shiny ground and puddles: look along the ground (first person)
 			context.runOnClient(client -> client.options.setPerspective(Perspective.FIRST_PERSON));
 			sp.getServer().runCommand("tp @p ~ ~ ~ 30 14");
 			context.waitTicks(12);
@@ -673,7 +636,6 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("rain_wet_ground_dusk");
 			sp.getServer().runCommand("time set 6000");
 			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_BACK));
-			// the parked truck in the rain: rain, ripples and the block outline must stay behind it
 			sp.getServer().runCommand("tp @p ~ ~ ~ 0 10");
 			context.runOnClient(client -> {
 				WhiteClient.get().modules().get(BlockOutline.class).setEnabled(true);
@@ -697,21 +659,18 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			});
 			sp.getServer().runCommand("weather clear");
 
-			// pause menu in the main-menu look (world stays visible behind it)
 			context.setScreen(() -> new GameMenuScreen(true));
 			context.waitTicks(30);
 			context.takeScreenshot("pause_menu");
 			context.setScreen(() -> null);
 			context.waitTicks(3);
 
-			// themed inventory
 			context.setScreen(() -> new net.minecraft.client.gui.screen.ingame.InventoryScreen(net.minecraft.client.MinecraftClient.getInstance().player));
 			context.waitTicks(15);
 			context.takeScreenshot("inventory_theme");
 			context.setScreen(() -> null);
 			context.waitTicks(3);
 
-			// your own name tag with the WHITECLIENT logo in front (F5)
 			context.runOnClient(client -> client.options.setPerspective(Perspective.THIRD_PERSON_FRONT));
 			sp.getServer().runCommand("tp @p ~ ~ ~ 0 5");
 			context.waitTicks(10);
@@ -726,10 +685,8 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			fakeOtherClient = false;
 			context.setScreen(() -> null);
 			context.waitTicks(5);
-
 		}
 
-		// main menu again: the custom skin walks in
 		context.runOnClient(client -> WhiteTitleScreen.debugWalkTime = 1.5f);
 		context.setScreen(WhiteTitleScreen::new);
 		context.waitTicks(30);

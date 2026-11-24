@@ -8,7 +8,6 @@ import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 
-/** Animated backgrounds for the title screen, pause menu and the WHITECLIENT menu. */
 public class MenuBackground extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Energy", "Energy", "Silk", "Aurora", "Mono"));
 	public final ColorSetting color = add(new ColorSetting("Energy Color", 0xEEF2FF));
@@ -18,14 +17,12 @@ public class MenuBackground extends Module {
 	public final ModeSetting pauseLayout = add(new ModeSetting("Pause Menu Layout", "Showcase", "Showcase", "Classic"));
 	public final BoolSetting pauseHideExtras = add(new BoolSetting("Hide Advancements, Statistics & Reporting", true).visibleWhen(() -> pauseLayout.is("Showcase")));
 	public final ModeSetting pauseClientButton = add(new ModeSetting("WHITECLIENT Button", "Bottom", "Bottom", "Top").visibleWhen(() -> pauseLayout.is("Showcase")));
-	/** The old full swirl background behind the pause menu (renamed so it starts off for everyone). */
 	public final BoolSetting pauseMenu = add(new BoolSetting("Pause Swirl Background", false));
 	public final BoolSetting clickGui = add(new BoolSetting("Client Menu", false));
 	public final BoolSetting loadingScreens = add(new BoolSetting("Loading Screens", true));
 	public final BoolSetting otherMenus = add(new BoolSetting("Other Menus", true));
 	public final ModeSetting otherMenusLook = add(new ModeSetting("Other Menus Look", "Planet", "Planet", "Swirl").visibleWhen(() -> otherMenus.isOn()));
 	public final BoolSetting featuredServer = add(new BoolSetting("Featured Server (VexVanilla)", true));
-	/** VexVanilla was put in your server list once (so deleting it from the list sticks). */
 	public final BoolSetting featuredAdded = add(new BoolSetting("Featured Server Added", false).visibleWhen(() -> false));
 	public final BoolSetting pauseCard = add(new BoolSetting("Pause Menu Card", true));
 	public final NumberSetting opacity = add(new NumberSetting("Pause Opacity", 0.92, 0.2, 1.0, 0.01));

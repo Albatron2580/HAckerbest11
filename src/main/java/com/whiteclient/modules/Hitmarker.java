@@ -9,13 +9,11 @@ import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.gui.DrawContext;
 
-/** A small X around the crosshair when you hit something (red on a kill). */
 public class Hitmarker extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final ColorSetting killColor = add(new ColorSetting("Kill Color", 0xFF4D6A));
 	public final NumberSetting size = add(new NumberSetting("Size", 1.0, 0.5, 2.0, 0.05, "x"));
 
-	/** Test hook: pretend a hit just happened. */
 	public static long debugHitAt;
 
 	public Hitmarker() {

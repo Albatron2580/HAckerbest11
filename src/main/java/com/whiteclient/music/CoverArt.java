@@ -15,7 +15,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
-/** Downloads album covers (JPEG) and turns them into a small rounded texture. */
 public final class CoverArt {
 	public static final int SIZE = 64;
 	public static final Identifier ID = Identifier.of(WhiteClient.MOD_ID, "dynamic/cover");
@@ -27,7 +26,6 @@ public final class CoverArt {
 	private volatile boolean hasCover;
 	private NativeImageBackedTexture texture;
 
-	/** Worker thread: download the cover if the URL changed. */
 	void request(String url) {
 		if (url == null || url.equals(requestedUrl)) {
 			if (url == null && requestedUrl != null) {
@@ -57,7 +55,6 @@ public final class CoverArt {
 		float radius = SIZE * 0.18f;
 		for (int y = 0; y < SIZE; y++) {
 			for (int x = 0; x < SIZE; x++) {
-				// box-filter downscale
 				int x0 = x * w / SIZE, x1 = Math.max(x0 + 1, (x + 1) * w / SIZE);
 				int y0 = y * h / SIZE, y1 = Math.max(y0 + 1, (y + 1) * h / SIZE);
 				long r = 0, g = 0, b = 0, n = 0;
@@ -70,7 +67,6 @@ public final class CoverArt {
 						n++;
 					}
 				}
-				// rounded corners via alpha
 				float cx = Math.min(x + 0.5f, SIZE - x - 0.5f);
 				float cy = Math.min(y + 0.5f, SIZE - y - 0.5f);
 				float alpha = 1f;
@@ -86,7 +82,6 @@ public final class CoverArt {
 		return out;
 	}
 
-	/** Render thread: uploads a freshly downloaded cover. Returns the texture id or null. */
 	public Identifier texture() {
 		int[] px = pending;
 		if (px != null) {

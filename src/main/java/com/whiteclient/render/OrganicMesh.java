@@ -3,11 +3,6 @@ package com.whiteclient.render;
 import net.minecraft.client.render.VertexConsumerProvider;
 import org.joml.Matrix4f;
 
-/**
- * Smooth shaded 3D shapes (ellipsoids, tapered tubes, cones, thin membranes) for the pets.
- * Coordinates are camera-relative. Shading: soft wrapped sun light, darker underneath, a coloured
- * glowing rim (so the pets still "glow") and optional gloss for eyes and noses.
- */
 public final class OrganicMesh {
 	private final SolidBatch batch = new SolidBatch();
 	private float light = 1f, glowAmt = 0f;
@@ -60,17 +55,11 @@ public final class OrganicMesh {
 		return t * t * (3 - 2 * t);
 	}
 
-	/** Ellipsoid in a frame (ax right, ay up, az forward, unit vectors), one colour. */
 	public void ellipsoid(V3 c, V3 ax, V3 ay, V3 az, float rx, float ry, float rz, int rgb) {
 		ellipsoid(c, ax, ay, az, rx, ry, rz, rgb, rgb, 0f, 0xFF);
 	}
 
-	/**
-	 * Ellipsoid with a two-tone colour: {@code top} on the back, {@code bottom} on the belly
-	 * (or the front half when the frame is turned). {@code gloss} adds a shiny highlight.
-	 */
 	public void ellipsoid(V3 c, V3 ax, V3 ay, V3 az, float rx, float ry, float rz, int top, int bottom, float gloss, int alpha) {
-		// level of detail: small or far-away parts (petals, eyes, tiny spheres) need far fewer faces
 		float size = Math.max(rx, Math.max(ry, rz)) / distance(c);
 		int lon = size > 0.12f ? 14 : size > 0.05f ? 12 : size > 0.022f ? 9 : 6;
 		int lat = Math.max(3, lon / 2);
@@ -103,22 +92,18 @@ public final class OrganicMesh {
 		}
 	}
 
-	/** Distance from the camera (positions are camera-relative). */
 	private static float distance(V3 p) {
 		return (float) Math.sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z()) + 0.05f;
 	}
 
-	/** Sphere. */
 	public void sphere(V3 c, float r, int rgb) {
 		ellipsoid(c, new V3(1, 0, 0), V3.UP, new V3(0, 0, 1), r, r, r, rgb);
 	}
 
-	/** Shiny sphere (eyes, noses). */
 	public void glossySphere(V3 c, float r, int rgb, float gloss) {
 		ellipsoid(c, new V3(1, 0, 0), V3.UP, new V3(0, 0, 1), r, r, r, rgb, rgb, gloss, 0xFF);
 	}
 
-	/** Tapered tube from a (radius ra) to b (radius rb). Put spheres on the joints to round them. */
 	public void tube(V3 a, V3 b, float ra, float rb, int rgb) {
 		tube(a, b, ra, rb, rgb, rgb);
 	}
@@ -153,10 +138,6 @@ public final class OrganicMesh {
 		}
 	}
 
-	/**
-	 * A flattened cone (ears): base centre, tip, wide direction {@code w} with half width rw, thickness rd.
-	 * Faces pointing along {@code inner} get the inner colour (pink inside of ears).
-	 */
 	public void cone(V3 base, V3 tip, V3 w, float rw, float rd, int rgb, int innerRgb, V3 inner) {
 		V3 d = tip.sub(base).normalize();
 		V3 e1 = w.sub(d.mul(w.dot(d))).normalize();
@@ -182,7 +163,6 @@ public final class OrganicMesh {
 		}
 	}
 
-	/** Thin two-sided membrane (wings, fins): a fan around the first point, colour fades from root to edge. */
 	public void membrane(V3[] pts, int rootRgb, int edgeRgb, float alphaRoot, float alphaEdge) {
 		V3 c = pts[0];
 		V3 n = pts[1].sub(c).cross(pts[pts.length - 1].sub(c)).normalize();
@@ -206,7 +186,6 @@ public final class OrganicMesh {
 		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
-	/** Soft contact shadow on the ground (translucent black, fades at the edge). */
 	public void shadow(V3 c, V3 fwd, float halfLen, float halfW, float alpha) {
 		if (alpha <= 0.01f) {
 			return;

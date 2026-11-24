@@ -8,7 +8,6 @@ import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.update.AutoUpdater;
 import net.minecraft.client.MinecraftClient;
 
-/** Checks for new WHITECLIENT versions, downloads them in the background and installs them when you close the game. */
 public class AutoUpdate extends Module {
 	public final InfoSetting statusInfo = add(new InfoSetting("Status", AutoUpdater::status));
 	public final ActionSetting checkNow = add(new ActionSetting("Updates", () -> "Check Now", () -> AutoUpdater.checkAsync(this.installAuto.isOn(), true)));
@@ -26,7 +25,6 @@ public class AutoUpdate extends Module {
 		long now = System.currentTimeMillis();
 		boolean onMainMenu = mc.currentScreen instanceof net.minecraft.client.gui.screen.TitleScreen
 				|| mc.currentScreen instanceof com.whiteclient.gui.WhiteTitleScreen;
-		// at start, every 20 minutes, and whenever you are on the main menu (at most every 3 minutes)
 		if (now >= nextCheck || (onMainMenu && now - lastCheck > 3 * 60 * 1000)) {
 			nextCheck = now + 20L * 60 * 1000;
 			lastCheck = now;

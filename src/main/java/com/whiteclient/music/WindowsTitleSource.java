@@ -7,10 +7,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * No-login mode (Windows only): reads "Artist - Song" from the Spotify desktop window title.
- * Playback position is tracked from the moment the title changes.
- */
 final class WindowsTitleSource {
 	private final Map<Integer, Boolean> spotifyPids = new HashMap<>();
 	private long pidCacheReset;
@@ -38,7 +34,6 @@ final class WindowsTitleSource {
 				.orElse(false));
 	}
 
-	/** @return [running, title-with-dash-or-null] */
 	private Object[] scan() {
 		final boolean[] running = {false};
 		final String[] title = {null};
@@ -63,7 +58,6 @@ final class WindowsTitleSource {
 		return new Object[]{running[0], title[0]};
 	}
 
-	/** Current state, or null if Spotify is not running. */
 	NowPlaying poll() {
 		Object[] r = scan();
 		boolean running = (Boolean) r[0];
@@ -76,7 +70,6 @@ final class WindowsTitleSource {
 		}
 		if (title != null) {
 			if (!title.equals(lastTitle)) {
-				// a new song started (if we were already watching, we know it started now)
 				positionKnown = sawSpotify;
 				lastTitle = title;
 				trackStart = now;
@@ -89,7 +82,6 @@ final class WindowsTitleSource {
 			sawSpotify = true;
 			return build(title, now - trackStart - pausedTotal, true, now);
 		}
-		// Spotify open but paused (title is just "Spotify Premium" / "Spotify Free")
 		sawSpotify = true;
 		if (lastTitle == null) {
 			return null;

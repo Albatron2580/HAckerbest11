@@ -17,11 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Themed inventories: chests, your inventory, furnaces, crafting tables and every other container
- * are redrawn in the WHITECLIENT colours with adjustable opacity and readable light titles.
- * It recolours the game's own container pictures, so every slot stays exactly where it was.
- */
 public class InventoryTheme extends Module {
 	public final ColorSetting panel = add(new ColorSetting("Panel Color", 0x16161D));
 	public final ColorSetting slot = add(new ColorSetting("Slot Color", 0x0B0B10));
@@ -50,13 +45,11 @@ public class InventoryTheme extends Module {
 		return wc == null ? null : wc.modules().get(InventoryTheme.class);
 	}
 
-	/** Title colour for container screens (null = keep the game's). */
 	public static boolean themedTooltips() {
 		InventoryTheme t = get();
 		return t != null && t.isEnabled() && t.tooltips.isOn();
 	}
 
-	/** Rounded tooltip: x/y/w/h is the text area, like vanilla's (which draws 3 px around it). */
 	public static void drawTooltip(net.minecraft.client.gui.DrawContext ctx, int x, int y, int w, int h) {
 		InventoryTheme t = get();
 		int panel = t != null ? com.whiteclient.render.Colors.mix(t.panel.rgb(), 0x000000, 0.35f) : 0x0E0E13;
@@ -78,7 +71,6 @@ public class InventoryTheme extends Module {
 		return panel.rgb() + ":" + slot.rgb() + ":" + edge.rgb() + ":" + opacity.get() + ":" + edgeGlow.get();
 	}
 
-	/** Called when a container screen opens: (re)builds the themed pictures if needed. */
 	public static void ensure() {
 		InventoryTheme t = get();
 		if (t == null) {
@@ -145,11 +137,6 @@ public class InventoryTheme extends Module {
 		return (r << 16) | (g << 8) | bl;
 	}
 
-	/**
-	 * Vanilla containers are drawn in greys: black outline, dark slot shadows, mid-grey slots, light-grey panel and
-	 * white highlights. Each grey is mapped to a theme colour (antialiased greys in between are blended), coloured
-	 * pixels (icons, arrows) are left alone.
-	 */
 	private void recolor(NativeImage img) {
 		int p = panel.rgb(), s = slot.rgb();
 		float op = opacity.getFloat();
@@ -158,7 +145,6 @@ public class InventoryTheme extends Module {
 		int dark = mix(p, 0x000000, 0.55f);
 		int slotShadow = mix(s, 0x000000, 0.45f);
 		int slotLight = mix(s, edge.rgb(), eg * 0.45f);
-		// anchors: grey value -> {rgb, alpha}
 		int[] grey = {0, 55, 85, 139, 198, 255};
 		int[] rgb = {mix(p, edge.rgb(), eg * 0.6f), slotShadow, dark, s, p, highlight};
 		float[] alpha = {Math.min(1f, op + 0.05f), Math.min(1f, op + 0.08f), op, Math.min(1f, op + 0.06f), op, op};
@@ -179,7 +165,7 @@ public class InventoryTheme extends Module {
 				int r = (c >> 16) & 0xFF, g = (c >> 8) & 0xFF, b = c & 0xFF;
 				int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
 				if (max - min > 14) {
-					continue; // coloured detail
+					continue;
 				}
 				int v = (r + g + b) / 3;
 				int k = 0;
@@ -187,7 +173,6 @@ public class InventoryTheme extends Module {
 					k++;
 				}
 				float t = Math.max(0f, Math.min(1f, (v - grey[k]) / (float) (grey[k + 1] - grey[k])));
-				// the slot-light ring around slots (white next to the slot grey) gets its own softer tone
 				int out = mix(rgb[k], rgb[k + 1], t);
 				if (k == 4 && t > 0.98f && isSlotEdge(orig, w, h, x, y)) {
 					out = slotLight;
@@ -199,7 +184,6 @@ public class InventoryTheme extends Module {
 		}
 	}
 
-	/** White pixels that border a slot interior (vanilla draws a light line on the bottom-right of each slot). */
 	private static boolean isSlotEdge(int[] px, int w, int h, int x, int y) {
 		for (int dy = -1; dy <= 1; dy++) {
 			for (int dx = -1; dx <= 1; dx++) {

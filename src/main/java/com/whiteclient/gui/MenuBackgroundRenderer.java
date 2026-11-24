@@ -17,10 +17,6 @@ import net.minecraft.util.Identifier;
 
 import java.util.OptionalDouble;
 
-/**
- * Animated menu background. Pixels are computed by {@link BackgroundShader} on a
- * worker thread and uploaded into a small dynamic texture that is stretched over the screen.
- */
 public final class MenuBackgroundRenderer {
 	private static final Identifier TEXTURE_ID = Identifier.of(WhiteClient.MOD_ID, "dynamic/menu_background");
 	private static final int TEX_W = 384;
@@ -32,7 +28,6 @@ public final class MenuBackgroundRenderer {
 	private static boolean fresh;
 	private static boolean hasFrame;
 	private static volatile long lastRequestMs;
-	/** Shader mode wanted by the screen currently drawing (-1 = Menu Background setting). */
 	private static volatile int requestedMode = -1;
 	private static Thread worker;
 	private static SmoothTexture texture;
@@ -40,7 +35,6 @@ public final class MenuBackgroundRenderer {
 	private MenuBackgroundRenderer() {
 	}
 
-	/** Texture that samples with linear filtering so the low-res image looks smooth. */
 	private static final class SmoothTexture extends NativeImageBackedTexture {
 		private GpuSampler linear;
 		private boolean samplerFailed;
@@ -139,12 +133,10 @@ public final class MenuBackgroundRenderer {
 		hasFrame = true;
 	}
 
-	/** Draws the animated background over the whole screen. Never throws. */
 	public static void draw(DrawContext ctx, int width, int height, float alpha) {
 		draw(ctx, width, height, alpha, -1);
 	}
 
-	/** Same, with a specific {@link com.whiteclient.render.BackgroundShader} mode (-1 = setting). */
 	public static void draw(DrawContext ctx, int width, int height, float alpha, int mode) {
 		requestedMode = mode;
 		try {
@@ -172,7 +164,6 @@ public final class MenuBackgroundRenderer {
 			ctx.fill(0, 0, width, height, Colors.argb(0x0A0604, alpha));
 			return;
 		}
-		// crop the texture so it keeps its aspect ratio
 		float texAspect = TEX_W / (float) TEX_H;
 		float screenAspect = width / (float) Math.max(1, height);
 		int regionW = TEX_W;

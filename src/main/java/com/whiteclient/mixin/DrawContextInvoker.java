@@ -7,7 +7,6 @@ import net.minecraft.client.gui.DrawContext;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-/** Lets the browser window draw the page texture (a GPU texture view) in the GUI. */
 @Mixin(DrawContext.class)
 public interface DrawContextInvoker {
 	@Invoker("drawTexturedQuad")

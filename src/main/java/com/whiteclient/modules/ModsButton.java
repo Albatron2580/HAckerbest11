@@ -4,7 +4,6 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.TextSetting;
 
-/** Adds a "Mods" button to the pause menu that opens the WHITECLIENT menu. */
 public class ModsButton extends Module {
 	public final TextSetting label = add(new TextSetting("Button Text", "Mods", 24));
 

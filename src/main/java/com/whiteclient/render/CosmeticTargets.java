@@ -7,14 +7,12 @@ import net.minecraft.entity.player.PlayerEntity;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Decides which players get cosmetics (halo, wings...). */
 public final class CosmeticTargets {
 	private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 
 	private CosmeticTargets() {
 	}
 
-	/** Invisible players are skipped, unless they wear armor (then you can see where they are anyway). */
 	public static boolean visible(PlayerEntity p) {
 		if (!p.isInvisible()) {
 			return true;
@@ -27,11 +25,6 @@ public final class CosmeticTargets {
 		return false;
 	}
 
-	/**
-	 * @param self       include the local player (only when seen from outside, unless selfFirstPerson)
-	 * @param others     include other players in render range
-	 * @param maxDist    max distance for other players
-	 */
 	public static List<PlayerEntity> collect(WorldContext ctx, boolean self, boolean selfFirstPerson, boolean others, double maxDist) {
 		List<PlayerEntity> out = new ArrayList<>();
 		MinecraftClient mc = ctx.client;

@@ -22,11 +22,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LightType;
 
-/**
- * Car emote (press N). "Show Off": a car parks right next to you so you can stand by it.
- * "Drive": you sit in it and it drives wherever you walk. Purely visual and client-side:
- * only you see it and your movement never changes. Press N again (or sneak while driving) to put it away.
- */
 public class CarEmote extends Module {
 	public static final String[] CARS = {"Sports", "Pickup", "Kart"};
 
@@ -42,7 +37,7 @@ public class CarEmote extends Module {
 	public final ActionSetting toggleAction = add(new ActionSetting("Car", () -> active ? "Put Away" : "Spawn Car", this::toggleCar));
 
 	private static boolean active;
-	private float appear, pappear; // 0..1 spawn / despawn animation
+	private float appear, pappear;
 	private boolean leaving;
 	private boolean showOff;
 	private Perspective savedPerspective;
@@ -65,7 +60,6 @@ public class CarEmote extends Module {
 		return active && c != null && c.isEnabled();
 	}
 
-	/** Third-person camera distance multiplier, so the whole car fits on screen (used by a camera mixin). */
 	public static float cameraScale() {
 		CarEmote c = get();
 		if (c == null || !active || !c.isEnabled()) {
@@ -127,7 +121,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	/** How far the seated player is moved up/down for the current car (Drive mode). */
 	private float seatOffset() {
 		return switch (car.get()) {
 			case "Pickup" -> 0.3f;
@@ -136,7 +129,6 @@ public class CarEmote extends Module {
 		};
 	}
 
-	/** Driver seat in car space {x, z}: the car is placed so this point is where you are. */
 	private float[] seat() {
 		return switch (car.get()) {
 			case "Pickup" -> new float[]{-0.45f, 0.2f};
@@ -145,7 +137,6 @@ public class CarEmote extends Module {
 		};
 	}
 
-	/** Called by a mixin with the player's render state: sit pose + seat height (Drive mode only). */
 	public static void applyPose(Entity entity, EntityRenderState state) {
 		CarEmote c = get();
 		if (c == null || !active || !c.isEnabled() || state == null || c.showOff) {
@@ -173,7 +164,7 @@ public class CarEmote extends Module {
 			return;
 		}
 		if (!leaving && mode.is("Show Off") != showOff) {
-			start(); // mode changed in the menu
+			start();
 		}
 		Vec3d pos = p.getEntityPos();
 		if (!showOff && ((sneakExit.isOn() && p.isSneaking()) || p.hasVehicle() || p.isGliding() || p.isTouchingWater()
@@ -195,7 +186,6 @@ public class CarEmote extends Module {
 		float body = p.getBodyYaw();
 		if (!init) {
 			if (showOff) {
-				// park beside you (on your right), angled a little like at a car meet
 				float side = switch (car.get()) {
 					case "Pickup" -> 2.2f;
 					case "Kart" -> 1.25f;
@@ -223,7 +213,6 @@ public class CarEmote extends Module {
 		float turn = MathHelper.wrapDegrees(body - yaw) * 0.35f;
 		yaw += turn;
 		steer += (MathHelper.clamp(turn * 2.5f, -30f, 30f) - steer) * 0.3f;
-		// wheels roll forward / backward depending on the direction of travel
 		double fx = -Math.sin(Math.toRadians(yaw)), fz = Math.cos(Math.toRadians(yaw));
 		double along = (pos.x - cx) * fx + (pos.z - cz) * fz;
 		if (Math.abs(along) < 6) {
@@ -234,7 +223,6 @@ public class CarEmote extends Module {
 		cz = pos.z;
 	}
 
-	/** Ground height for a parked car: the highest ground under its four wheels (so it never sinks into a hill). */
 	private double settle(MinecraftClient mc, double x, double z, float carYaw, double nearY) {
 		float[] wheels = switch (car.get()) {
 			case "Pickup" -> new float[]{0.9f, 1.85f};
@@ -279,8 +267,6 @@ public class CarEmote extends Module {
 		};
 	}
 
-	// ================================================================== materials + lighting
-
 	private static final int PAINT = 0, GLASS = 1, TRIM = 2, CHROME = 3, RIM = 4, TYRE = 5, LEATHER = 6, BED = 7, LAMP = 8,
 			RED_LAMP = 9, CALIPER = 10, ROTOR = 11, DARK_RIM = 12, TYRE2 = 13, AMBER = 14, PIANO = 15;
 	private static final int[] MAT_RGB = {0, 0x0A0E15, 0x111215, 0xAEB3BC, 0x8A8F98, 0x121214, 0x232429, 0x18191C, 0xD9E0EA,
@@ -289,7 +275,6 @@ public class CarEmote extends Module {
 	private static final float[] MAT_F = {0.92f, 0.86f, 0.25f, 0.3f, 0.45f, 0.06f, 0.1f, 0.12f, 0.6f, 0.6f, 0.35f, 0.3f, 0.5f, 0.06f, 0.6f, 0.8f};
 	private static final float[] MAT_S = {1.3f, 1.5f, 0.25f, 1.4f, 1.1f, 0.04f, 0.12f, 0.15f, 1.4f, 1.2f, 0.8f, 0.5f, 0.9f, 0.04f, 1.2f, 1.2f};
 	private static final float[] MAT_P = {40, 70, 20, 80, 50, 8, 12, 12, 80, 60, 30, 20, 50, 8, 60, 60};
-	/** Broad soft sheen (clear coat catching the sky light). */
 	private static final float[] MAT_SHEEN = {0.16f, 0.1f, 0.03f, 0.12f, 0.1f, 0f, 0.02f, 0f, 0.05f, 0.05f, 0.05f, 0.03f, 0.06f, 0f, 0.05f, 0.08f};
 	private static final float LX = 0.32f, LY = 0.86f, LZ = 0.4f;
 
@@ -300,10 +285,6 @@ public class CarEmote extends Module {
 	private float wSpin, wSteer;
 	private boolean roof;
 
-	/**
-	 * Glossy car lighting per vertex: diffuse sun + sun glint + the sky / ground reflected in the paint
-	 * (stronger at grazing angles, like real clear coat). Everything is dimmed by the light level at night.
-	 */
 	private int lit(int m, float nx, float ny, float nz, float px, float py, float pz) {
 		int rgb = m == PAINT ? paintRgb : MAT_RGB[m];
 		float vl = (float) Math.sqrt(px * px + py * py + pz * pz);
@@ -339,11 +320,7 @@ public class CarEmote extends Module {
 		return t * t * (3 - 2 * t);
 	}
 
-	// ================================================================== car space -> camera space
-
-	/** Car-local (x right, y up, z forward) to camera-relative coordinates. */
 	private float[] world(float lx, float ly, float lz) {
-		// right = (-cos, 0, -sin), forward = (-sin, 0, cos) for Minecraft yaw
 		float wx = -cosY * lx + -sinY * lz;
 		float wz = -sinY * lx + cosY * lz;
 		return new float[]{ox + wx * scale, oy + ly * scale, oz + wz * scale};
@@ -357,7 +334,6 @@ public class CarEmote extends Module {
 		return new float[]{x, y, z};
 	}
 
-	/** Quad in car space with one material, lit with the given outward normal (0,0,0 = double-sided, e.g. glass). */
 	private void quad(float[] a, float[] b, float[] c, float[] d, float nx, float ny, float nz, int m) {
 		float[] wa = world(a[0], a[1], a[2]), wb = world(b[0], b[1], b[2]), wc = world(c[0], c[1], c[2]), wd = world(d[0], d[1], d[2]);
 		boolean both = nx == 0 && ny == 0 && nz == 0;
@@ -379,7 +355,6 @@ public class CarEmote extends Module {
 				wd[0], wd[1], wd[2], lit(m, ln[0], ln[1], ln[2], wd[0], wd[1], wd[2]), n[0], n[1], n[2]);
 	}
 
-	/** Axis-aligned box in car space. */
 	private void box(float x1, float y1, float z1, float x2, float y2, float z2, int m) {
 		quad(v(x1, y1, z2), v(x2, y1, z2), v(x2, y2, z2), v(x1, y2, z2), 0, 0, 1, m);
 		quad(v(x2, y1, z1), v(x1, y1, z1), v(x1, y2, z1), v(x2, y2, z1), 0, 0, -1, m);
@@ -389,12 +364,10 @@ public class CarEmote extends Module {
 		quad(v(x1, y1, z1), v(x2, y1, z1), v(x2, y1, z2), v(x1, y1, z2), 0, -1, 0, m);
 	}
 
-	/** Flat rectangle on a plane of constant z, facing +z (dir 1) or -z (dir -1). */
 	private void zRect(float x1, float y1, float x2, float y2, float z, float dir, int m) {
 		quad(v(x1, y1, z), v(x2, y1, z), v(x2, y2, z), v(x1, y2, z), 0, 0, dir, m);
 	}
 
-	/** Disc on a plane of constant z, facing dir. */
 	private void zDisc(float x, float y, float z, float r, float dir, int m) {
 		int seg = 12;
 		float[] c = v(x, y, z);
@@ -404,21 +377,12 @@ public class CarEmote extends Module {
 		}
 	}
 
-	// ================================================================== smooth lofted bodies
-
-	/*
-	 * A body is a list of cross-sections ("stations") from front to back. Each station is a rounded box:
-	 * {z, bottom y, top y, half width at the bottom, half width at the top, top corner radius, bottom corner radius, crown}.
-	 * The rings are connected into one smooth skin with per-vertex normals, so the paint shades and reflects like a real car.
-	 */
 	private static final int NB = 2, KC = 4, NS = 3, NT = 3;
 	private static final int HALF = NB + KC + NS + KC + NT;
 	private static final int RING = HALF * 2;
-	/** Segment indices around half a ring: bottom, bottom corner, side, top corner, top. */
 	private static final int SEG_SIDE = NB + KC, SEG_TOPARC = NB + KC + NS, SEG_TOP = NB + KC + NS + KC;
 
 	private interface Material {
-		/** Material for a body face (seg = -1 for the end caps). Return -1 to leave a hole. */
 		int at(int seg, float x, float y, float z, float nx, float ny, float nz);
 	}
 
@@ -462,7 +426,6 @@ public class CarEmote extends Module {
 		return r;
 	}
 
-	/** The station interpolated at z (for putting details flush on the body). */
 	private static float[] stationAt(float[][] st, float z) {
 		if (z >= st[0][0]) {
 			return st[0];
@@ -482,7 +445,6 @@ public class CarEmote extends Module {
 		return st[st.length - 1];
 	}
 
-	/** Half width of the body side at (z, y). */
 	private static float surfaceX(float[][] st, float z, float y) {
 		float[] s = stationAt(st, z);
 		float yb = s[1], yt = s[2], wb = s[3], wt = s[4];
@@ -504,7 +466,6 @@ public class CarEmote extends Module {
 		return vn[0] * fx + vn[1] * fy + vn[2] * fz < 0.55f ? new float[]{fx, fy, fz} : vn;
 	}
 
-	/** Builds and draws a smooth body. Faces entirely below {@code hideBelow} are skipped. Returns the ring points. */
 	private float[][][] loft(float[][] st, float hideBelow, boolean openBottom, Material mat) {
 		int ns = st.length;
 		float[][][] p = new float[ns][][];
@@ -599,7 +560,6 @@ public class CarEmote extends Module {
 				w[3][0], w[3][1], w[3][2], c[3], fn[0], fn[1], fn[2]);
 	}
 
-	/** A thin line running up the body side (door gaps, pillars). */
 	private void sideLineV(float[][] st, int side, float z, float y1, float y2, float halfWidth, int m) {
 		int n = 6;
 		for (int i = 0; i < n; i++) {
@@ -610,7 +570,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	/** A thin line running along the body side at a height (trim strips). */
 	private void sideLineH(float[][] st, int side, float y, float z1, float z2, float halfHeight, int m) {
 		int n = Math.max(2, (int) (Math.abs(z2 - z1) / 0.35f));
 		for (int i = 0; i < n; i++) {
@@ -621,7 +580,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	/** A strip along the side lit as if it faced upwards: reads as a sharp crease catching the sky. */
 	private void crease(float[][] st, int side, float y, float z1, float z2, float halfHeight) {
 		int n = Math.max(2, (int) (Math.abs(z2 - z1) / 0.3f));
 		for (int i = 0; i < n; i++) {
@@ -632,7 +590,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	/** A small flat patch on the body side (vents, handles, side lamps). */
 	private void sidePatch(float[][] st, int side, float z1, float z2, float y1, float y2, float lift, int m) {
 		float[] a = v(side * (surfaceX(st, z1, y1) + lift), y1, z1);
 		float[] b = v(side * (surfaceX(st, z2, y1) + lift), y1, z2);
@@ -641,7 +598,6 @@ public class CarEmote extends Module {
 		quad(a, b, c, d, side, 0.15f, 0, m);
 	}
 
-	/** Dark wheel arch wrapped onto the body side. */
 	private void arch(float[][] st, int side, float y, float z, float r) {
 		int seg = 18;
 		float[] fr = {0f, 0.4f, 0.75f, 1f};
@@ -662,7 +618,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	/** Soft contact shadow under the car (translucent black, fades at the edges). */
 	private void shadow(float halfLen, float halfW) {
 		int seg = 28;
 		float[] c = world(0, 0.015f, 0);
@@ -684,28 +639,20 @@ public class CarEmote extends Module {
 		}
 	}
 
-	// ================================================================== wheels
-
-	/** A point on a wheel: o = offset along the axle, a = angle (0 = forward), rr = radius. */
 	private float[] wp(float x, float y, float z, float o, double a, float rr, float cs, float sn) {
 		float pz = (float) Math.cos(a) * rr, py = (float) Math.sin(a) * rr;
 		return v(x + o * cs + pz * sn, y + py, z + pz * cs - o * sn);
 	}
 
-	/**
-	 * Wheel with a rounded tyre, concave spoked rim, brake disc and caliper.
-	 * side -1 = left, +1 = right. spokes = number of spoke pairs if {@code twin}.
-	 */
 	private void wheel(float x, float y, float z, float r, float w, int side, boolean steering, int spokes, boolean twin,
 					   int rimMat, boolean caliper, boolean knobby) {
 		int seg = 22;
 		float steerRad = steering ? (float) Math.toRadians(wSteer) : 0f;
 		float cs = (float) Math.cos(steerRad), sn = (float) Math.sin(steerRad);
-		float ax = side * cs, az = -side * sn; // outward axle direction
+		float ax = side * cs, az = -side * sn;
 		float hw = w / 2f, sh = Math.min(0.04f, r * 0.12f);
 		float rim = r * 0.68f;
 		double spin = -wSpin;
-		// tread + rounded shoulders
 		for (int i = 0; i < seg; i++) {
 			double a0 = Math.PI * 2 * i / seg + spin, a1 = Math.PI * 2 * (i + 1) / seg + spin, am = (a0 + a1) / 2;
 			float ny = (float) Math.sin(am), nf = (float) Math.cos(am);
@@ -719,20 +666,16 @@ public class CarEmote extends Module {
 						rnx + ax * sx, ny, rnz + az * sx, TYRE);
 			}
 		}
-		// outer sidewall (tyre ring) and inner sidewall
 		float oo = side * hw;
 		for (int i = 0; i < seg; i++) {
 			double a0 = Math.PI * 2 * i / seg + spin, a1 = Math.PI * 2 * (i + 1) / seg + spin;
 			quad(wp(x, y, z, oo, a0, r - sh, cs, sn), wp(x, y, z, oo, a1, r - sh, cs, sn), wp(x, y, z, oo, a1, rim, cs, sn), wp(x, y, z, oo, a0, rim, cs, sn), ax, 0, az, TYRE);
 			quad(wp(x, y, z, -oo, a1, r - sh, cs, sn), wp(x, y, z, -oo, a0, r - sh, cs, sn), wp(x, y, z, -oo, a0, 0, cs, sn), wp(x, y, z, -oo, a1, 0, cs, sn), -ax, 0, -az, TYRE);
-			// rim lip
 			quad(wp(x, y, z, oo - side * 0.004f, a0, rim, cs, sn), wp(x, y, z, oo - side * 0.004f, a1, rim, cs, sn),
 					wp(x, y, z, oo - side * 0.004f, a1, rim * 0.9f, cs, sn), wp(x, y, z, oo - side * 0.004f, a0, rim * 0.9f, cs, sn), ax, 0, az, rimMat);
-			// dark barrel behind the spokes
 			float ob = oo - side * 0.07f;
 			quad(wp(x, y, z, ob, a0, rim * 0.92f, cs, sn), wp(x, y, z, ob, a1, rim * 0.92f, cs, sn), wp(x, y, z, ob, a1, 0, cs, sn), wp(x, y, z, ob, a0, 0, cs, sn), ax, 0, az, PIANO);
 		}
-		// brake disc (does not need to spin, it is round) + caliper (stays still)
 		float od = oo - side * 0.055f;
 		for (int i = 0; i < 16; i++) {
 			double a0 = Math.PI * 2 * i / 16, a1 = Math.PI * 2 * (i + 1) / 16;
@@ -745,7 +688,6 @@ public class CarEmote extends Module {
 				quad(wp(x, y, z, oc, a0, rim * 0.86f, cs, sn), wp(x, y, z, oc, a1, rim * 0.86f, cs, sn), wp(x, y, z, oc, a1, rim * 0.56f, cs, sn), wp(x, y, z, oc, a0, rim * 0.56f, cs, sn), ax, 0, az, CALIPER);
 			}
 		}
-		// spokes: concave, from the hub out to the rim lip
 		float oHub = oo - side * 0.04f, oRim = oo - side * 0.008f;
 		int count = twin ? spokes * 2 : spokes;
 		for (int k = 0; k < count; k++) {
@@ -755,7 +697,6 @@ public class CarEmote extends Module {
 			quad(wp(x, y, z, oHub, a - hwHub, rim * 0.22f, cs, sn), wp(x, y, z, oHub, a + hwHub, rim * 0.22f, cs, sn),
 					wp(x, y, z, oRim, a + hwRim, rim * 0.9f, cs, sn), wp(x, y, z, oRim, a - hwRim, rim * 0.9f, cs, sn), ax, 0, az, rimMat);
 		}
-		// hub + centre cap
 		for (int i = 0; i < 12; i++) {
 			double a0 = Math.PI * 2 * i / 12 + spin, a1 = Math.PI * 2 * (i + 1) / 12 + spin;
 			quad(wp(x, y, z, oHub + side * 0.004f, a0, rim * 0.24f, cs, sn), wp(x, y, z, oHub + side * 0.004f, a1, rim * 0.24f, cs, sn),
@@ -765,7 +706,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	/** A steering wheel ring tilted towards the driver. */
 	private void ringWheel(float x, float y, float z, float r) {
 		int seg = 16;
 		double tilt = Math.toRadians(25);
@@ -781,8 +721,6 @@ public class CarEmote extends Module {
 		}
 		quad(v(x - r * 0.8f, y - 0.015f, z), v(x + r * 0.8f, y - 0.015f, z), v(x + r * 0.8f, y + 0.015f, z), v(x - r * 0.8f, y + 0.015f, z), 0, 0, 0, TRIM);
 	}
-
-	// ================================================================== drawing
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
@@ -814,7 +752,6 @@ public class CarEmote extends Module {
 			oy = ctx.ry(cy);
 			oz = ctx.rz(cz);
 		} else {
-			// the car is placed so the driver's seat is where you are
 			Vec3d pl = ctx.client.player.getLerpedPos(td);
 			float[] seat = seat();
 			float sx = -cosY * seat[0] + -sinY * seat[1];
@@ -827,7 +764,6 @@ public class CarEmote extends Module {
 			oz = ctx.rz(pl.z) - sz * scale;
 		}
 
-		// light level at the car: sky light dims at night, block light (torches) stays
 		BlockPos bp = BlockPos.ofFloored(baseX, baseY + 0.5, baseZ);
 		long time = ctx.client.world.getTimeOfDay() % 24000L;
 		float day = 0.5f + 0.5f * (float) Math.cos((time - 6000L) / 24000.0 * Math.PI * 2);
@@ -845,10 +781,7 @@ public class CarEmote extends Module {
 		glowParts(ctx.glow, ap);
 	}
 
-	// ---------------------------------------------------------------- sports coupe (long hood, low fastback roof)
-
 	private static final float[][] SPORTS_BODY = {
-			// z, bottom, top, half width bottom, half width top, top radius, bottom radius, crown
 			{2.45f, 0.21f, 0.54f, 0.74f, 0.64f, 0.11f, 0.08f, 0f},
 			{2.4f, 0.16f, 0.61f, 0.85f, 0.76f, 0.16f, 0.08f, 0.02f},
 			{2.32f, 0.14f, 0.66f, 0.9f, 0.83f, 0.19f, 0.07f, 0.03f},
@@ -887,10 +820,10 @@ public class CarEmote extends Module {
 				return PAINT;
 			}
 			if (seg < SEG_SIDE) {
-				return TRIM; // underbody + black side sills
+				return TRIM;
 			}
 			if (open && seg >= SEG_TOP && z < 0.62f && z > -1.0f) {
-				return LEATHER; // open cockpit (convertible while driving)
+				return LEATHER;
 			}
 			return PAINT;
 		});
@@ -903,18 +836,17 @@ public class CarEmote extends Module {
 					return -1;
 				}
 				if (seg == SEG_SIDE) {
-					return PAINT; // belt line
+					return PAINT;
 				}
 				boolean roofZone = z < 0.12f && z > -1.15f;
 				if (seg < SEG_TOPARC) {
-					return z < -1.62f ? PAINT : GLASS; // side windows, painted C-pillar at the back
+					return z < -1.62f ? PAINT : GLASS;
 				}
 				if (seg < SEG_TOP) {
-					return seg - SEG_TOPARC >= 2 || !roofZone ? PAINT : GLASS; // A / C pillars and roof edge
+					return seg - SEG_TOPARC >= 2 || !roofZone ? PAINT : GLASS;
 				}
-				return roofZone ? PAINT : GLASS; // roof, windshield, rear window
+				return roofZone ? PAINT : GLASS;
 			});
-			// chrome window line
 			for (int s = -1; s <= 1; s += 2) {
 				for (int i = 0; i < g.length - 1; i++) {
 					float[] a = g[i][SEG_SIDE + 1], b = g[i + 1][SEG_SIDE + 1];
@@ -929,7 +861,6 @@ public class CarEmote extends Module {
 				}
 			}
 		} else {
-			// convertible: windshield with frame, seats, dashboard, steering wheel
 			quad(v(-0.72f, 0.83f, 0.8f), v(0.72f, 0.83f, 0.8f), v(0.62f, 1.18f, 0.42f), v(-0.62f, 1.18f, 0.42f), 0, 0, 0, GLASS);
 			box(-0.64f, 1.16f, 0.38f, 0.64f, 1.2f, 0.45f, TRIM);
 			for (int s = -1; s <= 1; s += 2) {
@@ -942,7 +873,6 @@ public class CarEmote extends Module {
 			ringWheel(-0.4f, 1.03f, 0.27f, 0.16f);
 		}
 		for (int s = -1; s <= 1; s += 2) {
-			// door gaps, handle, side vent, mirrors
 			sideLineV(SPORTS_BODY, s, 0.64f, 0.2f, 0.86f, 0.006f, PIANO);
 			sideLineV(SPORTS_BODY, s, -0.92f, 0.22f, 0.9f, 0.006f, PIANO);
 			sidePatch(SPORTS_BODY, s, -0.58f, -0.76f, 0.79f, 0.815f, 0.008f, CHROME);
@@ -953,13 +883,11 @@ public class CarEmote extends Module {
 			box(s > 0 ? 0.78f : -0.88f, 0.9f, 0.53f, s > 0 ? 0.88f : -0.78f, 0.93f, 0.57f, PIANO);
 			box(mx, 0.9f, 0.48f, mx + 0.22f, 0.99f, 0.6f, PAINT);
 			quad(v(mx, 0.9f, 0.478f), v(mx + 0.22f, 0.9f, 0.478f), v(mx + 0.22f, 0.99f, 0.478f), v(mx, 0.99f, 0.478f), 0, 0, -1, CHROME);
-			// wheels in dark arches
 			arch(SPORTS_BODY, s, 0.35f, 1.5f, 0.4f);
 			arch(SPORTS_BODY, s, 0.35f, -1.4f, 0.41f);
 			wheel(s * 0.835f, 0.35f, 1.5f, 0.35f, 0.26f, s, true, 5, true, RIM, true, false);
 			wheel(s * 0.84f, 0.355f, -1.4f, 0.355f, 0.29f, s, false, 5, true, RIM, true, false);
 		}
-		// front: kidney grille, intakes, headlights (front cap is at z 2.44)
 		float fz = 2.455f;
 		for (int s = -1; s <= 1; s += 2) {
 			float g1 = s * 0.035f, g2 = s * 0.27f;
@@ -976,7 +904,6 @@ public class CarEmote extends Module {
 			zRect(Math.min(h1, h2) + 0.02f, 0.44f, Math.max(h1, h2) - 0.02f, 0.47f, fz + 0.004f, 1, LAMP);
 		}
 		zRect(-0.42f, 0.21f, 0.42f, 0.3f, fz, 1, PIANO);
-		// rear: L-shaped tail lights, diffuser, quad exhaust
 		float rz = -2.465f;
 		for (int s = -1; s <= 1; s += 2) {
 			float t1 = s * 0.38f, t2 = s * 0.7f;
@@ -991,8 +918,6 @@ public class CarEmote extends Module {
 		zRect(-0.6f, 0.3f, 0.6f, 0.45f, rz + 0.001f, -1, PIANO);
 		zRect(-0.38f, 0.72f, 0.38f, 0.79f, rz, -1, PIANO);
 	}
-
-	// ---------------------------------------------------------------- pickup truck (full size, lifted, blacked out)
 
 	private static final float[][] PICKUP_BODY = {
 			{3.02f, 0.5f, 1.34f, 0.98f, 0.97f, 0.07f, 0.06f},
@@ -1023,7 +948,7 @@ public class CarEmote extends Module {
 				return TRIM;
 			}
 			if (seg >= SEG_TOP && z < -0.62f && z > -2.9f) {
-				return -1; // open bed
+				return -1;
 			}
 			return PAINT;
 		});
@@ -1047,7 +972,6 @@ public class CarEmote extends Module {
 			}
 			return roofZone ? PAINT : GLASS;
 		});
-		// bed: floor with ribs, inner walls, wheel wells
 		quad(v(-0.91f, 0.98f, -0.62f), v(0.91f, 0.98f, -0.62f), v(0.91f, 0.98f, -2.9f), v(-0.91f, 0.98f, -2.9f), 0, 1, 0, BED);
 		for (int i = -3; i <= 3; i++) {
 			float x = i * 0.24f;
@@ -1061,7 +985,6 @@ public class CarEmote extends Module {
 		}
 		quad(v(-0.91f, 0.98f, -0.62f), v(0.91f, 0.98f, -0.62f), v(0.91f, 1.43f, -0.62f), v(-0.91f, 1.43f, -0.62f), 0, 0, -1, BED);
 		quad(v(0.91f, 0.98f, -2.9f), v(-0.91f, 0.98f, -2.9f), v(-0.91f, 1.43f, -2.9f), v(0.91f, 1.43f, -2.9f), 0, 0, 1, BED);
-		// rear window (while driving the back wall is built around it so you can be seen through the glass)
 		if (driving) {
 			zRect(-0.94f, 1.3f, 0.94f, 1.64f, -0.58f, -1, PAINT);
 			zRect(-0.88f, 2.06f, 0.88f, 2.21f, -0.58f, -1, PAINT);
@@ -1071,7 +994,6 @@ public class CarEmote extends Module {
 		} else {
 			zRect(-0.7f, 1.64f, 0.7f, 2.06f, -0.585f, -1, GLASS);
 		}
-		// front: big blacked-out grille, headlights, bumper, fog lights
 		float fz = 3.025f;
 		zRect(-0.66f, 0.74f, 0.66f, 1.27f, fz, 1, CHROME);
 		zRect(-0.62f, 0.78f, 0.62f, 1.23f, fz + 0.004f, 1, PIANO);
@@ -1087,7 +1009,6 @@ public class CarEmote extends Module {
 		}
 		box(-1.03f, 0.44f, 2.98f, 1.03f, 0.74f, 3.16f, TRIM);
 		box(-0.5f, 0.42f, 3.0f, 0.5f, 0.5f, 3.2f, CHROME);
-		// rear: tailgate handle, tall tail lights, bumper with step
 		float rz = -3.005f;
 		zRect(-0.18f, 1.24f, 0.18f, 1.3f, rz, -1, PIANO);
 		for (int s = -1; s <= 1; s += 2) {
@@ -1096,13 +1017,11 @@ public class CarEmote extends Module {
 		}
 		box(-1.03f, 0.44f, -3.16f, 1.03f, 0.72f, -2.98f, TRIM);
 		box(-0.35f, 0.66f, -3.2f, 0.35f, 0.73f, -3.1f, CHROME);
-		// roof marker lights
 		for (int i = -2; i <= 2; i++) {
 			float x = i * 0.18f;
 			box(x - 0.04f, 2.2f, 0.52f, x + 0.04f, 2.235f, 0.58f, AMBER);
 		}
 		for (int s = -1; s <= 1; s += 2) {
-			// door gaps, B-pillar, handles, running boards, mirrors
 			sideLineV(PICKUP_BODY, s, 1.24f, 0.5f, 1.43f, 0.007f, PIANO);
 			sideLineV(PICKUP_BODY, s, 0.12f, 0.5f, 1.43f, 0.007f, PIANO);
 			sideLineV(PICKUP_BODY, s, -0.58f, 0.5f, 1.43f, 0.007f, PIANO);
@@ -1133,8 +1052,6 @@ public class CarEmote extends Module {
 		}
 	}
 
-	// ---------------------------------------------------------------- kart
-
 	private void kart() {
 		shadow(1.1f, 0.7f);
 		box(-0.55f, 0.1f, -0.9f, 0.55f, 0.22f, 0.95f, PAINT);
@@ -1156,8 +1073,6 @@ public class CarEmote extends Module {
 			wheel(s * 0.66f, 0.22f, -0.7f, 0.22f, 0.24f, s, false, 5, false, RIM, false, false);
 		}
 	}
-
-	// ---------------------------------------------------------------- lights / underglow / spawn flash (additive glow on top)
 
 	private void glowLineCar(GlowBatch g, float x1, float y1, float z1, float x2, float y2, float z2, float width, int rgb, float a) {
 		float[] p1 = world(x1, y1, z1), p2 = world(x2, y2, z2);

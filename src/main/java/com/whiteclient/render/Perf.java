@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Tiny frame-time profiler: rolling average milliseconds per module / render step (for finding lag). */
 public final class Perf {
 	private Perf() {
 	}
@@ -29,7 +28,6 @@ public final class Perf {
 		STATS.clear();
 	}
 
-	/** The most expensive entries, e.g. "Snow:world 0.42ms (max 1.10)". */
 	public static String report(int top) {
 		List<Map.Entry<String, double[]>> list = new ArrayList<>(STATS.entrySet());
 		list.sort((a, b) -> Double.compare(b.getValue()[0], a.getValue()[0]));

@@ -14,7 +14,6 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.Random;
 
-/** Ambient particles around you: fireflies, cherry petals, embers, hearts or bubbles. */
 public class Ambience extends Module {
 	public final ModeSetting mode = add(new ModeSetting("Particles", "Fireflies", "Fireflies", "Petals", "Embers", "Hearts", "Bubbles"));
 	public final NumberSetting amount = add(new NumberSetting("Amount", 70, 10, 250, 5));

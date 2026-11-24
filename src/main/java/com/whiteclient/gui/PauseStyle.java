@@ -29,11 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/**
- * The pause menu in the same look as the WHITECLIENT main menu: the world stays visible behind
- * a soft dark fade, the big planet sits on the left, the logo and a clean text menu in the middle
- * and your player on the right. All vanilla / other-mod buttons are kept, only moved and restyled.
- */
 public final class PauseStyle {
 	@FunctionalInterface
 	private interface IconPainter {
@@ -53,7 +48,6 @@ public final class PauseStyle {
 	private static long lastNanos = System.nanoTime();
 	private static float frameDt;
 
-	// layout of the current pause screen
 	private static float colX, logoR, logoY, titleY, menuHalf;
 	private static boolean compact;
 	private static Screen current;
@@ -70,7 +64,6 @@ public final class PauseStyle {
 		return bg != null && bg.isEnabled() && bg.pauseLayout.is("Showcase");
 	}
 
-	/** True for buttons this style draws itself (their vanilla box and label are skipped). */
 	public static boolean owns(Object widget) {
 		return widget instanceof ClickableWidget w && (ITEMS.containsKey(w) || ICONS.containsKey(w))
 				&& MinecraftClient.getInstance().currentScreen == current;
@@ -90,9 +83,6 @@ public final class PauseStyle {
 		return 1f - (1f - k) * (1f - k) * (1f - k);
 	}
 
-	// ------------------------------------------------------------------ layout
-
-	/** Called after the pause screen has built its buttons (and after our Mods button was added). */
 	public static void layout(MinecraftClient client, Screen screen) {
 		List<ClickableWidget> all = Screens.getButtons(screen);
 		List<ClickableWidget> items = new ArrayList<>();
@@ -105,17 +95,16 @@ public final class PauseStyle {
 			}
 		}
 		if (items.isEmpty()) {
-			return; // F3+Esc: no menu, keep vanilla
+			return;
 		}
 		current = screen;
 		OPENED.putIfAbsent(screen, System.nanoTime());
 		for (AbstractTextWidget t : texts) {
-			t.visible = false; // "Game Menu" title: our logo replaces it
+			t.visible = false;
 		}
 		items.sort(Comparator.comparingInt(ClickableWidget::getY).thenComparingInt(ClickableWidget::getX));
 
 		MenuBackground bg = WhiteClient.get().modules().get(MenuBackground.class);
-		// buttons you rarely need: Advancements (still on L), Statistics and Player Reporting
 		if (bg != null && bg.pauseHideExtras.isOn()) {
 			for (ClickableWidget w : List.copyOf(items)) {
 				String key = keyOf(w);
@@ -125,7 +114,6 @@ public final class PauseStyle {
 				}
 			}
 		}
-		// the WHITECLIENT button goes to the bottom (or the top)
 		ClickableWidget clientButton = null;
 		for (ClickableWidget w : items) {
 			if (isClientButton(w)) {
@@ -146,7 +134,6 @@ public final class PauseStyle {
 		int width = screen.width, height = screen.height;
 		int n = items.size();
 		float bottom = height - 20;
-		// small gaps that group the menu: after the top button(s), before quitting and before a bottom WHITECLIENT button
 		boolean[] gapAfter = new boolean[n];
 		if (n > 3) {
 			for (int i = 0; i < n - 1; i++) {
@@ -167,7 +154,6 @@ public final class PauseStyle {
 		float top = titleY + 16 + 12;
 		float step = (bottom - top - gaps * gapPx) / n;
 		if (step < 15) {
-			// short window or lots of buttons: logo and name on one small line
 			compact = true;
 			logoR = 6.5f;
 			logoY = 15;
@@ -206,7 +192,6 @@ public final class PauseStyle {
 		float titleW = compact ? UiFont.width(tr, "WHITECLIENT") * 1.1f + 26 : tr.getWidth(UiFont.title("WHITECLIENT"));
 		menuHalf = Math.max(maxW, titleW) / 2f + 10;
 
-		// little round icon buttons, top right (like the main menu)
 		List<Object[]> icons = new ArrayList<>();
 		icons.add(new Object[]{"Wardrobe", (IconPainter) Icons::shirt, (Runnable) () -> client.setScreen(new WardrobeScreen(screen))});
 		Browser browser = WhiteClient.get().modules().get(Browser.class);
@@ -224,7 +209,6 @@ public final class PauseStyle {
 			ix += is + ig;
 		}
 
-		// the player model on the right
 		int ph = (int) Math.min(300, height * 0.62f), pw = (int) (ph * 0.6f);
 		if (player == null || ph != playerH || pw != playerW) {
 			try {
@@ -273,9 +257,6 @@ public final class PauseStyle {
 		return k.equals("menu.returnToMenu") || k.equals("menu.disconnect") || k.equals("menu.quit");
 	}
 
-	// ------------------------------------------------------------------ background scene
-
-	/** Drawn after the (blurred) world background and before the buttons. */
 	public static void drawScene(DrawContext ctx, Screen s, int mouseX, int mouseY, float delta) {
 		if (s != current) {
 			return;
@@ -289,14 +270,12 @@ public final class PauseStyle {
 		lastNanos = now;
 		float fade = intro(s, 0f);
 
-		// soft dark fade instead of a full background, so you still see your world (like the main menu's calm left side)
 		ctx.fillGradient(0, 0, width, height, Colors.argb(0x000000, 0.28f * fade), Colors.argb(0x000000, 0.62f * fade));
 		Render2D.hGradient(ctx, 0, 0, width * 0.6f, height, Colors.argb(0x000000, 0.42f * fade), 0x00000000);
 		Render2D.hGradient(ctx, width * 0.62f, 0, width * 0.38f, height, 0x00000000, Colors.argb(0x05050A, 0.35f * fade));
 
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 
-		// ---- big planet on the left
 		boolean big = settings == null || settings.bigPlanet.isOn();
 		float br = Math.max(40, Math.min(150, height * 0.26f));
 		float bx = Math.min(width * 0.15f, width / 2f - menuHalf - br * Render2D.BIG_RING * 1.1f - 8);
@@ -306,7 +285,6 @@ public final class PauseStyle {
 			Render2D.bigPlanet(ctx, bx, by + (1 - ba) * 12, br, time, ba * 0.92f);
 		}
 
-		// ---- a few small planets drifting up
 		float modelX = modelX(width);
 		if (settings == null || settings.planets.isOn()) {
 			float pa = intro(s, 0.15f);
@@ -329,7 +307,7 @@ public final class PauseStyle {
 					}
 				}
 				if (py < 50) {
-					a *= Math.max(0f, (py - 34) / 16f); // keep clear of the chips and icons at the top
+					a *= Math.max(0f, (py - 34) / 16f);
 				}
 				float dxm = Math.abs(px - modelX) / (playerW * 0.55f + r * 2f);
 				if (player != null && dxm < 1f && py > height * 0.12f) {
@@ -341,7 +319,6 @@ public final class PauseStyle {
 			}
 		}
 
-		// ---- your player on the right
 		if (player != null && (settings == null || settings.player.isOn()) && modelX - playerW * 0.5f > width / 2f + menuHalf - 6) {
 			try {
 				drawPlayer(ctx, s, client, tr, modelX, mouseX, mouseY, delta, time);
@@ -350,7 +327,6 @@ public final class PauseStyle {
 			}
 		}
 
-		// ---- logo + name
 		float li = intro(s, 0.05f);
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
@@ -371,7 +347,6 @@ public final class PauseStyle {
 		}
 		m.popMatrix();
 
-		// ---- where you are (top left)
 		float ci = intro(s, 0.2f);
 		String where = whereText(client);
 		if (where != null) {
@@ -383,7 +358,6 @@ public final class PauseStyle {
 			UiFont.draw(ctx, tr, where, cx + 21, 15, Colors.withAlpha(0xEDEDF2, (int) (255 * ci)));
 		}
 
-		// ---- footer
 		float fi = intro(s, 0.3f);
 		UiFont.draw(ctx, tr, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(0x9A9AA6, (int) (220 * fi)));
 		UpdateBadge.draw(ctx, tr, width, height, time);
@@ -407,7 +381,6 @@ public final class PauseStyle {
 			Render2D.roundRect(ctx, cxp - playerW * 0.18f * i, y + playerH - 6 - i, playerW * 0.36f * i, 3 + 2 * i, 4 + i, Colors.argb(0x000000, 0.08f * k));
 		}
 		player.render(ctx, x, y, mouseX, mouseY, delta);
-		// planet logo + name with a thin underline above the head
 		String name = client.getSession().getUsername();
 		float ny = y - 8 - 6 * (1 - k);
 		float nw = UiFont.width(tr, name) * 1.1f;
@@ -433,8 +406,6 @@ public final class PauseStyle {
 		}
 		return null;
 	}
-
-	// ------------------------------------------------------------------ buttons
 
 	public static void drawWidget(DrawContext ctx, ClickableWidget w) {
 		MinecraftClient client = MinecraftClient.getInstance();

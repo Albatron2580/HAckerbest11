@@ -9,13 +9,11 @@ import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
-/** A soft pulsing red glow around the screen when your health is low. */
 public class LowHealth extends Module {
 	public final NumberSetting hearts = add(new NumberSetting("Below Hearts", 4, 1, 10, 0.5));
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFF2840));
 	public final NumberSetting strength = add(new NumberSetting("Strength", 0.55, 0.1, 1.0, 0.05));
 
-	/** Test hook (-1 = off). */
 	public static float debugHealth = -1;
 
 	public LowHealth() {

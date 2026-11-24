@@ -15,7 +15,6 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 
-/** WASD, space and mouse buttons with clicks per second. */
 public class Keystrokes extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Left", HudLayout.POSITIONS));
 	public final BoolSetting mouse = add(new BoolSetting("Mouse Buttons", true));
@@ -25,7 +24,6 @@ public class Keystrokes extends Module {
 
 	private final float[] press = new float[7];
 	private long lastFrame = System.nanoTime();
-	/** Test hook: keys shown as held (bit mask W A S D LMB RMB SPACE). */
 	public static int debugHeld;
 
 	public Keystrokes() {

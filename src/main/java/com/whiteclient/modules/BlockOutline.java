@@ -15,7 +15,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.shape.VoxelShape;
 
-/** A glowing outline (and soft fill) on the block you look at, instead of the thin black line. */
 public class BlockOutline extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final BoolSetting rainbow = add(new BoolSetting("Rainbow", false));

@@ -27,16 +27,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * VexVanilla as the main server of the multiplayer screen: a big "partnered" card at the top with its icon, message,
- * players and ping and a Play button, and the server kept first in your server list.
- */
 public final class FeaturedServer {
 	public static final String NAME = "VexVanilla";
 	public static final String ADDRESS = "vexvanilla.net";
 	private static final Identifier ICON = Identifier.of(WhiteClient.MOD_ID, "featured_server_icon");
 	private static final int CARD_H = 58;
-	/** Same width vanilla uses for server messages, so their lines (and centring spaces) break the same way. */
 	private static final int MOTD_W = 236;
 	private static final int PLAY_W = 64;
 
@@ -82,7 +77,6 @@ public final class FeaturedServer {
 		return all[all.length - 1];
 	}
 
-	/** After the screen has built itself: pin VexVanilla first in the list, make room for the card, add Play. */
 	public static void setup(MinecraftClient client, MultiplayerScreen s) {
 		if (!(s instanceof MultiplayerScreenAccessor acc)) {
 			return;
@@ -98,7 +92,6 @@ public final class FeaturedServer {
 		}
 		boolean changed = false;
 		if (idx < 0 && bg != null && !bg.featuredAdded.isOn()) {
-			// add it once; if you delete it from the list later it stays deleted (the card stays)
 			list.add(new ServerInfo(NAME, ADDRESS, otherType()), false);
 			idx = list.size() - 1;
 			bg.featuredAdded.set(true);
@@ -124,13 +117,12 @@ public final class FeaturedServer {
 		}
 		screen = s;
 
-		// room for the card under the title
 		ThreePartsLayoutWidget layout = acc.whiteclient$layout();
 		int header = 30 + CARD_H + 10;
 		layout.setHeaderHeight(header);
 		for (ClickableWidget wdg : Screens.getButtons(s)) {
 			if (wdg instanceof AbstractTextWidget t && wdg.getY() < 40) {
-				t.visible = false; // our own title replaces "Play Multiplayer"
+				t.visible = false;
 			}
 		}
 		layout.refreshPositions();
@@ -147,7 +139,6 @@ public final class FeaturedServer {
 		Screens.getButtons(s).add(play);
 	}
 
-	/** Title and the featured card, drawn over the background and under the buttons. */
 	public static void draw(DrawContext ctx, MultiplayerScreen s, int mouseX, int mouseY) {
 		if (s != screen || info == null) {
 			return;
@@ -161,14 +152,12 @@ public final class FeaturedServer {
 		boolean over = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
 		hover += ((over ? 1f : 0f) - hover) * Math.min(1f, dt * 10f);
 
-		// title: planet logo + MULTIPLAYER
 		String title = "Multiplayer";
 		float tw = UiFont.width(tr, title) * 1.2f;
 		float gx = s.width / 2f - (tw + 18) / 2f;
 		Render2D.planetLogo(ctx, gx + 6, 15, 5, time, 255);
 		UiFont.drawScaled(ctx, tr, title, gx + 18, 10, 1.2f, 0xFFF2F2F6);
 
-		// soft glow + card
 		for (int g = 5; g >= 1; g--) {
 			float e = g * 2.2f;
 			Render2D.roundRect(ctx, x - e, y - e, w + e * 2, h + e * 2, 9 + e, Colors.withAlpha(0xFFFFFF, (int) ((2 + 3 * hover) * (6 - g) / 5f)));
@@ -176,7 +165,6 @@ public final class FeaturedServer {
 		Render2D.roundRect(ctx, x, y, w, h, 9, 0xE40C0C12);
 		Render2D.roundRectOutline(ctx, x, y, w, h, 9, 1, Colors.withAlpha(0xFFFFFF, (int) (45 + 60 * hover)));
 
-		// server icon (from the server itself), or the planet while it loads
 		int ix = Math.round(x + 9), iy = Math.round(y + (h - 32) / 2f);
 		updateIcon(mc);
 		Render2D.roundRect(ctx, ix - 1, iy - 1, 34, 34, 6, 0xFF16161D);
@@ -186,7 +174,6 @@ public final class FeaturedServer {
 			Render2D.planetLogo(ctx, ix + 16, iy + 16, 8, time, 255);
 		}
 
-		// name and PARTNERED tag
 		float tx = ix + 42;
 		UiFont.drawScaled(ctx, tr, NAME, tx, y + 8, 1.15f, 0xFFFFFFFF);
 		float nw = UiFont.width(tr, NAME) * 1.15f;
@@ -195,7 +182,6 @@ public final class FeaturedServer {
 		Render2D.roundRect(ctx, tx + nw + 6, y + 8, tagW, 11, 5.5f, 0x33FFFFFF);
 		UiFont.drawScaled(ctx, tr, tag, tx + nw + 11, y + 10, 0.8f, 0xFFEDEDF2);
 
-		// players and ping under the Play button (right column), so nothing overlaps
 		String status = statusText();
 		float rightEdge = x + w - 10;
 		float colLeft = rightEdge - PLAY_W;
@@ -206,7 +192,6 @@ public final class FeaturedServer {
 			UiFont.drawScaled(ctx, tr, status, sx, y + 36, 0.9f, statusColor());
 		}
 
-		// the server's own message, broken into lines exactly like the vanilla server list does
 		int motdW = (int) Math.min(MOTD_W, colLeft - 8 - tx);
 		Text motd = info.label;
 		if (motd != null && !motd.getString().isBlank() && info.getStatus() != null && info.getStatus().name().equals("SUCCESSFUL")) {

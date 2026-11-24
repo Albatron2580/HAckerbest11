@@ -8,10 +8,6 @@ import net.minecraft.client.gui.screen.Screen;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/**
- * The main-menu look for the other menus (multiplayer, singleplayer, options...): the silk background, the
- * big planet on the left and small planets drifting up the sides, with the middle kept dark so lists read well.
- */
 public final class MenuScene {
 	private static final Map<Screen, Long> OPENED = new WeakHashMap<>();
 
@@ -26,12 +22,10 @@ public final class MenuScene {
 		return 1f - (1f - k) * (1f - k) * (1f - k);
 	}
 
-	/** @param contentHalf half the width of the menu's content column (planets stay outside it) */
 	public static void draw(DrawContext ctx, Screen s, float contentHalf) {
 		draw(ctx, s, contentHalf, true);
 	}
 
-	/** @param fadeIn let the planets fade in when the screen opens */
 	public static void draw(DrawContext ctx, Screen s, float contentHalf, boolean fadeIn) {
 		int width = s.width, height = s.height;
 		float time = WhiteClient.get().time();
@@ -39,14 +33,12 @@ public final class MenuScene {
 		ctx.fillGradient(0, 0, width, height, 0x38000000, 0x8A000000);
 		Render2D.hGradient(ctx, 0, 0, width * 0.5f, height, 0x50000000, 0x00000000);
 
-		// big planet on the left, sliding a little off the edge on narrow windows
 		float br = Math.max(40, Math.min(140, height * 0.25f));
 		float bx = Math.min(width * 0.13f, width / 2f - contentHalf - br * 0.55f);
 		float by = height * 0.62f + (float) Math.sin(time * 0.35f) * 3;
 		float ba = fadeIn ? intro(s, 0f) : 1f;
 		Render2D.bigPlanet(ctx, bx, by + (1 - ba) * 14, br, time, ba * 0.9f);
 
-		// small planets drifting up both sides
 		float pa = fadeIn ? intro(s, 0.15f) : 1f;
 		float side = Math.max(30, width / 2f - contentHalf);
 		for (int i = 0; i < 9; i++) {
@@ -68,7 +60,6 @@ public final class MenuScene {
 				Render2D.planetLogo(ctx, px, py, r, time * (0.6f + frac(seed) * 0.8f) + seed, (int) (255 * a));
 			}
 		}
-		// a soft dark column behind the content so lists and text stay easy to read
 		float cw = contentHalf + 24;
 		Render2D.hGradient(ctx, width / 2f - cw - 40, 0, 40, height, 0x00000000, 0x30000000);
 		ctx.fill(Math.round(width / 2f - cw), 0, Math.round(width / 2f + cw), height, 0x30000000);

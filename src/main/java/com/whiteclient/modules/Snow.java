@@ -9,7 +9,6 @@ import com.whiteclient.setting.NumberSetting;
 
 import java.util.Random;
 
-/** Soft glowing snow / dust particles floating around you. */
 public class Snow extends Module {
 	public final NumberSetting amount = add(new NumberSetting("Amount", 180, 20, 600, 10));
 	public final NumberSetting radius = add(new NumberSetting("Radius", 14, 4, 32, 1));
@@ -86,7 +85,7 @@ public class Snow extends Module {
 			float x = (float) (px[i] - cx), y = (float) (py[i] - cy), z = (float) (pz[i] - cz);
 			float d2 = x * x + y * y + z * z;
 			if (d2 < 0.25f) {
-				continue; // too close to the camera
+				continue;
 			}
 			float fade = 1f - (float) Math.min(1.0, Math.sqrt(d2) / r);
 			float tw = 0.75f + 0.25f * (float) Math.sin(t * 2.3 + phase[i]);

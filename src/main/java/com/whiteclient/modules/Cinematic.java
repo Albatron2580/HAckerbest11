@@ -7,7 +7,6 @@ import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.gui.DrawContext;
 
-/** Cinematic look for videos and streams: smooth black movie bars and a soft colour grade. */
 public class Cinematic extends Module {
 	public final NumberSetting bars = add(new NumberSetting("Bars", 0.11, 0.0, 0.25, 0.01));
 	public final ModeSetting grade = add(new ModeSetting("Color", "Warm", "None", "Warm", "Cool", "Dream", "Night"));
@@ -35,7 +34,6 @@ public class Cinematic extends Module {
 		anim = Math.min(1f, anim + dt * 2.2f);
 		float k = 1f - (1f - anim) * (1f - anim) * (1f - anim);
 		int w = ctx.getScaledWindowWidth(), h = ctx.getScaledWindowHeight();
-		// colour grade
 		float st = strength.getFloat() * k;
 		int tint = switch (grade.get()) {
 			case "Warm" -> 0xFF9A4D;
@@ -47,7 +45,6 @@ public class Cinematic extends Module {
 		if (tint >= 0 && st > 0.01f) {
 			ctx.fillGradient(0, 0, w, h, Colors.argb(tint, 0.16f * st), Colors.argb(tint, 0.06f * st));
 		}
-		// vignette: soft dark edges
 		float v = vignette.getFloat() * k;
 		if (v > 0.01f) {
 			int edge = Math.max(8, w / 5);
@@ -59,7 +56,6 @@ public class Cinematic extends Module {
 				ctx.fill(w - e, 0, w, h, c);
 			}
 		}
-		// movie bars
 		int bh = Math.round(h * bars.getFloat() * k);
 		if (bh > 0) {
 			ctx.fill(0, 0, w, bh, 0xFF000000);

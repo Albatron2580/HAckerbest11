@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 
 import java.util.function.Supplier;
 
-/** A clickable button row in the menu (not saved). */
 public class ActionSetting extends Setting<String> {
 	private final Supplier<String> buttonText;
 	private final Runnable action;

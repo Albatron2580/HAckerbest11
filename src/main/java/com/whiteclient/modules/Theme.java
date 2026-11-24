@@ -9,7 +9,6 @@ import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.TextSetting;
 
-/** Every colour of the WHITECLIENT menus. */
 public class Theme extends Module {
 	public final ColorSetting accent = add(new ColorSetting("Accent", 0xFFFFFF));
 	public final ColorSetting background = add(new ColorSetting("Background", 0x09090D));
@@ -21,7 +20,6 @@ public class Theme extends Module {
 	public final NumberSetting opacity = add(new NumberSetting("Panel Opacity", 0.94, 0.5, 1.0, 0.01));
 	public final NumberSetting roundness = add(new NumberSetting("Roundness", 9, 0, 14, 0.5));
 	public final BoolSetting stars = add(new BoolSetting("Home Stars", true));
-	/** Cards fly out of one stack when the menu opens, and back into it when it closes. */
 	public final BoolSetting cardAnimations = add(new BoolSetting("Card Stack Animations", true));
 
 	private static final Theme FALLBACK = new Theme();
@@ -60,12 +58,10 @@ public class Theme extends Module {
 		return subtext.argb();
 	}
 
-	/** Perceived brightness 0..1 of an RGB colour. */
 	public static float lum(int c) {
 		return (((c >> 16) & 0xFF) * 0.299f + ((c >> 8) & 0xFF) * 0.587f + (c & 0xFF) * 0.114f) / 255f;
 	}
 
-	/** Colour that stays readable on top of the accent colour. */
 	public int onAccent() {
 		return lum(accent.rgb()) > 0.6f ? 0xFF0B0B0F : 0xFFFFFFFF;
 	}

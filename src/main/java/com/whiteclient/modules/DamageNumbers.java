@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-/** Floating numbers showing the damage things take (hidden behind walls). */
 public class DamageNumbers extends Module {
 	public final ModeSetting format = add(new ModeSetting("Format", "Health", "Health", "Hearts"));
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));

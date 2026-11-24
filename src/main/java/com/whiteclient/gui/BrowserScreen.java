@@ -19,10 +19,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The floating browser window: drag it by the top bar, resize it from the corner, pin it so it stays
- * on screen in-game. Type a web address or anything to search Google.
- */
 public class BrowserScreen extends Screen {
 	private static final float BAR = 24;
 	private static final String[][] QUICK = {
@@ -38,11 +34,10 @@ public class BrowserScreen extends Screen {
 	private final Browser mod;
 	private TextFieldWidget address;
 	private float wx, wy, ww, wh;
-	private int drag; // 0 none, 1 move, 2 resize, 3 page
+	private int drag;
 	private double dragDx, dragDy;
 	private long opened;
 	private String shownUrl = "";
-	/** Keys go to the web page (after clicking it); otherwise WASD / space / shift move you while the window is open. */
 	private boolean pageFocus;
 	private final List<Hit> hits = new ArrayList<>();
 
@@ -143,8 +138,6 @@ public class BrowserScreen extends Screen {
 		}
 	}
 
-	// ------------------------------------------------------------------ drawing
-
 	@Override
 	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
 		if (client.world == null) {
@@ -162,12 +155,10 @@ public class BrowserScreen extends Screen {
 		m.pushMatrix();
 		m.translate(0, (1 - ease) * 8);
 
-		// window
 		Render2D.shadow(ctx, wx, wy, ww, wh, 11, 8, (int) (90 * ease));
 		Render2D.roundRect(ctx, wx, wy, ww, wh, 11, Colors.argb(Colors.mix(th.panel.rgb(), 0x000000, 0.25f), 0.97f * ease));
 		Render2D.roundRectOutline(ctx, wx, wy, ww, wh, 11, 1, Colors.argb(0xFFFFFF, 0.08f * ease));
 
-		// top bar: back, forward, reload, home | address | pin, close
 		WebView v = mod.view();
 		float by = wy + BAR / 2f;
 		String[] nav = {"back", "forward", "reload", "home"};
@@ -217,7 +208,6 @@ public class BrowserScreen extends Screen {
 			close();
 		}));
 
-		// loading bar
 		if (v != null && v.loading()) {
 			float t = (System.currentTimeMillis() % 1100) / 1100f;
 			float lw = ww * 0.3f;
@@ -227,13 +217,11 @@ public class BrowserScreen extends Screen {
 			ctx.disableScissor();
 		}
 
-		// page
 		float pX = pageX(), pY = pageY(), pW = pageW(), pH = pageH();
 		Render2D.roundRect(ctx, pX, pY, pW, pH, 8, 0xFF0E0E13);
 		if (!Browser.drawPage(ctx, v, pX, pY, pW, pH, 1f)) {
 			drawPlaceholder(ctx, mouseX, mouseY, pX, pY, pW, pH, th);
 		}
-		// hint: typing vs walking
 		if (client.world != null) {
 			String hint = address.isFocused() ? "Enter to open · Esc to stop typing"
 					: pageFocus ? "Typing on the page · Esc or click outside it to walk again"
@@ -245,7 +233,6 @@ public class BrowserScreen extends Screen {
 				UiFont.drawScaled(ctx, textRenderer, hint, hx + 7, hy + 2.5f, 0.7f, Colors.argb(0xFFFFFF, 0.8f));
 			}
 		}
-		// resize grip
 		Icons.resize(ctx, wx + ww - 8, wy + wh - 8, 7, Colors.argb(0xFFFFFF, 0.35f));
 		m.popMatrix();
 
@@ -287,7 +274,6 @@ public class BrowserScreen extends Screen {
 		if (needMod) {
 			ty = button(ctx, mouseX, mouseY, cx, ty, "Get MCEF Modern (free)", true, () -> openOutside(WebView.MCEF_PAGE), th) + 6;
 		}
-		// quick links
 		float qw = 66, qh = 18, gap = 6;
 		int cols = Math.max(1, Math.min(QUICK.length, (int) ((w - 20 + gap) / (qw + gap))));
 		float qx0 = cx - (cols * qw + (cols - 1) * gap) / 2f;
@@ -374,8 +360,6 @@ public class BrowserScreen extends Screen {
 			default -> go(mod.home.get());
 		}
 	}
-
-	// ------------------------------------------------------------------ input
 
 	private double pageXpx(double mx) {
 		return (mx - pageX()) * scale();
@@ -553,7 +537,6 @@ public class BrowserScreen extends Screen {
 		return new net.minecraft.client.option.KeyBinding[]{o.forwardKey, o.backKey, o.leftKey, o.rightKey, o.jumpKey, o.sneakKey, o.sprintKey};
 	}
 
-	/** While you are not typing, you can keep walking around with the window open (it stays in place). */
 	@Override
 	public void tick() {
 		super.tick();

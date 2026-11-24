@@ -10,7 +10,6 @@ import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.RotationAxis;
 
-/** Move, turn and resize the item in your hand (first person). */
 public class HandView extends Module {
 	public final NumberSetting x = add(new NumberSetting("X", 0, -0.6, 0.6, 0.01));
 	public final NumberSetting y = add(new NumberSetting("Y", 0, -0.6, 0.6, 0.01));
@@ -26,7 +25,6 @@ public class HandView extends Module {
 		super("Hand View", "Move and resize your held item", Category.WORLD, false);
 	}
 
-	/** Mixin hook at the start of first-person item rendering. */
 	public static void begin(PlayerEntity player, Hand hand, MatrixStack matrices) {
 		WhiteClient wc = WhiteClient.get();
 		HandView hv = wc == null ? null : wc.modules().get(HandView.class);
@@ -45,7 +43,6 @@ public class HandView extends Module {
 		matrices.scale(s, s, s);
 	}
 
-	/** Mixin hook at the end of first-person item rendering. */
 	public static void end(MatrixStack matrices) {
 		if (depth > 0) {
 			depth--;

@@ -17,7 +17,6 @@ public enum Category {
 		this.subtitle = subtitle;
 	}
 
-	/** Categories shown as cards / in the sidebar. */
 	public boolean listed() {
 		return this != CLIENT;
 	}

@@ -12,12 +12,7 @@ import net.minecraft.util.Util;
 import java.net.URI;
 import java.util.List;
 
-/**
- * Support WHITECLIENT with a donation. Donations are voluntary and unlock nothing: everything stays free.
- * The button opens the team's PayPal.me page in your normal browser (PayPal.me keeps the owner's email private).
- */
 public class SupportScreen extends Screen {
-	/** The team's PayPal.me link, e.g. https://www.paypal.com/paypalme/Name (empty until it is set). */
 	public static final String PAYPAL_ME = "https://www.paypal.com/paypalme/LyanoBotteldoorn";
 
 	private static final int[] AMOUNTS = {2, 5, 10};
@@ -37,7 +32,6 @@ public class SupportScreen extends Screen {
 		return !PAYPAL_ME.isBlank();
 	}
 
-	/** paypal.me links take the amount as the last part: paypal.me/Name/5EUR */
 	private String link() {
 		String base = PAYPAL_ME.endsWith("/") ? PAYPAL_ME.substring(0, PAYPAL_ME.length() - 1) : PAYPAL_ME;
 		return amount > 0 ? base + "/" + amount + "EUR" : base;
@@ -53,7 +47,6 @@ public class SupportScreen extends Screen {
 		cardX = width / 2f - cardW / 2f;
 		cardY = Math.max(10, height / 2f - cardH / 2f - 6);
 
-		// amount chips
 		int chipW = 44, gap = 6;
 		int n = AMOUNTS.length + 1;
 		int rowW = n * chipW + (n - 1) * gap;
@@ -66,7 +59,6 @@ public class SupportScreen extends Screen {
 					.dimensions(cx0 + i * (chipW + gap), cy, chipW, 18).build();
 			addDrawableChild(chip);
 		}
-		// the big button
 		int bw = Math.round(Math.min(220, cardW - 40));
 		ButtonWidget donate = ButtonWidget.builder(Text.literal(ready() ? "Donate with PayPal" : "PayPal link coming soon"), b -> openPayPal())
 				.dimensions(Math.round(width / 2f - bw / 2f), Math.round(cardY + 130), bw, 22).build();
@@ -114,7 +106,6 @@ public class SupportScreen extends Screen {
 		k = 1f - (1f - k) * (1f - k) * (1f - k);
 		float time = WhiteClient.get().time();
 
-		// card
 		for (int g = 6; g >= 1; g--) {
 			float e = g * 2.4f;
 			Render2D.roundRect(ctx, cardX - e, cardY - e, cardW + e * 2, cardH + e * 2, 12 + e, Colors.argb(0xFFFFFF, 0.012f * k));
@@ -122,7 +113,6 @@ public class SupportScreen extends Screen {
 		Render2D.roundRect(ctx, cardX, cardY, cardW, cardH, 12, Colors.argb(0x0B0B10, 0.92f * k));
 		Render2D.roundRectOutline(ctx, cardX, cardY, cardW, cardH, 12, 1, Colors.argb(0xFFFFFF, 0.18f * k));
 
-		// beating heart + title
 		float beat = 1f + 0.08f * (float) Math.pow(Math.max(0, Math.sin(time * 3.2)), 8);
 		float cx = width / 2f;
 		Render2D.circle(ctx, cx, cardY + 24, 14 * beat, Colors.argb(0xFF6B8A, 0.16f * k));
@@ -131,7 +121,6 @@ public class SupportScreen extends Screen {
 		float tw = UiFont.width(textRenderer, title) * 1.35f;
 		UiFont.drawScaled(ctx, textRenderer, title, cx - tw / 2f, cardY + 42, 1.35f, Colors.argb(0xFFFFFF, k));
 
-		// message
 		String msg = "WHITECLIENT is free and stays free. If you like it, you can support the team with a donation. It helps us keep adding new stuff.";
 		List<OrderedText> lines = textRenderer.wrapLines(Text.literal(msg), (int) (cardW - 36));
 		float ly = cardY + 62;
@@ -143,7 +132,6 @@ public class SupportScreen extends Screen {
 
 		super.render(ctx, mouseX, mouseY, delta);
 
-		// selected amount: a light ring around the chip
 		for (var child : children()) {
 			if (child instanceof ButtonWidget b) {
 				String l = b.getMessage().getString();

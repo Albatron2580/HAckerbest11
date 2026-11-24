@@ -17,13 +17,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/** Something pretty happens when you kill something (only you see it). */
 public class KillEffects extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Soul", "Soul", "Lightning", "Shockwave", "Hearts", "Confetti"));
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting size = add(new NumberSetting("Size", 1.0, 0.5, 2.0, 0.05, "x"));
 
-	private final List<float[]> effects = new ArrayList<>(); // x, y, z, start, height, seed, styleIndex
+	private final List<float[]> effects = new ArrayList<>();
 	private final Random random = new Random();
 
 	public KillEffects() {
@@ -38,7 +37,6 @@ public class KillEffects extends Module {
 		spawn(pos, target.getHeight());
 	}
 
-	/** Test hook. */
 	public void spawn(Vec3d pos, float height) {
 		int idx = 0;
 		for (int i = 0; i < style.getModes().size(); i++) {
@@ -67,7 +65,7 @@ public class KillEffects extends Module {
 			float h = e[4];
 			Random r = new Random((long) e[5]);
 			switch ((int) e[6]) {
-				case 1 -> { // lightning
+				case 1 -> {
 					float flash = u < 0.35f ? 1f : Math.max(0f, 1f - (u - 0.35f) * 2.5f);
 					float top = y + 14;
 					float px = x, py = top, pz = z;
@@ -89,7 +87,7 @@ public class KillEffects extends Module {
 					g.flatRing(x, y + 0.03f, z, 0.3f + u * 2.5f * s, 0.12f, rgb, a);
 					g.disc(x, y + h * 0.5f, z, 1.6f * s, 0xDCE6FF, 0.5f * flash, 18);
 				}
-				case 2 -> { // shockwave
+				case 2 -> {
 					for (int k = 0; k < 3; k++) {
 						float uu = Math.max(0f, u * 1.4f - k * 0.15f);
 						if (uu <= 0 || uu > 1) {
@@ -102,7 +100,7 @@ public class KillEffects extends Module {
 					g.glowLine(x, y, z, x, y + 6 * s, z, 0.5f * s, rgb, beam);
 					g.flatDisc(x, y + 0.03f, z, 1.4f * s, rgb, 0.4f * beam);
 				}
-				case 3 -> { // hearts
+				case 3 -> {
 					for (int i = 0; i < 9; i++) {
 						float ang = r.nextFloat() * 6.283f;
 						float d = 0.3f + r.nextFloat() * 0.6f;
@@ -111,7 +109,7 @@ public class KillEffects extends Module {
 								"❤", (1.4f + r.nextFloat()) * s, Colors.argb(i % 3 == 0 ? 0xFFFFFF : 0xFF5C8A, a), false);
 					}
 				}
-				case 4 -> { // confetti
+				case 4 -> {
 					for (int i = 0; i < 40; i++) {
 						float ang = r.nextFloat() * 6.283f;
 						float sp = 1.2f + r.nextFloat() * 2.2f;
@@ -123,7 +121,7 @@ public class KillEffects extends Module {
 						g.disc(px, py, pz, 0.07f * s, c, 0.95f * a, 6);
 					}
 				}
-				default -> { // soul
+				default -> {
 					float rise = (1f - (1f - u) * (1f - u)) * 2.6f * s;
 					float cy = y + h * 0.5f + rise;
 					g.disc(x, cy, z, 0.55f * s, rgb, 0.45f * a, 16);

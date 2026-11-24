@@ -7,13 +7,11 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.MinecraftClient;
 
-/** Hold C (change it in Controls) to zoom in smoothly, like OptiFine zoom. */
 public class Zoom extends Module {
 	public final NumberSetting factor = add(new NumberSetting("Zoom", 4, 1.5, 12, 0.5, "x"));
 	public final BoolSetting smooth = add(new BoolSetting("Smooth Animation", true));
 	public final BoolSetting cinematic = add(new BoolSetting("Smooth Camera While Zoomed", true));
 
-	/** Test hook. */
 	public static boolean debugHeld;
 
 	private static float current = 1f;
@@ -39,7 +37,6 @@ public class Zoom extends Module {
 		return debugHeld || (mc.currentScreen == null && WhiteClient.get().zoomKey() != null && WhiteClient.get().zoomKey().isPressed());
 	}
 
-	/** Multiplier for the field of view (1 = normal). Called by a mixin every frame. */
 	public static float fovScale() {
 		Zoom z = get();
 		long now = System.nanoTime();

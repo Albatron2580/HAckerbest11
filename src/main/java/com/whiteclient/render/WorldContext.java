@@ -6,18 +6,14 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
 
-/** Everything a module needs to draw in the world for one frame. */
 public final class WorldContext {
 	public final MinecraftClient client;
 	public final MatrixStack matrices;
 	public final VertexConsumerProvider consumers;
-	/** Camera position; subtract it from world positions to get render coordinates. */
 	public final Vec3d cam;
 	public final Quaternionf camRotation;
 	public final float tickDelta;
-	/** Seconds since the client started (smooth, for animations). */
 	public final float time;
-	/** Seconds since the previous frame (clamped). */
 	public final float frameDelta;
 	public final GlowBatch glow;
 
@@ -46,7 +42,6 @@ public final class WorldContext {
 		return (float) (worldZ - cam.z);
 	}
 
-	/** True when the local player is seen from the outside (F5). */
 	public boolean thirdPerson() {
 		return client.options != null && !client.options.getPerspective().isFirstPerson();
 	}

@@ -12,7 +12,6 @@ import com.whiteclient.render.CosmeticTargets;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
-/** Soft white glow around (and over) your player, with orbiting sparkles. */
 public class Aura extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final NumberSetting radius = add(new NumberSetting("Radius", 1.15, 0.4, 2.5, 0.05));
@@ -42,7 +41,6 @@ public class Aura extends Module {
 		float pul = 1f + pulse.getFloat() * 0.22f * (float) Math.sin(ctx.time * 2.6f);
 		float a = intensity.getFloat() * pul;
 
-		// pull the sprite towards the camera so it also brightens the body
 		V3 toCam = center.mul(-1).normalize();
 		V3 front = bodyGlow.isOn() ? center.add(toCam, 0.5f) : center.add(toCam, -0.35f);
 		g.disc(front.x(), front.y(), front.z(), radius.getFloat() * pul, rgb, a, 24);

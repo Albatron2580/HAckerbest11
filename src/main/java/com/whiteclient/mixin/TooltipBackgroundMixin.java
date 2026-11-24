@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Rounded dark tooltips with a thin light edge, in the WHITECLIENT style. */
 @Mixin(TooltipBackgroundRenderer.class)
 public abstract class TooltipBackgroundMixin {
 	@Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)

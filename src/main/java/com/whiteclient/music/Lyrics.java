@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Time-synced lyrics parsed from LRC text. */
 public final class Lyrics {
 	public record Line(long timeMs, String text) {
 	}
@@ -35,7 +34,6 @@ public final class Lyrics {
 		return lines;
 	}
 
-	/** Index of the line that is active at {@code posMs}, or -1 before the first line. */
 	public int indexAt(long posMs) {
 		int lo = 0, hi = lines.size() - 1, ans = -1;
 		while (lo <= hi) {
@@ -50,7 +48,6 @@ public final class Lyrics {
 		return ans;
 	}
 
-	/** When the line at {@code index} ends (start of the next line, or +4s for the last one). */
 	public long endOf(int index) {
 		if (index + 1 < lines.size()) {
 			return lines.get(index + 1).timeMs();

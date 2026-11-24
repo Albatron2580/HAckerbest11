@@ -12,7 +12,6 @@ import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
-/** Replaces the vanilla crosshair with a clean custom one. */
 public class CustomCrosshair extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Cross + Dot", "Cross", "Cross + Dot", "Dot", "Circle", "Circle + Dot", "T-Shape", "Chevron", "Square"));
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -31,7 +30,6 @@ public class CustomCrosshair extends Module {
 		super("Custom Crosshair", "A clean custom crosshair", Category.HUD, false);
 	}
 
-	/** Called instead of the vanilla crosshair while enabled. */
 	public void draw(DrawContext ctx) {
 		MinecraftClient mc = MinecraftClient.getInstance();
 		if (mc.player == null || mc.options == null || !mc.options.getPerspective().isFirstPerson() || mc.player.isSpectator()) {

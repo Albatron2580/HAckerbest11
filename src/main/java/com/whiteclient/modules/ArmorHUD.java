@@ -17,7 +17,6 @@ import net.minecraft.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Your armour and held item with durability. */
 public class ArmorHUD extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Next To Hotbar", "Next To Hotbar", "Top Left", "Top Right", "Bottom Left", "Bottom Right", "Left", "Right"));
 	public final ModeSetting durability = add(new ModeSetting("Durability", "Percent", "Percent", "Number", "Bar Only"));

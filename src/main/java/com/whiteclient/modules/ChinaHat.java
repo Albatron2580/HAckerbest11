@@ -13,7 +13,6 @@ import com.whiteclient.setting.NumberSetting;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
-/** A glowing cone hat ("china hat") on your head. */
 public class ChinaHat extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final ColorSetting color2 = add(new ColorSetting("Tip Color", 0xBFD0FF));

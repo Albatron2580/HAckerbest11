@@ -9,7 +9,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix3x2fStack;
 
-/** Smooth Poppins font for the WHITECLIENT menus (falls back to the Minecraft font for missing glyphs). */
 public final class UiFont {
 	public static final Identifier UI = Identifier.of(WhiteClient.MOD_ID, "ui");
 	public static final Identifier TITLE = Identifier.of(WhiteClient.MOD_ID, "title");

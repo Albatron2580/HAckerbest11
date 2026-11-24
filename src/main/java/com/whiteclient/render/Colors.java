@@ -18,7 +18,6 @@ public final class Colors {
 		return withAlpha(argb, (int) (a * factor));
 	}
 
-	/** Linear mix of two RGB colours, t=0 gives a, t=1 gives b. Alpha of the result is 0. */
 	public static int mix(int a, int b, float t) {
 		t = Math.max(0f, Math.min(1f, t));
 		int r = (int) (((a >> 16) & 0xFF) + (((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * t);
@@ -35,7 +34,6 @@ public final class Colors {
 		return (alpha << 24) | mix(a, b, t);
 	}
 
-	/** Multiplies the RGB channels (darken when factor < 1). */
 	public static int shade(int rgb, float factor) {
 		int r = Math.min(255, (int) (((rgb >> 16) & 0xFF) * factor));
 		int g = Math.min(255, (int) (((rgb >> 8) & 0xFF) * factor));
@@ -60,7 +58,6 @@ public final class Colors {
 		return ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
 	}
 
-	/** RGB -> {hue 0..1, saturation 0..1, value 0..1}. */
 	public static float[] toHsv(int rgb) {
 		float r = ((rgb >> 16) & 0xFF) / 255f, g = ((rgb >> 8) & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
 		float max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));

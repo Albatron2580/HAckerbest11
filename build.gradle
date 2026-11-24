@@ -10,7 +10,6 @@ base {
 }
 
 repositories {
-	// MCEF Modern (open source Chromium engine mod, LGPL-2.1) powers the browser window; it is bundled unmodified.
 	maven {
 		url = "https://maven.dimaskama.net/releases"
 		content {
@@ -27,7 +26,6 @@ loom {
 	}
 }
 
-// Client game test (CI only): boots Minecraft, creates a world and takes screenshots of every feature.
 fabricApi {
 	configureTests {
 		createSourceSet = true

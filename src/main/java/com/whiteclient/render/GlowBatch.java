@@ -11,11 +11,6 @@ import org.joml.Matrix4f;
 
 import java.util.Arrays;
 
-/**
- * Collects additive "glow" quads in camera-relative space (camera at 0,0,0),
- * sorts them back-to-front, orients every quad towards the camera and draws
- * them with a vanilla additive render layer.
- */
 public final class GlowBatch {
 	private static final int FLOATS_PER_QUAD = 12;
 
@@ -32,7 +27,6 @@ public final class GlowBatch {
 	private float viewX, viewY, viewZ;
 	private boolean viewSet;
 
-	/** Camera forward direction, used to skip sprites behind the camera. */
 	public void setView(float fx, float fy, float fz) {
 		viewX = fx;
 		viewY = fy;
@@ -57,13 +51,12 @@ public final class GlowBatch {
 		}
 	}
 
-	/** Adds a quad; the winding is fixed up automatically. Colours are ARGB, alpha = glow strength. */
 	public void quad(float x1, float y1, float z1, int c1,
 					 float x2, float y2, float z2, int c2,
 					 float x3, float y3, float z3, int c3,
 					 float x4, float y4, float z4, int c4) {
 		if (((c1 | c2 | c3 | c4) >>> 24) == 0) {
-			return; // fully transparent
+			return;
 		}
 		ensure();
 		int p = count * FLOATS_PER_QUAD;
@@ -76,7 +69,6 @@ public final class GlowBatch {
 		count++;
 	}
 
-	/** Read-only access to the collected quads (used by the offline preview tool). */
 	public interface QuadVisitor {
 		void quad(float[] positions, int posOffset, int[] colors, int colorOffset);
 	}
@@ -87,15 +79,8 @@ public final class GlowBatch {
 		}
 	}
 
-	// ------------------------------------------------------------------ shapes
-
-	/**
-	 * A soft camera-facing ribbon from a to b. The centre line has colour {@code core}
-	 * and fades to fully transparent at {@code width} away from the line.
-	 */
 	public void ribbon(float ax, float ay, float az, float bx, float by, float bz, float width, int core) {
 		float dx = bx - ax, dy = by - ay, dz = bz - az;
-		// view vector = midpoint (camera is at origin)
 		float vx = (ax + bx) * 0.5f, vy = (ay + by) * 0.5f, vz = (az + bz) * 0.5f;
 		float sx = dy * vz - dz * vy;
 		float sy = dz * vx - dx * vz;
@@ -111,7 +96,6 @@ public final class GlowBatch {
 		quad(ax, ay, az, core, ax - sx, ay - sy, az - sz, edge, bx - sx, by - sy, bz - sz, edge, bx, by, bz, core);
 	}
 
-	/** Glowing line: wide faint halo + medium glow + bright near-white core. */
 	public void glowLine(float ax, float ay, float az, float bx, float by, float bz, float width, int rgb, float intensity) {
 		if (intensity <= 0.003f) {
 			return;
@@ -121,15 +105,13 @@ public final class GlowBatch {
 		ribbon(ax, ay, az, bx, by, bz, width * 0.14f, Colors.argb(Colors.mix(rgb, 0xFFFFFF, 0.65f), Math.min(1f, 1.0f * intensity)));
 	}
 
-	/** A soft round glow sprite that always faces the camera. */
 	public void disc(float cx, float cy, float cz, float radius, int rgb, float alpha, int segments) {
 		if (alpha <= 0.003f) {
 			return;
 		}
 		if (viewSet && cx * viewX + cy * viewY + cz * viewZ < -radius * 1.5f) {
-			return; // behind the camera
+			return;
 		}
-		// build a basis perpendicular to the view direction
 		float len = (float) Math.sqrt(cx * cx + cy * cy + cz * cz);
 		float vx, vy, vz;
 		if (len < 1.0e-4f) {
@@ -137,14 +119,12 @@ public final class GlowBatch {
 		} else {
 			vx = cx / len; vy = cy / len; vz = cz / len;
 		}
-		// right = v x up(0,1,0)
 		float rx = -vz, ry = 0, rz = vx;
 		float rl = (float) Math.sqrt(rx * rx + rz * rz);
 		if (rl < 1.0e-4f) {
 			rx = 1; rz = 0; rl = 1;
 		}
 		rx /= rl; rz /= rl;
-		// up = right x v
 		float ux = ry * vz - rz * vy;
 		float uy = rz * vx - rx * vz;
 		float uz = rx * vy - ry * vx;
@@ -159,11 +139,9 @@ public final class GlowBatch {
 			float c1 = (float) Math.cos((i + 1) * step), s1 = (float) Math.sin((i + 1) * step);
 			float ax0 = (rx * c0 + ux * s0), ay0 = (ry * c0 + uy * s0), az0 = (rz * c0 + uz * s0);
 			float ax1 = (rx * c1 + ux * s1), ay1 = (ry * c1 + uy * s1), az1 = (rz * c1 + uz * s1);
-			// inner fan (degenerate quad = triangle)
 			quad(cx, cy, cz, center, cx, cy, cz, center,
 					cx + ax0 * inner, cy + ay0 * inner, cz + az0 * inner, mid,
 					cx + ax1 * inner, cy + ay1 * inner, cz + az1 * inner, mid);
-			// outer ring
 			quad(cx + ax0 * inner, cy + ay0 * inner, cz + az0 * inner, mid,
 					cx + ax0 * radius, cy + ay0 * radius, cz + az0 * radius, edge,
 					cx + ax1 * radius, cy + ay1 * radius, cz + az1 * radius, edge,
@@ -171,7 +149,6 @@ public final class GlowBatch {
 		}
 	}
 
-	/** A soft horizontal ring lying flat (not camera facing), e.g. on the ground. */
 	public void flatRing(float cx, float cy, float cz, float radius, float width, int rgb, float alpha) {
 		if (alpha <= 0.004f || radius <= 0) {
 			return;
@@ -190,7 +167,6 @@ public final class GlowBatch {
 		}
 	}
 
-	/** A flat filled glow disc lying on the ground (bright centre fading out). */
 	public void flatDisc(float cx, float cy, float cz, float radius, int rgb, float alpha) {
 		if (alpha <= 0.004f || radius <= 0) {
 			return;
@@ -205,8 +181,6 @@ public final class GlowBatch {
 					cx + (float) Math.cos(a1) * radius, cy, cz + (float) Math.sin(a1) * radius, edge);
 		}
 	}
-
-	// ------------------------------------------------------------------ drawing
 
 	private static void resolveLayer() {
 		if (layerResolved) {
@@ -223,7 +197,6 @@ public final class GlowBatch {
 				if (mode == VertexFormat.DrawMode.TRIANGLES || mode == VertexFormat.DrawMode.QUADS) {
 					cachedLayer = layer;
 					cachedTriangles = mode == VertexFormat.DrawMode.TRIANGLES;
-					// dragon rays do not write depth, so draw order does not matter there
 					cachedNeedsSort = layer != candidates[0];
 					WhiteClient.LOGGER.info("[WHITECLIENT] glow layer: {} ({})", layer, mode);
 					return;
@@ -235,7 +208,6 @@ public final class GlowBatch {
 		WhiteClient.LOGGER.warn("[WHITECLIENT] no usable glow render layer found; glow effects disabled");
 	}
 
-	/** Sorts back-to-front and writes all quads into the given consumers. */
 	public void draw(VertexConsumerProvider consumers, Matrix4f matrix) {
 		if (count == 0) {
 			return;
@@ -254,7 +226,7 @@ public final class GlowBatch {
 				float d = cx * cx + cy * cy + cz * cz;
 				order[i] = ((long) Float.floatToIntBits(d) << 32) | (i & 0xFFFFFFFFL);
 			} else {
-				order[i] = count - 1 - i; // keep submission order
+				order[i] = count - 1 - i;
 			}
 		}
 		if (cachedNeedsSort) {
@@ -270,7 +242,6 @@ public final class GlowBatch {
 			float x2 = pos[p + 3], y2 = pos[p + 4], z2 = pos[p + 5];
 			float x3 = pos[p + 6], y3 = pos[p + 7], z3 = pos[p + 8];
 			float x4 = pos[p + 9], y4 = pos[p + 10], z4 = pos[p + 11];
-			// normal from the diagonals (works for degenerate quads too)
 			float ax = x3 - x1, ay = y3 - y1, az = z3 - z1;
 			float bx = x4 - x2, by = y4 - y2, bz = z4 - z2;
 			float nx = ay * bz - az * by;

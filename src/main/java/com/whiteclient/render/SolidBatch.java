@@ -17,11 +17,6 @@ import org.joml.Matrix4f;
 
 import java.util.Arrays;
 
-/**
- * Coloured solid quads (camera-relative) for simple 3D models such as the emote cars.
- * Faces pointing away from the camera are skipped and the rest are drawn back to front,
- * so no depth sorting problems inside a model.
- */
 public final class SolidBatch {
 	private static final int FLOATS = 12;
 	private float[] pos = new float[FLOATS * 256];
@@ -32,7 +27,6 @@ public final class SolidBatch {
 	private static RenderLayer layer;
 	private static boolean triangles;
 	private static boolean resolved;
-	/** Entity format (writes depth, so rain / glow / other things behind the model are hidden properly). */
 	private static boolean entityFormat;
 	private static final Identifier WHITE = Identifier.of(WhiteClient.MOD_ID, "dynamic/solid_white");
 
@@ -45,17 +39,13 @@ public final class SolidBatch {
 		}
 	}
 
-	/**
-	 * Adds a quad (corners in order around the face). {@code nx/ny/nz} is the outward normal;
-	 * pass 0,0,0 for double-sided faces (glass).
-	 */
 	public void quad(float x1, float y1, float z1, int c1, float x2, float y2, float z2, int c2,
 					 float x3, float y3, float z3, int c3, float x4, float y4, float z4, int c4,
 					 float nx, float ny, float nz) {
 		if (nx != 0 || ny != 0 || nz != 0) {
 			float cx = (x1 + x2 + x3 + x4) * 0.25f, cy = (y1 + y2 + y3 + y4) * 0.25f, cz = (z1 + z2 + z3 + z4) * 0.25f;
 			if (nx * -cx + ny * -cy + nz * -cz <= 0) {
-				return; // facing away from the camera
+				return;
 			}
 		}
 		ensure();
@@ -148,7 +138,6 @@ public final class SolidBatch {
 			float x2 = pos[p + 3], y2 = pos[p + 4], z2 = pos[p + 5];
 			float x3 = pos[p + 6], y3 = pos[p + 7], z3 = pos[p + 8];
 			float x4 = pos[p + 9], y4 = pos[p + 10], z4 = pos[p + 11];
-			// wind the quad towards the camera so it shows whether or not the layer culls
 			float ax = x3 - x1, ay = y3 - y1, az = z3 - z1;
 			float bx = x4 - x2, by = y4 - y2, bz = z4 - z2;
 			float nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;

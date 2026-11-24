@@ -30,10 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Spotify login with PKCE (no client secret needed). The user registers their own
- * Spotify app with redirect URI {@value #REDIRECT_URI} and pastes its Client ID.
- */
 public final class SpotifyAuth {
 	public static final int PORT = 25588;
 	public static final String REDIRECT_URI = "http://127.0.0.1:" + PORT + "/callback";
@@ -114,10 +110,6 @@ public final class SpotifyAuth {
 		return URLEncoder.encode(s, StandardCharsets.UTF_8);
 	}
 
-	/**
-	 * Starts the login: returns the URL the browser has to open. A tiny local web server
-	 * waits (3 minutes) for Spotify to redirect back with the code.
-	 */
 	public String startLogin(String id, Consumer<String> chat) {
 		if (id == null || id.isBlank()) {
 			status = "Paste your Spotify Client ID first";
@@ -229,7 +221,6 @@ public final class SpotifyAuth {
 		return map;
 	}
 
-	/** POSTs to the token endpoint; stores the tokens on success. */
 	private synchronized boolean exchange(String form) {
 		try {
 			HttpRequest req = HttpRequest.newBuilder(URI.create("https://accounts.spotify.com/api/token"))
@@ -260,7 +251,6 @@ public final class SpotifyAuth {
 		}
 	}
 
-	/** A valid access token (refreshing when needed), or null. Call from a worker thread. */
 	public String accessToken() {
 		if (!isLoggedIn()) {
 			return null;
@@ -276,7 +266,6 @@ public final class SpotifyAuth {
 		return ok ? accessToken : null;
 	}
 
-	/** Forces a refresh on the next call (after a 401). */
 	public void invalidate() {
 		expiresAt = 0;
 	}

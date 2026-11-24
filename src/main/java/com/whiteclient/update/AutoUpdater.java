@@ -28,11 +28,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * Keeps WHITECLIENT up to date: looks for a newer release on the project's GitHub page, downloads it in the
- * background, checks it (SHA-256 published next to it, and that it really is WHITECLIENT), and installs it
- * when you close the game. Only github.com downloads of this one project are accepted.
- */
 public final class AutoUpdater {
 	public static final String REPO = "Albatron2580/HAckerbest11";
 	private static final String API = "https://api.github.com/repos/" + REPO + "/releases/latest";
@@ -55,12 +50,10 @@ public final class AutoUpdater {
 		return readyVersion;
 	}
 
-	/** For the screenshots in the tests: pretend a version is ready (nothing is installed without a download). */
 	public static void previewReady(String version) {
 		readyVersion = version;
 	}
 
-	/** A short line for the menus, or null when there is nothing to say. */
 	public static String badge() {
 		if (readyVersion != null) {
 			return "Update " + readyVersion + " ready · installs when you close the game";
@@ -72,7 +65,6 @@ public final class AutoUpdater {
 		return FabricLoader.getInstance().getGameDir().resolve("whiteclient").resolve("update");
 	}
 
-	/** The WHITECLIENT jar the game loaded, or null when running from a development folder. */
 	public static Path ownJar() {
 		ModContainer c = FabricLoader.getInstance().getModContainer(WhiteClient.MOD_ID).orElse(null);
 		if (c == null) {
@@ -86,7 +78,6 @@ public final class AutoUpdater {
 		return null;
 	}
 
-	/** At start: tidy up after a finished update and show what the last install did. */
 	public static void startup() {
 		Path dir = updateDir();
 		try {
@@ -102,7 +93,7 @@ public final class AutoUpdater {
 					for (Path p : files.toList()) {
 						String v = versionOf(p.getFileName().toString());
 						if (v != null && compare(v, WhiteClient.VERSION) <= 0) {
-							Files.deleteIfExists(p); // already installed
+							Files.deleteIfExists(p);
 						}
 					}
 				}
@@ -131,7 +122,6 @@ public final class AutoUpdater {
 		t.start();
 	}
 
-	/** Checks right now on this thread (used by the tests); returns the status line. */
 	public static String checkNow(boolean install) {
 		try {
 			check(install, true);
@@ -156,7 +146,7 @@ public final class AutoUpdater {
 
 	private static void check(boolean install, boolean manual) throws Exception {
 		if (readyVersion != null && !manual) {
-			return; // already downloaded, waiting for the game to close
+			return;
 		}
 		status = "Checking for updates...";
 		HttpClient http = http();
@@ -185,7 +175,6 @@ public final class AutoUpdater {
 		toast("WHITECLIENT " + latest + " downloaded", "It installs when you close the game");
 	}
 
-	/** Downloads one released version into a folder and checks it; returns the checked jar. */
 	public static Path download(HttpClient http, String latest, Path dir) throws Exception {
 		String jarName = "whiteclient-" + latest + ".jar";
 		String jarUrl = DOWNLOADS + "v" + latest + "/" + jarName;
@@ -215,7 +204,6 @@ public final class AutoUpdater {
 		return target;
 	}
 
-	/** Downloads and checks a released version into a temporary folder (used by the tests). */
 	public static String testDownload(String version) {
 		try {
 			Path dir = Files.createTempDirectory("whiteclient-update-test");
@@ -226,10 +214,6 @@ public final class AutoUpdater {
 		}
 	}
 
-	/**
-	 * The newest released version. Uses the normal github.com "latest release" link (it just redirects to
-	 * the newest tag, with no API limits); GitHub's API is the fallback. Null when nothing is released.
-	 */
 	private static String latestVersion() throws Exception {
 		try {
 			HttpClient noRedirect = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
@@ -244,10 +228,9 @@ public final class AutoUpdater {
 				return tag.startsWith("v") ? tag.substring(1) : tag;
 			}
 			if (r.statusCode() / 100 == 3 && loc.endsWith("/releases")) {
-				return null; // no release yet
+				return null;
 			}
 		} catch (IOException ignored) {
-			// try the API below
 		}
 		HttpResponse<String> res = http().send(request(API).header("Accept", "application/vnd.github+json").build(),
 				HttpResponse.BodyHandlers.ofString());
@@ -261,7 +244,6 @@ public final class AutoUpdater {
 		return tag.startsWith("v") ? tag.substring(1) : tag;
 	}
 
-	/** The download must really be WHITECLIENT, with the version it claims, and carry the installer. */
 	private static void verifyJar(Path jar, String version) throws IOException {
 		try (ZipFile zip = new ZipFile(jar.toFile())) {
 			ZipEntry meta = zip.getEntry("fabric.mod.json");
@@ -278,7 +260,6 @@ public final class AutoUpdater {
 		}
 	}
 
-	/** Called when the game closes: hand the downloaded jar to the installer, which waits for the game to exit. */
 	public static void onGameClosing() {
 		if (armed || staged == null || readyVersion == null || !Files.isRegularFile(staged)) {
 			return;
@@ -305,7 +286,6 @@ public final class AutoUpdater {
 	private static String javaExecutable() {
 		String cmd = ProcessHandle.current().info().command().orElse(null);
 		if (cmd != null) {
-			// java.exe would flash a console window on Windows: use javaw.exe next to it if it is there
 			if (cmd.toLowerCase(Locale.ROOT).endsWith("java.exe")) {
 				Path w = Path.of(cmd).resolveSibling("javaw.exe");
 				if (Files.isRegularFile(w)) {
@@ -349,7 +329,6 @@ public final class AutoUpdater {
 		return jar > 0 ? n.substring(0, jar) : null;
 	}
 
-	/** Compares versions like 1.12.0 and 1.12.10 number by number. */
 	public static int compare(String a, String b) {
 		List<String> pa = List.of(a.split("[.+-]")), pb = List.of(b.split("[.+-]"));
 		for (int i = 0; i < Math.max(pa.size(), pb.size()); i++) {

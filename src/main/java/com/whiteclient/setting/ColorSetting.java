@@ -3,7 +3,6 @@ package com.whiteclient.setting;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
-/** An RGB colour (alpha is always forced to 255). */
 public class ColorSetting extends Setting<Integer> {
 	public static final int[] PRESETS = {
 			0xFFFFFFFF, 0xFFB8B8C4, 0xFFFF4A4A, 0xFFFF8A1E, 0xFFFFD54A,

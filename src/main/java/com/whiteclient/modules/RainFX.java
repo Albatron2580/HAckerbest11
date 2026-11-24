@@ -24,7 +24,6 @@ import net.minecraft.world.Heightmap;
 
 import java.util.Random;
 
-/** Prettier rain: glowing streaks, ripples on the ground and little splash droplets. */
 public class RainFX extends Module {
 	public final BoolSetting streaks = add(new BoolSetting("Glow Streaks", true));
 	public final BoolSetting ripples = add(new BoolSetting("Ripples", true));
@@ -44,16 +43,13 @@ public class RainFX extends Module {
 	private static final int MAX_STREAKS = 260, MAX_RIPPLES = 220, MAX_DROPS = 500;
 	private final Random random = new Random();
 
-	// streaks
 	private final double[] sx = new double[MAX_STREAKS], sy = new double[MAX_STREAKS], sz = new double[MAX_STREAKS];
 	private final double[] sGround = new double[MAX_STREAKS];
 	private final float[] sSpeed = new float[MAX_STREAKS];
 	private int streakCount;
-	// ripples
 	private final double[] rx = new double[MAX_RIPPLES], ry = new double[MAX_RIPPLES], rz = new double[MAX_RIPPLES];
 	private final float[] rAge = new float[MAX_RIPPLES], rLife = new float[MAX_RIPPLES], rSize = new float[MAX_RIPPLES];
 	private int rippleCount;
-	// droplets
 	private final double[] dx = new double[MAX_DROPS], dy = new double[MAX_DROPS], dz = new double[MAX_DROPS];
 	private final float[] dvx = new float[MAX_DROPS], dvy = new float[MAX_DROPS], dvz = new float[MAX_DROPS];
 	private final double[] dFloor = new double[MAX_DROPS];
@@ -62,21 +58,17 @@ public class RainFX extends Module {
 	private float spawnAcc;
 	private float rainLevel;
 
-	// ---- wet ground: a cached grid of the rain-exposed top surfaces around the player
 	private static final int WR = 12, WN = WR * 2 + 1, SUB = 4, PN = WN * SUB + 1;
 	private final float[] wTop = new float[WN * WN];
 	private final float[] wLight = new float[WN * WN];
 	private final float[] wMat = new float[WN * WN];
-	/** Block light on each block corner (average of the blocks around it) so torch light fades smoothly. */
 	private final float[] cLight = new float[(WN + 1) * (WN + 1)];
 	private final boolean[] wFlat = new boolean[WN * WN];
 	private final float[] wPeak = new float[WN * WN];
-	/** Streak noise on whole-block corners and puddle noise on a finer grid (both world-anchored). */
 	private final float[] wNoise = new float[(WN + 1) * (WN + 1)];
 	private final float[] pNoise = new float[PN * PN];
 	private int wcx = Integer.MIN_VALUE, wcz, wcy;
 	private float wRefresh;
-	/** Builds up while it rains and slowly dries afterwards, so puddles grow over time. */
 	private float wetness;
 	private ClientWorld wetWorld;
 	private final SolidBatch puddleBase = new SolidBatch();
@@ -100,7 +92,6 @@ public class RainFX extends Module {
 		return always.isOn() ? Math.max(g, 1f) : g;
 	}
 
-	/** Surface height at x/z or NaN when it isn't raining there. */
 	private double surface(ClientWorld world, double x, double z, double playerY) {
 		int bx = (int) Math.floor(x), bz = (int) Math.floor(z);
 		int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, bx, bz);
@@ -177,7 +168,6 @@ public class RainFX extends Module {
 		int rgb = color.rgb();
 		float bright = brightness.getFloat();
 
-		// ---- streaks
 		int wantStreaks = streaks.isOn() ? (int) Math.min(MAX_STREAKS, 110 * amount.get() * strength) : 0;
 		while (streakCount < wantStreaks) {
 			respawnStreak(streakCount++, p, world, r, true);
@@ -208,7 +198,6 @@ public class RainFX extends Module {
 			g.ribbon(x, y + len, z, x, y, z, 0.026f, Colors.argb(rgb, a));
 		}
 
-		// ---- extra ripples (rain hitting the ground everywhere, not only under the streaks)
 		spawnAcc += dt * 55 * amount.getFloat() * strength;
 		while (spawnAcc >= 1f) {
 			spawnAcc -= 1f;
@@ -221,7 +210,6 @@ public class RainFX extends Module {
 			}
 		}
 
-		// ---- draw ripples: flat rings lying on the ground
 		for (int i = 0; i < rippleCount; i++) {
 			rAge[i] += dt;
 			if (rAge[i] >= rLife[i]) {
@@ -240,7 +228,6 @@ public class RainFX extends Module {
 			}
 		}
 
-		// ---- droplets
 		for (int i = 0; i < dropCount; i++) {
 			dAge[i] += dt;
 			dvy[i] -= 9.5f * dt;
@@ -262,15 +249,10 @@ public class RainFX extends Module {
 		wetGround(ctx, world, p, strength, dt);
 	}
 
-	// =====================================================================================
-	// Wet ground: rain-exposed surfaces get a view-angle sheen (strong at grazing angles,
-	// like real wet stone) and flat spots slowly fill with dark, sky-reflecting puddles.
-	// =====================================================================================
-
 	private void wetGround(WorldContext ctx, ClientWorld world, Vec3d p, float strength, float dt) {
 		if (world != wetWorld) {
 			wetWorld = world;
-			wetness = strength; // joining a world where it already rains: already wet
+			wetness = strength;
 			wcx = Integer.MIN_VALUE;
 		}
 		float target = always.isOn() ? 1f : strength;
@@ -294,18 +276,16 @@ public class RainFX extends Module {
 		GlowBatch g = ctx.glow;
 		float sh = shine.getFloat();
 		float night = dayLight(world);
-		// the grey-blue rain sky is what wet ground and puddles mirror
 		int base = Colors.mix(color.rgb(), 0x7D8CA8, 0.45f);
 		int sky = Colors.mix(base, 0x46557F, 0.6f * (1f - night));
 		float groundA = 0.36f * sh * wetness * (0.35f + 0.65f * night);
 		float puddleA = 0.5f * sh * wetness * (0.45f + 0.55f * night);
-		float warmW = 1f - 0.7f * night; // torch / fire light only shows up in the dark
+		float warmW = 1f - 0.7f * night;
 		float reach = Math.min(WR, radius.getFloat() + 2f);
 		if (FpsBoost.lighter()) {
 			reach = Math.min(reach, 9f);
 		}
 		boolean doPuddles = puddles.isOn();
-		// puddles grow the longer it rains
 		float th = 0.86f - 0.20f * wetness;
 		float time = ctx.time;
 		int quads = 0, cells = 0;
@@ -335,7 +315,6 @@ public class RainFX extends Module {
 				g.quad(ax, ry, az, c00, bxx, ry, az, c10, bxx, ry, bzz, c11, ax, ry, bzz, c01);
 				quads++;
 
-				// little glints of light catching the water
 				float hsh = hash(x0, z0, 77);
 				if (hsh < 0.45f) {
 					float tw = (float) Math.sin(time * (1.5f + 3f * hash(x0, z0, 78)) + hash(x0, z0, 79) * 6.283f);
@@ -360,10 +339,8 @@ public class RainFX extends Module {
 		puddleBase.draw(ctx.consumers, ctx.matrices.peek().getPositionMatrix());
 	}
 
-	/** Columns / puddle cells drawn last frame (for the tests). */
 	public int debugWetQuads, debugPuddleCells;
 
-	/** A whole block of puddle, split into small cells so the puddle edge is a soft, round blob. */
 	private int puddle(WorldContext ctx, GlowBatch g, int gx, int gz, int x0, int z0, float top, Vec3d p, float reach,
 					   float th, float alpha, int sky, float warmW) {
 		float yb = ctx.ry(top + 0.006f), ys = ctx.ry(top + 0.014f);
@@ -371,7 +348,6 @@ public class RainFX extends Module {
 		int k00 = gz * (WN + 1) + gx;
 		float l00 = cLight[k00], l10 = cLight[k00 + 1], l01 = cLight[k00 + WN + 1], l11 = cLight[k00 + WN + 2];
 		int cells = 0;
-		// a block that is completely under water is one quad instead of SUB x SUB small ones
 		boolean full = true;
 		for (int sz = 0; sz <= SUB && full; sz++) {
 			for (int sx = 0; sx <= SUB; sx++) {
@@ -403,12 +379,10 @@ public class RainFX extends Module {
 				cells++;
 				double wx = x0 + sx * step, wz = z0 + sz * step;
 				float ax = ctx.rx(wx), az = ctx.rz(wz), bx = ax + step, bz = az + step;
-				// dark water body ...
 				puddleBase.quad(ax, yb, az, Colors.argb(0x04060A, 0.58f * m00 * wetness),
 						ax, yb, bz, Colors.argb(0x04060A, 0.58f * m01 * wetness),
 						bx, yb, bz, Colors.argb(0x04060A, 0.58f * m11 * wetness),
 						bx, yb, az, Colors.argb(0x04060A, 0.58f * m10 * wetness), 0f, 1f, 0f);
-				// ... mirroring the sky, with a bright wet rim on the edge
 				float u0 = (float) sx / SUB, u1 = (float) (sx + 1) / SUB, v0 = (float) sz / SUB, v1 = (float) (sz + 1) / SUB;
 				int c00 = puddleCol(ax, ys, az, p, wx, wz, reach, m00, alpha, sky, bilerp(l00, l10, l01, l11, u0, v0) * warmW);
 				int c10 = puddleCol(bx, ys, az, p, wx + step, wz, reach, m10, alpha, sky, bilerp(l00, l10, l01, l11, u1, v0) * warmW);
@@ -436,7 +410,6 @@ public class RainFX extends Module {
 		return t * t * (3 - 2 * t);
 	}
 
-	/** Fresnel: almost nothing straight down, a strong sheen when you look along the ground. */
 	private static float fresnel(float vx, float vy, float vz) {
 		float d = (float) Math.sqrt(vx * vx + vy * vy + vz * vz) + 1e-4f;
 		float cos = Math.min(1f, Math.abs(vy) / d);
@@ -474,7 +447,6 @@ public class RainFX extends Module {
 		return Colors.argb(tint(sky, warm), Math.min(1f, a));
 	}
 
-	/** 1 in daylight, 0 at midnight (moonlit puddles still shine a little). */
 	private static float dayLight(ClientWorld world) {
 		long tod = Math.floorMod(world.getTimeOfDay(), 24000L);
 		double ang = (tod - 6000) / 24000.0 * Math.PI * 2;
@@ -506,7 +478,6 @@ public class RainFX extends Module {
 				wLight[i] = Math.max(0, world.getLightLevel(LightType.BLOCK, m) - 5) / 10f;
 				m.set(bx - WR + gx, (int) Math.ceil(t - 0.01f) - 1, bz - WR + gz);
 				BlockState st = world.getBlockState(m);
-				// grass and dirt soak up water, stone / wood / concrete shine the most
 				wMat[i] = st.isIn(BlockTags.DIRT) ? 0.7f : st.isIn(BlockTags.SAND) ? 0.85f : 1.15f;
 				wFlat[i] = gx > 0 && gz > 0 && gx < WN - 1 && gz < WN - 1
 						&& same(t, wTop[i - 1]) && same(t, wTop[i + 1]) && same(t, wTop[i - WN]) && same(t, wTop[i + WN]);
@@ -540,7 +511,6 @@ public class RainFX extends Module {
 				pNoise[pz * PN + px] = 0.72f * valueNoise(x / 5.5, z / 5.5, 41) + 0.28f * valueNoise(x / 1.9, z / 1.9, 57);
 			}
 		}
-		// the highest puddle value in each block, so dry blocks are skipped quickly
 		for (int gz = 0; gz < WN; gz++) {
 			for (int gx = 0; gx < WN; gx++) {
 				float peak = 0;
@@ -549,11 +519,9 @@ public class RainFX extends Module {
 						peak = Math.max(peak, pNoise[(gz * SUB + sz) * PN + gx * SUB + sx]);
 					}
 				}
-				// puddles only sit where every corner of the block is flat with its neighbours
 				wPeak[gz * WN + gx] = peak;
 			}
 		}
-		// fade puddle noise to zero on the edges of a flat block that borders a step, so puddles don't hang over edges
 		for (int gz = 0; gz < WN; gz++) {
 			for (int gx = 0; gx < WN; gx++) {
 				int i = gz * WN + gx;
@@ -573,7 +541,6 @@ public class RainFX extends Module {
 		return !Float.isNaN(b) && Math.abs(a - b) < 0.01f;
 	}
 
-	/** Y of the rain-exposed top face at x/z, or NaN (water, leaves, fences, snow biomes, far away). */
 	private static float wetTop(ClientWorld world, BlockPos.Mutable m, int x, int z, int playerY, boolean any) {
 		int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z);
 		if (top - playerY > 14 || playerY - top > 18) {
@@ -637,7 +604,6 @@ public class RainFX extends Module {
 		dAge[to] = dAge[from];
 	}
 
-	/** A soft horizontal ring (not camera facing) so ripples lie flat on the ground. */
 	private static void flatRing(GlowBatch g, float cx, float cy, float cz, float radius, float width, int rgb, float alpha) {
 		if (alpha <= 0.004f) {
 			return;

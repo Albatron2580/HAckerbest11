@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Glowing rings on the ground when you jump and land. */
 public class JumpCircles extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
 	public final BoolSetting rainbow = add(new BoolSetting("Rainbow", false));
@@ -27,13 +26,12 @@ public class JumpCircles extends Module {
 	public final BoolSetting others = add(new BoolSetting("Show On Others", false));
 
 	private final Map<Integer, Boolean> onGround = new HashMap<>();
-	private final List<float[]> circles = new ArrayList<>(); // x, y, z, startTime, sizeMul, hue
+	private final List<float[]> circles = new ArrayList<>();
 
 	public JumpCircles() {
 		super("Jump Circles", "Glowing rings when you jump and land", Category.COSMETICS, false);
 	}
 
-	/** Test hook. */
 	public void spawn(double x, double y, double z, float time, float mul) {
 		circles.add(new float[]{(float) x, (float) y, (float) z, time, mul, (float) Math.random()});
 	}

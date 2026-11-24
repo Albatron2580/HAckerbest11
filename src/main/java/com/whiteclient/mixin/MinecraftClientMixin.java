@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-/** Swaps the vanilla title screen for the WHITECLIENT main menu. */
 @Mixin(MinecraftClient.class)
 public abstract class MinecraftClientMixin {
 	@Shadow

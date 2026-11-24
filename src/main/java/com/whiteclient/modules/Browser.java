@@ -25,10 +25,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.OptionalDouble;
 
-/**
- * Floating web browser window (press B). Drag it anywhere, resize it, and pin it so it stays on screen
- * while you play (great for videos, guides or a wiki). Real pages need the free MCEF Modern mod.
- */
 public class Browser extends Module {
 	public final TextSetting home = add(new TextSetting("Home Page", "https://www.google.com", 300));
 	public final BoolSetting pin = add(new BoolSetting("Stay On Screen", true));
@@ -52,7 +48,6 @@ public class Browser extends Module {
 		return wc == null ? null : wc.modules().get(Browser.class);
 	}
 
-	/** The live page, created on demand once the engine is ready. */
 	public WebView view() {
 		if (view == null && WebView.ready()) {
 			String start = lastUrl.get().isBlank() ? home.get() : lastUrl.get();
@@ -87,7 +82,6 @@ public class Browser extends Module {
 		closePage();
 	}
 
-	/** Turns what you typed into a web address (a Google search if it isn't one). */
 	public static String toUrl(String typed) {
 		String s = typed.trim();
 		if (s.isEmpty()) {
@@ -101,8 +95,6 @@ public class Browser extends Module {
 		}
 		return "https://www.google.com/search?q=" + URLEncoder.encode(s, StandardCharsets.UTF_8);
 	}
-
-	// ------------------------------------------------------------------ window rectangle (GUI units)
 
 	public float[] rect(int screenW, int screenH) {
 		float w = Math.max(160, winW.getFloat() * screenW);
@@ -121,9 +113,6 @@ public class Browser extends Module {
 		winH.set((double) (h / screenH));
 	}
 
-	// ------------------------------------------------------------------ drawing
-
-	/** Draws the page into a GUI rectangle (resizing the page to real screen pixels so it stays sharp). */
 	public static boolean drawPage(DrawContext ctx, WebView v, float x, float y, float w, float h, float alpha) {
 		if (v == null) {
 			return false;
@@ -154,7 +143,6 @@ public class Browser extends Module {
 		}
 	}
 
-	/** Pinned: the page keeps showing in its spot while you play (no input, just watch / read). */
 	@Override
 	public void renderHud(DrawContext ctx, float tickDelta) {
 		MinecraftClient mc = MinecraftClient.getInstance();

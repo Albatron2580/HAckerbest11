@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Car emote: makes your own player sit in the car (visual only). */
 @Mixin(EntityRenderManager.class)
 public abstract class EntityRenderManagerMixin {
 	@Inject(method = "getAndUpdateRenderState", at = @At("RETURN"), require = 0)

@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Counts clicks for the CPS displays (read-only, doesn't change input). */
 @Mixin(Mouse.class)
 public abstract class MouseMixin {
 	@Inject(method = "onMouseButton", at = @At("HEAD"), require = 0)

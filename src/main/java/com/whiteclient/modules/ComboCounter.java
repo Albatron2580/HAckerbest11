@@ -12,7 +12,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 
-/** How many hits in a row you landed without getting hit back. */
 public class ComboCounter extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Right", HudLayout.POSITIONS));
 	public final BoolSetting always = add(new BoolSetting("Always Show", false));

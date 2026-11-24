@@ -47,7 +47,6 @@ public class NumberSetting extends Setting<Double> {
 		this.value = clamped;
 	}
 
-	/** Sets the value from a 0..1 slider fraction. */
 	public void setFraction(double fraction) {
 		set(min + (max - min) * Math.max(0, Math.min(1, fraction)));
 	}

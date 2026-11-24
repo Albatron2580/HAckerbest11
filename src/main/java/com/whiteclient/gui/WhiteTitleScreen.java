@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/** WHITECLIENT main menu: animated background, logo, rounded buttons and an icon dock. */
 public class WhiteTitleScreen extends Screen {
 	private static final int BTN = 0xA60E0E14;
 	private static final int BTN_HOVER = 0xCC1E1E26;
@@ -43,9 +42,7 @@ public class WhiteTitleScreen extends Screen {
 	private SkinPreview walker;
 	private boolean showcase = true;
 	private int walkerW, walkerH;
-	/** Screenshot tests: fixed seconds into the walk-in animation (NaN = real time). */
 	public static float debugWalkTime = Float.NaN;
-	/** Direction the model faces while walking in (degrees for the skin widget). */
 	public static float walkYaw = -90f;
 
 	private record Hit(float x1, float y1, float x2, float y2, Runnable action) {
@@ -88,13 +85,11 @@ public class WhiteTitleScreen extends Screen {
 		}
 	}
 
-	/** The player model walks in from the side, turns to you and idles (photo 1). */
 	private void drawWalker(DrawContext ctx, int mouseX, int mouseY, float delta, float time, MainMenu settings) {
 		if (walker == null || (settings != null && !settings.player.isOn())) {
 			return;
 		}
 		boolean left = !showcase && settings != null && settings.playerSide.is("Left");
-		// stand in the free space next to the buttons
 		float buttonsHalf = Math.min(214, width - 40) / 2f;
 		float free = width / 2f - buttonsHalf;
 		if (!showcase && free < walkerW * 0.8f + 8) {
@@ -120,15 +115,12 @@ public class WhiteTitleScreen extends Screen {
 		int x = Math.round(cxp - walkerW / 2f);
 		float footY = showcase ? height - Math.max(26, height * 0.1f) : height - 34;
 		int y = Math.round(footY - walkerH + (float) Math.abs(Math.sin(phase)) * -1.5f * walk);
-		// soft floor shadow + glow
 		float sa = Math.min(1f, Math.max(0f, t / 0.6f));
 		for (int i = 4; i >= 1; i--) {
 			Render2D.roundRect(ctx, cxp - walkerW * 0.18f * i, y + walkerH - 6 - i, walkerW * 0.36f * i, 3 + 2 * i, 4 + i, Colors.argb(0x000000, 0.08f * sa));
 		}
 		walker.render(ctx, x, y, mouseX, mouseY, delta);
-		// name tag above the head
 		if (turn > 0.01f && showcase) {
-			// planet logo + name with a thin underline above the head (like a profile tag)
 			String name = client.getSession().getUsername();
 			float ny = y - 8 - 6 * (1 - turn);
 			float nw = UiFont.width(textRenderer, name) * 1.1f;
@@ -169,7 +161,6 @@ public class WhiteTitleScreen extends Screen {
 		return mx >= x && mx < x + w && my >= y && my < y + h;
 	}
 
-	/** 0..1 intro progress for an element that starts after {@code delay} seconds. */
 	private float intro(float delay) {
 		float t = (System.nanoTime() - opened) / 1.0e9f - delay;
 		float k = Math.max(0f, Math.min(1f, t / 0.45f));
@@ -189,7 +180,6 @@ public class WhiteTitleScreen extends Screen {
 			MenuBackgroundRenderer.draw(ctx, width, height, 1f);
 		}
 		if (silk) {
-			// keep the left side calm so the menu text reads well
 			Render2D.hGradient(ctx, 0, 0, width * 0.55f, height, 0x50000000, 0x00000000);
 			ctx.fillGradient(0, height / 2, width, height, 0x00000000, 0x40000000);
 		} else {
@@ -197,7 +187,6 @@ public class WhiteTitleScreen extends Screen {
 		}
 	}
 
-	/** Average time (ms) the menu takes to build one frame, for the performance test. */
 	public static double renderMs;
 
 	@Override
@@ -232,7 +221,6 @@ public class WhiteTitleScreen extends Screen {
 		float cx = width / 2f;
 		float logoY = Math.max(40, height * 0.27f);
 
-		// ---- logo
 		float li = intro(0.1f);
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
@@ -249,7 +237,6 @@ public class WhiteTitleScreen extends Screen {
 		UiFont.drawCentered(ctx, textRenderer, tag, cx, logoY + 16, Colors.withAlpha(SUB, la));
 		m.popMatrix();
 
-		// ---- main buttons
 		float bw = Math.min(214, width - 40);
 		float bh = 22;
 		float by = logoY + 38;
@@ -267,7 +254,6 @@ public class WhiteTitleScreen extends Screen {
 				cx - bw / 2f, by + (bh + 6) * 2, bw, bh, mouseX, mouseY, dt, true, 0.30f,
 				() -> client.setScreen(new ClickGuiScreen(this)));
 
-		// ---- icon dock
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> dock = new ArrayList<>();
 		dock.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> client.setScreen(new SupportScreen(this))});
@@ -308,7 +294,6 @@ public class WhiteTitleScreen extends Screen {
 			UiFont.drawCentered(ctx, textRenderer, tooltip, tipX, dy - 16, TEXT);
 		}
 
-		// ---- account chip (top left)
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 		float ci = intro(0.45f);
 		if (settings == null || settings.account.isOn()) {
@@ -326,7 +311,6 @@ public class WhiteTitleScreen extends Screen {
 			UiFont.draw(ctx, textRenderer, name, cxp + 21, 14, Colors.withAlpha(TEXT, (int) (255 * ci)));
 		}
 
-		// ---- now playing pill (top right)
 		NowPlaying np = WhiteClient.get().music().current();
 		float pi = anim("music", np != null && (settings == null || settings.music.isOn()) ? 1f : 0f, dt * 0.6f);
 		if (np != null && pi > 0.02f) {
@@ -339,7 +323,6 @@ public class WhiteTitleScreen extends Screen {
 			float px = width - 10 - pw + (1 - pi) * 14;
 			Render2D.roundRect(ctx, px, 10, pw, 18, 9, Colors.mulAlpha(BTN, pi));
 			Render2D.roundRectOutline(ctx, px, 10, pw, 18, 9, 1, Colors.withAlpha(0xFFFFFF, (int) (40 * pi)));
-			// equalizer bars
 			for (int b = 0; b < 3; b++) {
 				float hgt = np.playing() ? 3 + 5 * (0.5f + 0.5f * (float) Math.sin(time * (6 + b * 1.7) + b)) : 3;
 				Render2D.roundRect(ctx, px + 8 + b * 3.2f, 19 - hgt / 2f, 2, hgt, 1, Colors.withAlpha(0xFFFFFF, (int) (255 * pi)));
@@ -347,14 +330,12 @@ public class WhiteTitleScreen extends Screen {
 			UiFont.draw(ctx, textRenderer, s, px + 22, 14, Colors.withAlpha(TEXT, (int) (255 * pi)));
 		}
 
-		// ---- walking player
 		try {
 			drawWalker(ctx, mouseX, mouseY, delta, time, settings);
 		} catch (Throwable t) {
 			walker = null;
 		}
 
-		// ---- footer
 		float fi = intro(0.5f);
 		UiFont.draw(ctx, textRenderer, "WHITECLIENT " + WhiteClient.VERSION, 10, height - 24, Colors.withAlpha(TEXT, (int) (200 * fi)));
 		UiFont.draw(ctx, textRenderer, "Minecraft 1.21.11  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
@@ -369,25 +350,20 @@ public class WhiteTitleScreen extends Screen {
 		return textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
 	}
 
-	/** Right edge of the centred logo + menu column. */
 	private float menuRight() {
 		return width / 2f + textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
 	}
 
-	/** The model stands in the middle of the free space right of the menu. */
 	private float showcaseModelX() {
 		float right = menuRight();
 		return Math.max(right + walkerW * 0.5f, (right + width) / 2f);
 	}
 
-	/** Left: big planet logo + text menu. Right: your player on silk curtains with little planets floating by. */
 	private void renderShowcase(DrawContext ctx, int mouseX, int mouseY, float delta, float dt, float time) {
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 
-		// ---- big planet on the left (behind everything)
 		boolean big = settings == null || settings.bigPlanet.isOn();
 		float br = Math.max(40, Math.min(150, height * 0.26f));
-		// keep the ring and moon clear of the centred logo / menu (the planet may slide off the left edge)
 		float bx = Math.min(width * 0.15f, width / 2f - menuHalfWidth() - br * Render2D.BIG_RING * 1.1f - 8);
 		float by = height * 0.6f + (float) Math.sin(time * 0.35f) * 3;
 		if (big) {
@@ -395,7 +371,6 @@ public class WhiteTitleScreen extends Screen {
 			Render2D.bigPlanet(ctx, bx, by + (1 - ba) * 12, br, time, ba * 0.92f);
 		}
 
-		// ---- floating planets
 		if (settings == null || settings.planets.isOn()) {
 			float pa = intro(0.2f);
 			for (int i = 0; i < 11; i++) {
@@ -403,7 +378,6 @@ public class WhiteTitleScreen extends Screen {
 				float fx = frac(seed * 0.37f);
 				float sp = 0.010f + 0.012f * frac(seed * 0.13f);
 				float fy = frac(seed * 0.61f + time * sp);
-				// half of them float on the left, half on the right of the centred menu
 				float sideW = width / 2f - (menuRight() - width / 2f);
 				float px = (i % 2 == 0 ? sideW * fx : width - sideW * fx) + (float) Math.sin(time * 0.25f + seed) * 10;
 				float py = height * (1.12f - fy * 1.24f);
@@ -411,14 +385,12 @@ public class WhiteTitleScreen extends Screen {
 				float edge = Math.min(1f, Math.min(fy * 6f, (1f - fy) * 6f));
 				float a = (0.22f + 0.4f * frac(seed * 0.23f)) * edge * pa;
 				if (big) {
-					// fade out instead of drifting across the big planet
 					float ex = (px - bx) / (br * 1.9f), ey = (py - by) / (br * 1.15f);
 					float d = ex * ex + ey * ey;
 					if (d < 1f) {
 						a *= Math.max(0f, (d - 0.7f) / 0.3f);
 					}
 				}
-				// don't float through the player model (it is drawn on its own layer)
 				float dxm = Math.abs(px - showcaseModelX()) / (walkerW * 0.55f + r * 2f);
 				if (walker != null && dxm < 1f && py > height * 0.12f) {
 					a *= Math.max(0f, (dxm - 0.75f) * 4f);
@@ -429,14 +401,12 @@ public class WhiteTitleScreen extends Screen {
 			}
 		}
 
-		// ---- player model on the right
 		try {
 			drawWalker(ctx, mouseX, mouseY, delta, time, settings);
 		} catch (Throwable t) {
 			walker = null;
 		}
 
-		// ---- logo + name (left)
 		float colX = width / 2f;
 		float r = Math.max(11, Math.min(22, height * 0.062f));
 		float logoY = height * 0.3f;
@@ -454,7 +424,6 @@ public class WhiteTitleScreen extends Screen {
 		ctx.drawText(textRenderer, UiFont.title(word), Math.round(colX - tw / 2f), Math.round(titleY), Colors.withAlpha(0xFFFFFF, (int) (255 * li)), false);
 		m.popMatrix();
 
-		// ---- text menu
 		boolean mp = client.isMultiplayerEnabled();
 		String[] labels = {"Singleplayer", "Multiplayer", "Minecraft Settings", "Client", "Quit Game"};
 		Runnable[] actions = {
@@ -495,7 +464,6 @@ public class WhiteTitleScreen extends Screen {
 			}
 		}
 
-		// ---- small icon buttons (top right)
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> icons = new ArrayList<>();
 		icons.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> client.setScreen(new SupportScreen(this))});
@@ -532,7 +500,6 @@ public class WhiteTitleScreen extends Screen {
 			UiFont.draw(ctx, textRenderer, tip, tx + 5, 36, TEXT);
 		}
 
-		// ---- account chip (top left)
 		float ci = intro(0.45f);
 		if (settings == null || settings.account.isOn()) {
 			String name = client.getSession().getUsername();
@@ -549,7 +516,6 @@ public class WhiteTitleScreen extends Screen {
 			UiFont.draw(ctx, textRenderer, name, cxp + 21, 15, Colors.withAlpha(TEXT, (int) (255 * ci)));
 		}
 
-		// ---- now playing (top centre)
 		NowPlaying np = WhiteClient.get().music().current();
 		float pi = anim("music", np != null && (settings == null || settings.music.isOn()) ? 1f : 0f, dt * 0.6f);
 		if (np != null && pi > 0.02f) {
@@ -570,7 +536,6 @@ public class WhiteTitleScreen extends Screen {
 			UiFont.draw(ctx, textRenderer, s, px + 22, py + 5, Colors.withAlpha(TEXT, (int) (255 * pi)));
 		}
 
-		// ---- footer
 		float fi = intro(0.5f);
 		UiFont.draw(ctx, textRenderer, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(SUB, (int) (220 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
@@ -610,7 +575,6 @@ public class WhiteTitleScreen extends Screen {
 		float groupW = 10 + 6 + lw;
 		float gx = x + (w - groupW) / 2f;
 		if (accent) {
-			// logo is white by design, so draw a dark disc behind it on the white button
 			Render2D.circle(ctx, gx + 5, y - lift + h / 2f, 6.5f, Colors.withAlpha(0x0B0B0F, (int) (255 * k)));
 		}
 		icon.paint(ctx, gx + 5, y - lift + h / 2f, 10, Colors.mulAlpha(iconColor, k));

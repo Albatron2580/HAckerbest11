@@ -6,10 +6,6 @@ import com.whiteclient.setting.ModeSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 
-/**
- * Time &amp; Weather: pick the sky you like (sunset, night...) and turn rain off or on, only on your screen.
- * Nothing changes on the server or for other players.
- */
 public class TimeChanger extends Module {
 	public final ModeSetting time = add(new ModeSetting("Time", "Sunset", "Normal", "Sunrise", "Day", "Sunset", "Night", "Midnight"));
 	public final ModeSetting weather = add(new ModeSetting("Weather", "Normal", "Normal", "Clear", "Rain", "Thunder"));

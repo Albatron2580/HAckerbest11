@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Active potion effects as a clean list. */
 public class PotionHUD extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Top Right", HudLayout.POSITIONS));
 	public final BoolSetting hideVanilla = add(new BoolSetting("Hide Vanilla Icons", true));

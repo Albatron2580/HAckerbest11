@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-/** A glowing light trail behind you while you move. */
 public class Trail extends Module {
 	public final ModeSetting mode = add(new ModeSetting("Style", "Ribbon", "Ribbon", "Sparkles", "Both"));
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -90,14 +89,13 @@ public class Trail extends Module {
 				continue;
 			}
 			if (p == mc.player && !ctx.thirdPerson() && mode.is("Ribbon")) {
-				// in first person the ribbon would sit inside the camera; sparkles still show
 			}
 			Vec3d head = p.getLerpedPos(ctx.tickDelta).add(0, offset(p), 0);
 			int n = h.size();
 			Vec3d prev = head;
 			int i = 0;
 			Iterator<Vec3d> it = h.iterator();
-			it.next(); // newest tick position replaced by the smooth current one
+			it.next();
 			float halfW = width.getFloat() / 2f;
 			while (it.hasNext()) {
 				Vec3d cur = it.next();

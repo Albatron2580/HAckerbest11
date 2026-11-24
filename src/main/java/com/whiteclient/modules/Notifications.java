@@ -14,11 +14,10 @@ import net.minecraft.client.gui.DrawContext;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Small toasts when you turn a module on or off. */
 public class Notifications extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Bottom Right", "Bottom Right", "Top Right", "Bottom Left", "Top Left"));
 
-	private static final List<Object[]> TOASTS = new ArrayList<>(); // name, enabled, startMs
+	private static final List<Object[]> TOASTS = new ArrayList<>();
 
 	public Notifications() {
 		super("Notifications", "Toasts when you toggle a module", Category.HUD, true);
@@ -63,13 +62,11 @@ public class Notifications extends Module {
 			m.pushMatrix();
 			m.translate(slide, 0);
 			Hud.panel(ctx, p[0], p[1], w, h, a);
-			// toggle pill
 			float px = p[0] + 8, py = p[1] + 8;
 			Render2D.roundRect(ctx, px, py, 18, 10, 5, on ? Colors.argb(0xFFFFFF, a) : Colors.argb(0x3A3A44, a));
 			Render2D.circle(ctx, on ? px + 13 : px + 5, py + 5, 3.4f, on ? Colors.argb(0x15151B, a) : Colors.argb(0xA8A8B4, a));
 			Render2D.text(ctx, tr, name, p[0] + 32, p[1] + 5, Hud.alpha(Hud.TEXT, a));
 			Render2D.textScaled(ctx, tr, sub, p[0] + 32, p[1] + 15, 0.8f, Hud.alpha(on ? 0xFF7CFF9A : Hud.SUB, a));
-			// time bar
 			float life = Math.max(0f, 1f - age / 2.6f);
 			Render2D.roundRect(ctx, p[0] + 4, p[1] + h - 2.5f, (w - 8) * life, 1.2f, 0.6f, Colors.argb(0xFFFFFF, 0.35f * a));
 			m.popMatrix();

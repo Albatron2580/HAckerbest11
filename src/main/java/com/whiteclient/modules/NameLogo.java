@@ -19,9 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** The WHITECLIENT planet logo in front of your name (above your head and in the Tab list). */
 public class NameLogo extends Module {
-	/** Private-use character drawn as the planet logo by WHITECLIENT's font (assets/minecraft/font/default.json). */
 	public static final String GLYPH = "";
 
 	public final BoolSetting ownTag = add(new BoolSetting("Show Your Nametag In F5", true));
@@ -29,13 +27,7 @@ public class NameLogo extends Module {
 	public final BoolSetting others = add(new BoolSetting("Logo On Other WhiteClient Users", true));
 	public final BoolSetting share = add(new BoolSetting("Let Others See You Use WhiteClient", true));
 
-	/**
-	 * Minecraft's skin-layer byte has one bit nobody uses (0x80). WhiteClient sets it; the server passes the byte
-	 * on to everybody near you (it is how they know which layers of your skin to show), so other WhiteClient
-	 * users can see the flag. Normal players ignore the bit. Nothing else about you is sent anywhere.
-	 */
 	public static final int FLAG = 0x80;
-	/** WhiteClient users seen in this session (for the Tab list, also when they are far away). */
 	private static final Set<UUID> USERS = ConcurrentHashMap.newKeySet();
 	private int scan;
 	private boolean lastShare = true;
@@ -84,7 +76,6 @@ public class NameLogo extends Module {
 		resend();
 	}
 
-	/** The same settings with WhiteClient's flag added to the skin-layer bits. */
 	public static SyncedClientOptions withFlag(SyncedClientOptions o) throws ReflectiveOperationException {
 		int parts = o.playerModelParts();
 		if ((parts & FLAG) != 0) {
@@ -100,12 +91,12 @@ public class NameLogo extends Module {
 		}
 		int target = -1;
 		if (rc.length > 4 && types[4] == int.class && (Integer) vals[4] == parts) {
-			target = 4; // language, view distance, chat visibility, chat colours, skin layers, ...
+			target = 4;
 		} else {
 			for (int i = 0; i < rc.length; i++) {
 				if (types[i] == int.class && (Integer) vals[i] == parts) {
 					if (target >= 0) {
-						return o; // not sure which one: leave it alone
+						return o;
 					}
 					target = i;
 				}
@@ -120,7 +111,6 @@ public class NameLogo extends Module {
 		return c.newInstance(vals);
 	}
 
-	/** True for another player who uses WhiteClient (only works for players near you). */
 	public static boolean isUser(Entity e) {
 		if (!(e instanceof PlayerEntity p) || isSelf(e)) {
 			return false;
@@ -136,7 +126,6 @@ public class NameLogo extends Module {
 		return id != null && USERS.contains(id);
 	}
 
-	/** Own flag as the server sent it back (for the tests). */
 	public static boolean ownFlagSynced() {
 		MinecraftClient mc = MinecraftClient.getInstance();
 		try {
@@ -154,7 +143,7 @@ public class NameLogo extends Module {
 		}
 		if (share.isOn() != lastShare) {
 			lastShare = share.isOn();
-			resend(); // tell the server right away
+			resend();
 		}
 		if (scan-- > 0) {
 			return;

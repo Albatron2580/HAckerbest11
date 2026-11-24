@@ -16,7 +16,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LightType;
 
-/** 3D head cosmetics: crown, cat ears, bunny ears, devil horns, headphones and a flower crown. */
 public class HeadWear extends Module {
 	public static final String[] STYLES = {"Crown", "Cat Ears", "Bunny Ears", "Devil Horns", "Headphones", "Flower Crown"};
 
@@ -57,12 +56,11 @@ public class HeadWear extends Module {
 		float pitch = player.getPitch(td);
 		V3 r0 = V3.right(yaw), f0 = V3.forward(yaw);
 		float tilt = (float) Math.toRadians(pitch);
-		// the head turns around the neck: forward/up tip down when you look down
 		V3 u = V3.UP.rotate(r0, -tilt), f = f0.rotate(r0, -tilt), r = r0;
 		float sc = player.getScale() * 0.9375f * size.getFloat();
 		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getHeight() - 0.39), ctx.rz(p.z));
 		V3 top = neck.add(u, 0.47f * player.getScale() * 0.9375f + 0.02f);
-		float h = 0.235f * player.getScale() * 0.9375f; // half head size
+		float h = 0.235f * player.getScale() * 0.9375f;
 		BlockPos bp = BlockPos.ofFloored(p.x, p.y + 1.6, p.z);
 		long time = ctx.client.world.getTimeOfDay() % 24000L;
 		float day = 0.5f + 0.5f * (float) Math.cos((time - 6000L) / 24000.0 * Math.PI * 2);
@@ -145,7 +143,7 @@ public class HeadWear extends Module {
 					mesh.ellipsoid(c.add(u, -0.01f), r, u, f, 0.03f * sc, 0.01f * sc, 0.03f * sc, 0x5DBB63);
 				}
 			}
-			default -> { // crown
+			default -> {
 				int gold = main(0xF2C14E);
 				mesh.setup(light, 0xFFE9A8, 0.7f * glow.getFloat());
 				int n = 8;

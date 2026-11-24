@@ -2,7 +2,6 @@ package com.whiteclient.gui;
 
 import net.minecraft.client.gui.DrawContext;
 
-/** Small vector-style icons built from rounded shapes. {@code s} is the icon size, colours should be opaque. */
 public final class Icons {
 	private Icons() {
 	}
@@ -63,7 +62,6 @@ public final class Icons {
 	}
 
 	public static void spark(DrawContext ctx, float cx, float cy, float s, int c) {
-		// four-point star from two thin diamonds made of stacked rects
 		int steps = 6;
 		for (int i = 0; i < steps; i++) {
 			float k = 1f - i / (float) steps;
@@ -100,7 +98,6 @@ public final class Icons {
 		pts[i++] = cx - w; pts[i++] = mid;
 		pts[i++] = cx - w; pts[i++] = top + s * 0.12f;
 		Render2D.polygon(ctx, java.util.Arrays.copyOf(pts, i), c);
-		// check mark cut out in the card colour
 		float t = Math.max(0.7f, s * 0.09f);
 		Render2D.line(ctx, cx - s * 0.17f, cy + s * 0.0f, cx - s * 0.04f, cy + s * 0.13f, t, cut);
 		Render2D.line(ctx, cx - s * 0.04f, cy + s * 0.13f, cx + s * 0.2f, cy - s * 0.14f, t, cut);
