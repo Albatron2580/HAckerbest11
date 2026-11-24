@@ -164,18 +164,22 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new ClickGuiScreen(null));
 		context.waitTicks(25);
 		context.takeScreenshot("menu_home");
-		// card stack animations: the cards fly out of one stack...
+		// start page: the cards get shoved out of one stack into their places, then the small buttons...
 		context.setScreen(() -> new ClickGuiScreen(null));
 		context.waitTicks(3);
 		context.takeScreenshot("menu_deal_early");
 		context.waitTicks(5);
 		context.takeScreenshot("menu_deal_late");
-		// ...the window grows open with its module cards dealt in...
+		context.waitTicks(5);
+		context.takeScreenshot("menu_deal_buttons");
+		// ...a category window just opens (no shoving outside the start page) and closes right away...
 		context.setScreen(() -> new ClickGuiScreen(null, Category.HUD, null));
 		context.waitTicks(4);
-		context.takeScreenshot("menu_window_dealing");
-		context.waitTicks(30);
-		// ...and everything goes back into the stack when it closes
+		context.takeScreenshot("menu_window_open");
+		context.runOnClient(client -> client.currentScreen.close());
+		context.waitTicks(1);
+		context.runOnClient(client -> WhiteClient.LOGGER.info("[WHITECLIENT] window closed right away: {}", client.currentScreen));
+		// ...and on the start page everything is pulled back into the stack when it closes
 		context.setScreen(() -> new ClickGuiScreen(null));
 		context.waitTicks(40);
 		context.runOnClient(client -> client.currentScreen.close());

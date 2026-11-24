@@ -68,12 +68,10 @@ public class ClickGuiScreen extends Screen {
 	private long opened = System.nanoTime();
 	private long lastFrame = System.nanoTime();
 	private float viewSwitch = 1f;
-	/** When the cards of the current view started flying out of their stack. */
+	/** When the start page cards started getting shoved out of their stack. */
 	private long dealAt = System.nanoTime();
-	/** Set while the menu plays its closing animation. */
+	/** Set while the start page plays its closing animation. */
 	private long closingAt;
-	/** The category card you clicked: the window grows out of it. */
-	private float[] fromCard;
 
 	// scrolling (0 = list / home results, 1 = settings column)
 	private final float[] scroll = new float[2];
@@ -169,7 +167,7 @@ public class ClickGuiScreen extends Screen {
 
 	@Override
 	public void close() {
-		if (animations() && closingAt == 0) {
+		if (animations() && view == View.HOME && !searching && closingAt == 0) {
 			closingAt = System.nanoTime(); // cards go back into their stack first, render() closes for real
 			return;
 		}
@@ -204,14 +202,13 @@ public class ClickGuiScreen extends Screen {
 		return th == null || th.cardAnimations.isOn();
 	}
 
-	/** 0..1 progress of something that starts {@code delay} s after the deal and takes {@code dur} s. */
+	/** 0..1 progress of a card that is shoved out {@code delay} s after the menu opened, taking {@code dur} s. */
 	private float dealT(float delay, float dur) {
 		if (!animations()) {
 			return 1f;
 		}
 		float t = ((System.nanoTime() - dealAt) / 1.0e9f - delay) / dur;
-		t = Math.max(0f, Math.min(1f, t));
-		return Math.min(t, 1f - closeK());
+		return Math.max(0f, Math.min(1f, t));
 	}
 
 	/** 0..1 while closing. */
@@ -219,34 +216,83 @@ public class ClickGuiScreen extends Screen {
 		if (closingAt == 0) {
 			return 0f;
 		}
-		return Math.max(0f, Math.min(1f, (System.nanoTime() - closingAt) / 1.0e9f / 0.22f));
+		return Math.max(0f, Math.min(1f, (System.nanoTime() - closingAt) / 1.0e9f / 0.24f));
 	}
 
-	private static float easeOutBack(float t) {
-		float c1 = 1.35f, c3 = c1 + 1f, u = t - 1f;
-		return 1f + c3 * u * u * u + c1 * u * u;
+	/** Cards fade out at the very end of closing, once they are back in their stack. */
+	private float closeFade() {
+		return 1f - Math.max(0f, Math.min(1f, (closeK() - 0.6f) / 0.4f));
 	}
 
-	private static float easeOutCubic(float t) {
-		float u = 1f - t;
-		return 1f - u * u * u;
+	/** Part of a shove spent sliding; the rest is the bump into place. */
+	private static final float SLIDE = 0.6f;
+
+	/** How far along its slide a card is: a hard push, then table friction, still moving a bit when it hits its spot. */
+	private static float slide(float t) {
+		float u = Math.min(1f, t / SLIDE);
+		float w = 1f - u;
+		return 0.22f * u + 0.78f * (1f - w * w * w);
+	}
+
+	/** The bump when a card hits its spot: a few px past it, then it springs back and settles. 0 before the hit. */
+	private static float impact(float t) {
+		if (t <= SLIDE || t >= 1f) {
+			return 0f;
+		}
+		float v = (t - SLIDE) / (1f - SLIDE);
+		return (float) (Math.sin(v * Math.PI * 1.5) * (1 - v) * (1 - v));
+	}
+
+	/** Squash right at the hit (0..1). */
+	private static float squash(float t) {
+		if (t <= SLIDE || t >= 1f) {
+			return 0f;
+		}
+		float v = (t - SLIDE) / (1f - SLIDE);
+		return (float) Math.sin(Math.PI * Math.min(1f, v * 2.4f)) * (1f - v);
+	}
+
+	/** Shove order: the outer cards go first so every next card lands against one that is already there. */
+	private static int shoveRank(int i, int n) {
+		return 2 * Math.min(i, n - 1 - i) + (i * 2 > n - 1 ? 1 : 0);
+	}
+
+	/** The inner neighbour that lands against card i later (it nudges card i outwards), or -1. */
+	private static int pusherOf(int i, int n) {
+		float c = (n - 1) / 2f;
+		int j = i < c ? i + 1 : i - 1;
+		if (i == c || j == c || (i < c) != (j < c)) {
+			return -1;
+		}
+		return j;
 	}
 
 	/**
-	 * Draws the next thing as a card flying from a stack at (sx, sy) to its own place (centre fx, fy):
-	 * it lifts off in a small arc, turns from its tilted spot in the stack and lands with a little bounce.
+	 * Draws the next thing as a card shoved off a stack at (sx, sy) into its own place (centre fx, fy):
+	 * a hard push, it slides and slows down like on a table, bumps into its spot (a few px past, then back),
+	 * squashes a little on the hit and straightens out from its crooked spot in the stack.
+	 * {@code nudge} moves an already placed card outwards for a moment when its neighbour lands against it.
+	 * When the menu closes everything is pulled back into the stack.
 	 */
-	private void pushCard(DrawContext ctx, float fx, float fy, float sx, float sy, float t, float stackTilt, float lift) {
-		float e = easeOutBack(t);
-		float px = sx + (fx - sx) * e;
-		float py = sy + (fy - sy) * e - (float) Math.sin(Math.PI * t) * lift;
-		float ang = stackTilt * (1f - easeOutCubic(t)) + (float) Math.sin(Math.PI * t) * 0.06f * Math.signum(fx - sx);
-		float sc = 0.86f + 0.14f * easeOutCubic(t);
+	private void shoveCard(DrawContext ctx, float fx, float fy, float sx, float sy, float t, float stackTilt, float nudge) {
+		float dx = fx - sx, dy = fy - sy;
+		float len = (float) Math.sqrt(dx * dx + dy * dy);
+		float ux = len > 0.01f ? dx / len : 0f, uy = len > 0.01f ? dy / len : 1f;
+		float back = closeK();
+		float keep = 1f - back * back;
+		float e = slide(t) * keep;
+		float bump = impact(t) * Math.min(6f, 2f + len * 0.04f) * (1f - back);
+		float sq = squash(t) * 0.07f * (1f - back);
+		float px = sx + dx * e + ux * bump + Math.signum(dx) * nudge * (1f - back);
+		float py = sy + dy * e + uy * bump;
+		float ang = stackTilt * (1f - e) + ux * 0.035f * impact(t) * (1f - back);
+		float scX = 1f - sq * Math.abs(ux) + sq * 0.7f * Math.abs(uy);
+		float scY = 1f - sq * Math.abs(uy) + sq * 0.7f * Math.abs(ux);
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
 		m.translate(px, py);
 		m.rotate(ang);
-		m.scale(sc, sc);
+		m.scale(scX, scY);
 		m.translate(-fx, -fy);
 	}
 
@@ -407,34 +453,36 @@ public class ClickGuiScreen extends Screen {
 		float x0 = cx - rowW / 2f;
 		float y0 = titleY + 40;
 		float r = th.roundness.getFloat();
-		// all cards start in one stack in the middle, then fly out one after another
-		float stackX = cx, stackY = y0 + cs / 2f + 4;
+		// all cards start in one stack in the middle and get shoved out into their places, outer cards first
+		float stackX = cx, stackY = y0 + cs / 2f;
 		int n = cats.size();
 		Integer[] order = new Integer[n];
+		final float[] tOf = new float[n];
+		final int[] rank = new int[n];
 		for (int i = 0; i < n; i++) {
 			order[i] = i;
+			rank[i] = shoveRank(i, n);
+			tOf[i] = dealT(0.05f + rank[i] * 0.075f, 0.42f);
 		}
-		// cards still in the stack are drawn last (first one on top), flying cards first
-		final float[] tOf = new float[n];
-		for (int i = 0; i < n; i++) {
-			tOf[i] = dealT(0.06f + i * 0.055f, 0.5f);
-		}
+		// placed cards first, then the stack (next card on top), the card that is moving on top of everything
 		java.util.Arrays.sort(order, (p, q) -> {
-			boolean sp = tOf[p] <= 0f, sq = tOf[q] <= 0f;
-			if (sp != sq) {
-				return sp ? 1 : -1;
+			int gp = tOf[p] >= 1f ? 0 : tOf[p] <= 0f ? 1 : 2, gq = tOf[q] >= 1f ? 0 : tOf[q] <= 0f ? 1 : 2;
+			if (gp != gq) {
+				return Integer.compare(gp, gq);
 			}
-			return sp ? Integer.compare(q, p) : Integer.compare(p, q);
+			return Integer.compare(rank[q], rank[p]);
 		});
+		float fade = closeFade();
 		for (int oi = 0; oi < n; oi++) {
 			int i = order[oi];
 			Category c = cats.get(i);
-			float ci = animations() ? Math.min(1f, k * 1.6f) : Math.max(0f, Math.min(1f, (k - i * 0.05f) / 0.6f));
+			float ci = (animations() ? Math.min(1f, k * 1.6f) : Math.max(0f, Math.min(1f, (k - i * 0.05f) / 0.6f))) * fade;
 			float x = x0 + i * (cs + gap);
 			float y = animations() ? y0 : y0 + (1 - ci) * 14;
-			float dt0 = tOf[i];
-			float tilt = (float) Math.toRadians((i - (n - 1) / 2f) * 2.6f);
-			pushCard(ctx, x + cs / 2f, y + cs / 2f, stackX, stackY - (n - 1 - i) * 0.9f, dt0, tilt, 12f);
+			int pusher = pusherOf(i, n);
+			float nudge = pusher < 0 ? 0f : impact(tOf[pusher]) * 4.5f;
+			float tilt = (float) Math.toRadians(((rank[i] * 7) % 5 - 2) * 2.4f);
+			shoveCard(ctx, x + cs / 2f, y + cs / 2f, stackX, stackY - (n - 1 - rank[i]) * 0.9f, tOf[i], tilt, nudge);
 			boolean hover = in(mx, my, x, y, cs, cs);
 			float h = anim("card" + c, hover ? 1f : 0f, dt, 12f);
 			float grow = h * 4;
@@ -455,12 +503,10 @@ public class ClickGuiScreen extends Screen {
 			UiFont.drawScaled(ctx, textRenderer, on + "/" + modules(c).size(), bx + bs - 18, by + 5, 0.7f, Colors.argb(th.subtext.rgb(), ci));
 			ctx.getMatrices().popMatrix();
 			final Category cat = c;
-			final float[] rect = {bx, by, bs, bs};
 			hit(x, y, cs, cs, null, null, (a, b, btn) -> {
 				category = cat;
 				selected = null;
 				themePage = false;
-				fromCard = rect;
 				go(View.WINDOW);
 			});
 		}
@@ -470,12 +516,34 @@ public class ClickGuiScreen extends Screen {
 		float sw = 48, sh = 32, sg = 8;
 		float sx0 = cx - (labels.length * sw + (labels.length - 1) * sg) / 2f;
 		float sy = y0 + cs + 22;
+		// the small buttons have their own stack in the middle of their row and go right after the cards
+		float[] btT = new float[labels.length];
 		for (int i = 0; i < labels.length; i++) {
-			float si = animations() ? Math.min(1f, k * 1.6f) : Math.max(0f, Math.min(1f, (k - 0.3f - i * 0.05f) / 0.5f));
+			btT[i] = dealT(0.05f + n * 0.075f + shoveRank(i, labels.length) * 0.07f, 0.38f);
+		}
+		Integer[] bOrder = new Integer[labels.length];
+		for (int i = 0; i < labels.length; i++) {
+			bOrder[i] = i;
+		}
+		final int nbs = labels.length;
+		java.util.Arrays.sort(bOrder, (p, q) -> {
+			int gp = btT[p] >= 1f ? 0 : btT[p] <= 0f ? 1 : 2, gq = btT[q] >= 1f ? 0 : btT[q] <= 0f ? 1 : 2;
+			if (gp != gq) {
+				return Integer.compare(gp, gq);
+			}
+			return Integer.compare(shoveRank(q, nbs), shoveRank(p, nbs));
+		});
+		for (int bi = 0; bi < labels.length; bi++) {
+			int i = bOrder[bi];
+			float si = (animations() ? Math.min(1f, k * 1.6f) : Math.max(0f, Math.min(1f, (k - 0.3f - i * 0.05f) / 0.5f))) * fade;
 			float x = sx0 + i * (sw + sg);
 			float y = animations() ? sy : sy + (1 - si) * 10;
-			float bt = dealT(0.06f + n * 0.055f + 0.05f + i * 0.045f, 0.45f);
-			pushCard(ctx, x + sw / 2f, y + sh / 2f, stackX, stackY, bt, (float) Math.toRadians((i - 2) * 3f), 8f);
+			int nb = labels.length;
+			float bt = btT[i];
+			int pusher = pusherOf(i, nb);
+			float nudge = pusher < 0 ? 0f : impact(btT[pusher]) * 3.5f;
+			float tilt = (float) Math.toRadians(((shoveRank(i, nb) * 7) % 5 - 2) * 3f);
+			shoveCard(ctx, x + sw / 2f, y + sh / 2f, cx, sy + sh / 2f - (nb - 1 - shoveRank(i, nb)) * 0.8f, bt, tilt, nudge);
 			boolean hover = in(mx, my, x, y, sw, sh);
 			float h = anim("small" + i, hover ? 1f : 0f, dt, 12f);
 			Render2D.roundRect(ctx, x, y - h, sw, sh, r * 0.75f, Colors.mulAlpha(Colors.mixArgb(th.card(0.5f), Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.12f), 0.7f), h), si));
@@ -570,26 +638,10 @@ public class ClickGuiScreen extends Screen {
 		Matrix3x2fStack m = ctx.getMatrices();
 		m.pushMatrix();
 		float wcx = winX + winW / 2f, wcy = winY + winH / 2f;
-		if (animations()) {
-			float g = easeOutCubic(dealT(0f, 0.34f));
-			float fx = wcx, fy = wcy, fw = winW * 0.6f, fh = winH * 0.6f;
-			if (fromCard != null) {
-				fx = fromCard[0] + fromCard[2] / 2f;
-				fy = fromCard[1] + fromCard[3] / 2f;
-				fw = fromCard[2];
-				fh = fromCard[3];
-			}
-			float sxk = fw / winW + (1f - fw / winW) * g, syk = fh / winH + (1f - fh / winH) * g;
-			m.translate(fx + (wcx - fx) * g, fy + (wcy - fy) * g);
-			m.rotate((float) Math.toRadians(-3f) * (1f - g));
-			m.scale(sxk, syk);
-			m.translate(-wcx, -wcy);
-		} else {
-			float s = 0.95f + 0.05f * k;
-			m.translate(wcx, wcy);
-			m.scale(s, s);
-			m.translate(-wcx, -wcy);
-		}
+		float s = 0.95f + 0.05f * k;
+		m.translate(wcx, wcy);
+		m.scale(s, s);
+		m.translate(-wcx, -wcy);
 
 		float x = winX, y = winY, w = winW, h = winH;
 		Render2D.shadow(ctx, x, y, w, h, r, 8, 110);
@@ -759,9 +811,6 @@ public class ClickGuiScreen extends Screen {
 			boolean sel = mod == selected;
 			boolean hover = in(mx, my, rx, ry, colW, ROW - 3) && in(mx, my, clip[0], clip[1], clip[2] - clip[0], clip[3] - clip[1]);
 			float hv = anim(mod.getName() + "#row", hover ? 1f : 0f, dt, 14f);
-			float rt = dealT(0.16f + Math.min(i, 14) * 0.03f, 0.38f);
-			pushCard(ctx, rx + colW / 2f, ry + (ROW - 3) / 2f, x + w / 2f, y + (ROW - 3) / 2f - i * 0.4f, rt,
-					(float) Math.toRadians(((i % 5) - 2) * 2f), 6f);
 			Render2D.roundRect(ctx, rx, ry, colW, ROW - 3, 6, Colors.mixArgb(th.card(0.75f), th.card(1f), hv));
 			if (sel) {
 				Render2D.roundRectOutline(ctx, rx, ry, colW, ROW - 3, 6, 1, th.accent(0.7f));
@@ -770,7 +819,6 @@ public class ClickGuiScreen extends Screen {
 			float t = anim(mod.getName() + "#on", mod.isEnabled() ? 1f : 0f, dt, 14f);
 			float tx = rx + colW - 27;
 			drawToggle(ctx, tx, ry + 4, t);
-			ctx.getMatrices().popMatrix();
 			hit(tx - 2, ry, colW - (tx - 2 - rx), ROW - 3, null, clip, (a, b, btn) -> mod.toggle());
 			hit(rx, ry, tx - 2 - rx, ROW - 3, null, clip, (a, b, btn) -> {
 				commitEdit();
