@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class SupportScreen extends Screen {
 	/** The team's PayPal.me link, e.g. https://www.paypal.com/paypalme/Name (empty until it is set). */
-	public static final String PAYPAL_ME = "";
+	public static final String PAYPAL_ME = "https://www.paypal.com/paypalme/LyanoBotteldoorn";
 
 	private static final int[] AMOUNTS = {2, 5, 10};
 	private final Screen parent;
