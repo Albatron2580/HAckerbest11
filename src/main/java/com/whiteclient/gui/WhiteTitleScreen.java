@@ -225,6 +225,7 @@ public class WhiteTitleScreen extends Screen {
 		if (showcase) {
 			renderShowcase(ctx, mouseX, mouseY, delta, dt, time);
 			super.render(ctx, mouseX, mouseY, delta);
+			UpdateBadge.draw(ctx, textRenderer, width, height, time);
 			return;
 		}
 
@@ -359,6 +360,7 @@ public class WhiteTitleScreen extends Screen {
 		UiFont.draw(ctx, textRenderer, "Minecraft 1.21.11  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
 		UiFont.draw(ctx, textRenderer, copy, width - 10 - UiFont.width(textRenderer, copy), height - 14, Colors.withAlpha(SUB, (int) (160 * fi)));
+		UpdateBadge.draw(ctx, textRenderer, width, height, time);
 
 		super.render(ctx, mouseX, mouseY, delta);
 	}

@@ -14,7 +14,8 @@ public class AutoUpdate extends Module {
 	public final ActionSetting checkNow = add(new ActionSetting("Updates", () -> "Check Now", () -> AutoUpdater.checkAsync(this.installAuto.isOn(), true)));
 	public final BoolSetting installAuto = add(new BoolSetting("Install Automatically", true));
 
-	private long nextCheck = System.currentTimeMillis() + 15_000;
+	private long nextCheck = System.currentTimeMillis() + 10_000;
+	private long lastCheck;
 
 	public AutoUpdate() {
 		super("Auto Update", "Keeps WHITECLIENT up to date by itself", Category.MENU, true);
@@ -23,8 +24,12 @@ public class AutoUpdate extends Module {
 	@Override
 	public void onTick(MinecraftClient mc) {
 		long now = System.currentTimeMillis();
-		if (now >= nextCheck) {
-			nextCheck = now + 6L * 60 * 60 * 1000; // and again every 6 hours while you play
+		boolean onMainMenu = mc.currentScreen instanceof net.minecraft.client.gui.screen.TitleScreen
+				|| mc.currentScreen instanceof com.whiteclient.gui.WhiteTitleScreen;
+		// at start, every 20 minutes, and whenever you are on the main menu (at most every 3 minutes)
+		if (now >= nextCheck || (onMainMenu && now - lastCheck > 3 * 60 * 1000)) {
+			nextCheck = now + 20L * 60 * 1000;
+			lastCheck = now;
 			AutoUpdater.checkAsync(installAuto.isOn(), false);
 		}
 	}

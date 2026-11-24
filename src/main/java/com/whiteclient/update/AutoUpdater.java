@@ -55,6 +55,20 @@ public final class AutoUpdater {
 		return readyVersion;
 	}
 
+	/** For the screenshots in the tests: pretend a version is ready (nothing is installed without a download). */
+	public static void previewReady(String version) {
+		readyVersion = version;
+	}
+
+	/** A short line for the menus, or null when there is nothing to say. */
+	public static String badge() {
+		if (readyVersion != null) {
+			return "WHITECLIENT " + readyVersion + " is ready - it installs when you close the game";
+		}
+		String s = status;
+		return s.startsWith("Downloading") ? s : null;
+	}
+
 	private static Path updateDir() {
 		return FabricLoader.getInstance().getGameDir().resolve("whiteclient").resolve("update");
 	}

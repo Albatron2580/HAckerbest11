@@ -386,6 +386,7 @@ public final class PauseStyle {
 		// ---- footer
 		float fi = intro(s, 0.3f);
 		UiFont.draw(ctx, tr, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(0x9A9AA6, (int) (220 * fi)));
+		UpdateBadge.draw(ctx, tr, width, height, time);
 	}
 
 	private static float modelX(int width) {

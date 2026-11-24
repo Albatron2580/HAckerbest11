@@ -202,6 +202,13 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new com.whiteclient.gui.SupportScreen(new TitleScreen()));
 		context.waitTicks(20);
 		context.takeScreenshot("support_screen");
+		// "update ready" badge on the main menu
+		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady("9.9.9"));
+		context.setScreen(TitleScreen::new);
+		context.waitTicks(30);
+		context.takeScreenshot("main_menu_update_ready");
+		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady(null));
+
 		// connecting / loading screens get the planet look too
 		context.setScreen(() -> new net.minecraft.client.gui.screen.MessageScreen(net.minecraft.text.Text.literal("Encrypting...")));
 		context.waitTicks(10);
