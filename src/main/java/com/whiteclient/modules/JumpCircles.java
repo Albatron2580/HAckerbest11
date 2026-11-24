@@ -29,7 +29,7 @@ public class JumpCircles extends Module {
 	private final List<float[]> circles = new ArrayList<>();
 
 	public JumpCircles() {
-		super("Jump Circles", "Glowing rings when you jump and land", Category.COSMETICS, false);
+		super("Jump Circles", "Glowing rings when you jump and land", Category.COSMETICS, true);
 	}
 
 	public void spawn(double x, double y, double z, float time, float mul) {

@@ -1,4 +1,4 @@
-# WHITECLIENT 1.12.9 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.13.0 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -11,7 +11,6 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | Cosmetics | **Block Trail** | Glowing squares on the blocks you walk over |
 | Cosmetics | **Pets** | Glowing creatures made of light: **Jellyfish**, **Manta Ray** and **Star Whale**. They swim through the air next to you, follow you when you walk and jump, and float over your head when you stand still. Name, size and colours are yours to pick. Only you see them |
 | Cosmetics | **Head Wear** | Crown, cat ears, bunny ears, devil horns, headphones or a flower crown |
-| Cosmetics | **Name Logo** | The WHITECLIENT planet logo in front of your name, on your name tag (also visible to you in F5) and in the Tab list. **Other WhiteClient users get the logo too**, so you can see who uses it: WhiteClient sets one unused bit of Minecraft's skin-layer setting, which the server already shares with players near you. Nothing else is sent, and you can turn it off with **Let Others See You Use WhiteClient** |
 | Cosmetics | **China Hat** | Glowing cone hat on your head (also on others) |
 | Cosmetics | **Trail** | Glowing light ribbon / sparkles behind you |
 | Cosmetics | **Jump Circles** | Glowing rings on the ground when you jump and land |

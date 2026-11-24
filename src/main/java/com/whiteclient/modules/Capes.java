@@ -22,7 +22,7 @@ public class Capes extends Module {
 	public final ActionSetting reload = add(new ActionSetting("Reload Capes", () -> "Reload", CapeTextures::reload));
 
 	public Capes() {
-		super("Capes", "Free capes (only you see them)", Category.COSMETICS, false);
+		super("Capes", "Free capes (only you see them)", Category.COSMETICS, true);
 	}
 
 	public static Capes get() {

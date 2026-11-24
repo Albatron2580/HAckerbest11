@@ -27,7 +27,7 @@ public class CustomCrosshair extends Module {
 	private long lastFrame = System.nanoTime();
 
 	public CustomCrosshair() {
-		super("Custom Crosshair", "A clean custom crosshair", Category.HUD, false);
+		super("Custom Crosshair", "A clean custom crosshair", Category.HUD, true);
 	}
 
 	public void draw(DrawContext ctx) {

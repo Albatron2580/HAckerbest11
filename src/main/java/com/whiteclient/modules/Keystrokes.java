@@ -27,7 +27,7 @@ public class Keystrokes extends Module {
 	public static int debugHeld;
 
 	public Keystrokes() {
-		super("Keystrokes", "WASD + mouse with CPS", Category.HUD, false);
+		super("Keystrokes", "WASD + mouse with CPS", Category.HUD, true);
 	}
 
 	@Override

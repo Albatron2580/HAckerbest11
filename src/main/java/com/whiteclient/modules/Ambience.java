@@ -28,7 +28,7 @@ public class Ambience extends Module {
 	private String lastMode = "";
 
 	public Ambience() {
-		super("Ambience", "Fireflies, petals, embers and more", Category.WORLD, false);
+		super("Ambience", "Fireflies, petals, embers and more", Category.WORLD, true);
 	}
 
 	private void resize(int n) {

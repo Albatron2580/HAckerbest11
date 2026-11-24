@@ -22,7 +22,7 @@ public class HandView extends Module {
 	private static int depth;
 
 	public HandView() {
-		super("Hand View", "Move and resize your held item", Category.WORLD, false);
+		super("Hand View", "Move and resize your held item", Category.WORLD, true);
 	}
 
 	public static void begin(PlayerEntity player, Hand hand, MatrixStack matrices) {

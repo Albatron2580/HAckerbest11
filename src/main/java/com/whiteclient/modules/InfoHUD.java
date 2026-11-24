@@ -34,7 +34,7 @@ public class InfoHUD extends Module {
 	private float speedBps;
 
 	public InfoHUD() {
-		super("Info HUD", "Coords, direction, speed, CPS, clock...", Category.HUD, false);
+		super("Info HUD", "Coords, direction, speed, CPS, clock...", Category.HUD, true);
 	}
 
 	@Override

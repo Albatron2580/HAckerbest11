@@ -25,7 +25,7 @@ public class ChinaHat extends Module {
 	public final BoolSetting others = add(new BoolSetting("Show On Others", false));
 
 	public ChinaHat() {
-		super("China Hat", "A glowing cone hat on your head", Category.COSMETICS, false);
+		super("China Hat", "A glowing cone hat on your head", Category.COSMETICS, true);
 	}
 
 	@Override

@@ -30,7 +30,7 @@ public class HeadWear extends Module {
 	private final OrganicMesh mesh = new OrganicMesh();
 
 	public HeadWear() {
-		super("Head Wear", "3D crown, ears, horns or headphones on your head", Category.COSMETICS, false);
+		super("Head Wear", "3D crown, ears, horns or headphones on your head", Category.COSMETICS, true);
 	}
 
 	@Override

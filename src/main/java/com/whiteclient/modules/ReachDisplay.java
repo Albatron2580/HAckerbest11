@@ -19,7 +19,7 @@ public class ReachDisplay extends Module {
 	public final BoolSetting always = add(new BoolSetting("Always Show", false));
 
 	public ReachDisplay() {
-		super("Reach Display", "Distance of your last hit", Category.PVP, false);
+		super("Reach Display", "Distance of your last hit", Category.PVP, true);
 	}
 
 	@Override

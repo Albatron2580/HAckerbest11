@@ -24,7 +24,7 @@ public class PotionHUD extends Module {
 	private static final String[] ROMAN = {"", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
 
 	public PotionHUD() {
-		super("Potion HUD", "Active effects with time left", Category.HUD, false);
+		super("Potion HUD", "Active effects with time left", Category.HUD, true);
 	}
 
 	public boolean hidesVanilla() {

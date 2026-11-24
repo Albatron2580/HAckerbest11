@@ -20,7 +20,7 @@ public class ComboCounter extends Module {
 	private long popAt;
 
 	public ComboCounter() {
-		super("Combo Counter", "Hits in a row without getting hit", Category.PVP, false);
+		super("Combo Counter", "Hits in a row without getting hit", Category.PVP, true);
 	}
 
 	@Override

@@ -45,7 +45,7 @@ public class Pets extends Module {
 	private Vec3d lastPlayer;
 
 	public Pets() {
-		super("Pets", "A glowing jellyfish, manta ray or star whale that floats with you", Category.COSMETICS, false);
+		super("Pets", "A glowing jellyfish, manta ray or star whale that floats with you", Category.COSMETICS, true);
 	}
 
 	public static boolean isPet(Entity e) {

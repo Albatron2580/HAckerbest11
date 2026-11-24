@@ -33,7 +33,7 @@ public class Trail extends Module {
 	private final Map<Integer, ArrayDeque<Vec3d>> history = new HashMap<>();
 
 	public Trail() {
-		super("Trail", "A glowing light trail behind you", Category.COSMETICS, false);
+		super("Trail", "A glowing light trail behind you", Category.COSMETICS, true);
 	}
 
 	@Override

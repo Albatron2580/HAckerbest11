@@ -23,7 +23,7 @@ public class ArmorHUD extends Module {
 	public final BoolSetting heldItem = add(new BoolSetting("Held Item", true));
 
 	public ArmorHUD() {
-		super("Armor HUD", "Armour and item durability", Category.HUD, false);
+		super("Armor HUD", "Armour and item durability", Category.HUD, true);
 	}
 
 	@Override

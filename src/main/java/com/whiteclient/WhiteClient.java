@@ -59,7 +59,7 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.12.9";
+	public static final String VERSION = "1.13.0";
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;
@@ -110,7 +110,6 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new Pets());
 		modules.register(new ChinaHat());
 		modules.register(new HeadWear());
-		modules.register(new NameLogo());
 		modules.register(new Trail());
 		modules.register(new JumpCircles());
 		modules.register(new Capes());
@@ -157,6 +156,14 @@ public final class WhiteClient implements ClientModInitializer {
 
 		config = new ConfigManager(modules);
 		config.load();
+		if (config.loadedVersion() < 4) {
+			for (com.whiteclient.module.Module mod : modules.all()) {
+				if (!(mod instanceof Cinematic) && !(mod instanceof TimeChanger)) {
+					mod.setEnabled(true);
+				}
+			}
+			config.save();
+		}
 		if (config.loadedVersion() < 3) {
 			MainMenu mm = modules.get(MainMenu.class);
 			mm.layout.reset();

@@ -24,7 +24,7 @@ public class BlockOutline extends Module {
 	public final BoolSetting pulse = add(new BoolSetting("Pulse", true));
 
 	public BlockOutline() {
-		super("Block Outline", "Glowing outline on the block you look at", Category.WORLD, false);
+		super("Block Outline", "Glowing outline on the block you look at", Category.WORLD, true);
 	}
 
 	@Override
