@@ -53,6 +53,39 @@ public final class ButtonStyle {
 		return screen instanceof GameMenuScreen || screen instanceof TitleScreen;
 	}
 
+	/** A rounded track with a filled part and a light knob, and the label in the middle. */
+	public static void drawSlider(DrawContext ctx, ClickableWidget w, double value) {
+		MenuButtons settings = WhiteClient.get().modules().get(MenuButtons.class);
+		long now = System.nanoTime();
+		if (now - lastNanos > 1_000_000) {
+			frameDt = Math.min(0.1f, (now - lastNanos) / 1.0e9f);
+			lastNanos = now;
+		}
+		boolean hot = w.active && (w.isHovered() || w.isFocused());
+		float h = HOVER.getOrDefault(w, 0f);
+		h += ((hot ? 1f : 0f) - h) * Math.min(1f, frameDt * 14f);
+		HOVER.put(w, h);
+
+		float x = w.getX(), y = w.getY(), width = w.getWidth(), height = w.getHeight();
+		float r = Math.min(settings.roundness.getFloat(), height / 2f);
+		float op = settings.opacity.getFloat();
+		Render2D.roundRect(ctx, x, y, width, height, r, w.active ? Colors.argb(0x0B0B10, op) : Colors.argb(0x0B0B10, op * 0.5f));
+		float v = (float) Math.max(0, Math.min(1, value));
+		float knobW = 6;
+		float kx = x + 2 + v * (width - 4 - knobW);
+		// filled part up to the knob
+		if (kx + knobW / 2f > x + 2) {
+			Render2D.roundRect(ctx, x + 1, y + 1, kx + knobW / 2f - x - 1, height - 2, Math.max(0, r - 1), Colors.argb(0xFFFFFF, 0.10f + 0.08f * h));
+		}
+		if (settings.border.isOn()) {
+			Render2D.roundRectOutline(ctx, x, y, width, height, r, 1, Colors.argb(0xFFFFFF, 0.16f + 0.3f * h));
+		}
+		Render2D.roundRect(ctx, kx, y + 2, knobW, height - 4, Math.min(3, (height - 4) / 2f), Colors.argb(0xFFFFFF, w.active ? 0.75f + 0.25f * h : 0.35f));
+		net.minecraft.client.font.TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+		ctx.drawCenteredTextWithShadow(tr, w.getMessage(), Math.round(x + width / 2f), Math.round(y + (height - 8) / 2f),
+				w.active ? 0xFFFFFFFF : 0xFFA0A0A8);
+	}
+
 	public static void draw(DrawContext ctx, ClickableWidget w) {
 		MenuButtons settings = WhiteClient.get().modules().get(MenuButtons.class);
 		long now = System.nanoTime();

@@ -21,6 +21,7 @@
 		"PlayerListHudMixin",
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin",
+		"SliderWidgetMixin",
 		"TooltipBackgroundMixin"
 	],
 	"injectors": {
