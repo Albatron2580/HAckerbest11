@@ -208,6 +208,11 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> writeTestSkin());
 		// CI draws everything on the CPU: the animated loading-screen background makes chunk loading crawl there
 		context.runOnClient(client -> WhiteClient.get().modules().get(MenuBackground.class).loadingScreens.set(false));
+		// ...and uncapped frames would take the CPU away from the world being generated: cap them for the test
+		context.runOnClient(client -> {
+			WhiteClient.get().modules().get(com.whiteclient.modules.FpsBoost.class).unlock.set(false);
+			client.options.getMaxFps().setValue(30);
+		});
 
 		try (TestSingleplayerContext sp = context.worldBuilder().create()) {
 			sp.getClientWorld().waitForChunksRender();
