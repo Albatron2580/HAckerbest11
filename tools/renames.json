@@ -263,5 +263,25 @@
 		"if": "MC >= 26.1",
 		"from": "net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.getBoundKeyOf(",
 		"to": "net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "context.worldState()",
+		"to": "context.levelState()"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "context.matrices()",
+		"to": "context.poseStack()"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "context.consumers()",
+		"to": "context.bufferSource()"
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\bwidget\\.render\\(",
+		"to": "widget.extractRenderState("
 	}
 ]
