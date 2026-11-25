@@ -27,7 +27,7 @@ public class UpdateReadyScreen extends Screen {
 			opened = System.nanoTime();
 		}
 		cardW = Math.min(300, width - 30);
-		cardH = 168;
+		cardH = 184;
 		cardX = width / 2f - cardW / 2f;
 		cardY = Math.max(10, height / 2f - cardH / 2f - 6);
 
@@ -89,7 +89,7 @@ public class UpdateReadyScreen extends Screen {
 
 		String small = "You can also keep playing, it updates whenever you close the game.";
 		float sw = UiFont.width(textRenderer, small) * 0.75f;
-		UiFont.drawScaled(ctx, textRenderer, small, cx - sw / 2f, cardY + 132, 0.75f, Colors.argb(0x9A9AA6, k));
+		UiFont.drawScaled(ctx, textRenderer, small, cx - sw / 2f, cardY + 134, 0.75f, Colors.argb(0x9A9AA6, k));
 	}
 
 	@Override

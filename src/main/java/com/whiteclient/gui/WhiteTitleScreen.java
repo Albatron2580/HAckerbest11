@@ -592,9 +592,9 @@ public class WhiteTitleScreen extends Screen {
 	}
 
 	private void drawUpdateBadge(DrawContext ctx, int mouseX, int mouseY, float time) {
-		float[] b = UpdateBadge.bounds(textRenderer, width);
+		float[] b = UpdateBadge.bounds(textRenderer, width, height, false);
 		boolean hover = b != null && mouseX >= b[0] && mouseX < b[0] + b[2] && mouseY >= b[1] && mouseY < b[1] + b[3];
-		UpdateBadge.draw(ctx, textRenderer, width, height, time, hover);
+		UpdateBadge.draw(ctx, textRenderer, width, height, time, hover, false);
 		if (b != null && com.whiteclient.update.AutoUpdater.readyVersion() != null) {
 			hits.add(new Hit(b[0], b[1], b[0] + b[2], b[1] + b[3], () -> client.setScreen(new UpdateReadyScreen(this))));
 		}

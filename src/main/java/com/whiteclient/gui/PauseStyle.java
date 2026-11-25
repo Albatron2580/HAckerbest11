@@ -209,7 +209,7 @@ public final class PauseStyle {
 			all.add(b);
 			ix += is + ig;
 		}
-		float[] ub = com.whiteclient.update.AutoUpdater.readyVersion() != null ? UpdateBadge.bounds(tr, width) : null;
+		float[] ub = com.whiteclient.update.AutoUpdater.readyVersion() != null ? UpdateBadge.bounds(tr, width, height, true) : null;
 		if (ub != null) {
 			ButtonWidget b = ButtonWidget.builder(Text.literal(""), x -> client.setScreen(new UpdateReadyScreen(screen)))
 					.dimensions(Math.round(ub[0]), Math.round(ub[1]), Math.round(ub[2]), Math.round(ub[3])).build();
@@ -368,9 +368,9 @@ public final class PauseStyle {
 
 		float fi = intro(s, 0.3f);
 		UiFont.draw(ctx, tr, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(0x9A9AA6, (int) (220 * fi)));
-		float[] ub = UpdateBadge.bounds(tr, width);
+		float[] ub = UpdateBadge.bounds(tr, width, height, true);
 		boolean overBadge = ub != null && mouseX >= ub[0] && mouseX < ub[0] + ub[2] && mouseY >= ub[1] && mouseY < ub[1] + ub[3];
-		UpdateBadge.draw(ctx, tr, width, height, time, overBadge);
+		UpdateBadge.draw(ctx, tr, width, height, time, overBadge, true);
 	}
 
 	private static float modelX(int width) {

@@ -1,4 +1,4 @@
-# WHITECLIENT 1.13.2 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.13.3 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 

@@ -9,29 +9,25 @@ public final class UpdateBadge {
 	private UpdateBadge() {
 	}
 
-	public static float[] bounds(TextRenderer tr, int width) {
+	public static float[] bounds(TextRenderer tr, int width, int height, boolean corner) {
 		String text = AutoUpdater.badge();
 		if (text == null) {
 			return null;
 		}
 		float w = UiFont.width(tr, text) * 0.85f + 30;
-		return new float[]{width / 2f - w / 2f, 36, w, 16};
+		return corner ? new float[]{10, height - 36, w, 16} : new float[]{width / 2f - w / 2f, 36, w, 16};
 	}
 
-	public static void draw(DrawContext ctx, TextRenderer tr, int width, int height, float time) {
-		draw(ctx, tr, width, height, time, false);
-	}
-
-	public static void draw(DrawContext ctx, TextRenderer tr, int width, int height, float time, boolean hover) {
+	public static void draw(DrawContext ctx, TextRenderer tr, int width, int height, float time, boolean hover, boolean corner) {
 		String text = AutoUpdater.badge();
-		if (text == null) {
+		float[] b = bounds(tr, width, height, corner);
+		if (text == null || b == null) {
 			return;
 		}
 		boolean ready = AutoUpdater.readyVersion() != null;
 		float scale = 0.85f;
-		float tw = UiFont.width(tr, text) * scale;
-		float w = tw + 30, h = 16;
-		float x = width / 2f - w / 2f, y = 36;
+		float w = b[2], h = b[3];
+		float x = b[0], y = b[1];
 		float pulse = 0.5f + 0.5f * (float) Math.sin(time * 3.0);
 		Render2D.roundRect(ctx, x, y, w, h, 8, Colors.argb(hover && ready ? 0x18241B : 0x0B0B10, 0.88f));
 		Render2D.roundRectOutline(ctx, x, y, w, h, 8, 1, Colors.argb(ready ? 0x8BE39A : 0xFFFFFF, 0.35f + 0.3f * pulse));
