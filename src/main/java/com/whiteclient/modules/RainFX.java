@@ -335,7 +335,7 @@ public class RainFX extends Module {
 		}
 		debugWetQuads = quads;
 		debugPuddleCells = cells;
-		puddleBase.draw(ctx.consumers, ctx.matrices.last().pose());
+		puddleBase.draw(ctx.draw, ctx.matrices.last().pose());
 	}
 
 	public int debugWetQuads, debugPuddleCells;

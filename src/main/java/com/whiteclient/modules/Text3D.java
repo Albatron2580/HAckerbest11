@@ -431,7 +431,7 @@ public class Text3D extends Module {
 			ms.pushPose();
 			ms.translate(0, 0, -l * step);
 			Matrix4f m = ms.last().pose();
-			tr.drawInBatch(word, x, y, 0xFF000000 | c, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			ctx.draw.text(tr, word, x, y, 0xFF000000 | c, m, light);
 			ms.popPose();
 		}
 		if (outline) {
@@ -440,13 +440,13 @@ public class Text3D extends Module {
 			ms.translate(0, 0, -0.12f);
 			Matrix4f m = ms.last().pose();
 			float o = 0.75f;
-			tr.drawInBatch(word, x - o, y, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
-			tr.drawInBatch(word, x + o, y, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
-			tr.drawInBatch(word, x, y - o, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
-			tr.drawInBatch(word, x, y + o, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			ctx.draw.text(tr, word, x - o, y, dark, m, light);
+			ctx.draw.text(tr, word, x + o, y, dark, m, light);
+			ctx.draw.text(tr, word, x, y - o, dark, m, light);
+			ctx.draw.text(tr, word, x, y + o, dark, m, light);
 			ms.popPose();
 		}
 		Matrix4f m = ms.last().pose();
-		tr.drawInBatch(word, x, y, 0xFF000000 | rgb, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+		ctx.draw.text(tr, word, x, y, 0xFF000000 | rgb, m, light);
 	}
 }

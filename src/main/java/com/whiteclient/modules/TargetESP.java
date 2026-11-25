@@ -274,7 +274,7 @@ public class TargetESP extends Module {
 				String suit = suits[i % suits.length];
 				boolean red = i % suits.length == 1 || i % suits.length == 2;
 				int tc = Colors.argb(red ? 0xFF4D6A : 0x15151B, Math.min(1f, alpha));
-				tr.drawInBatch(suit, -tr.width(suit) / 2f, -4f, tc, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+				ctx.draw.text(tr, suit, -tr.width(suit) / 2f, -4f, tc, m, light);
 				ms.popPose();
 			}
 		}

@@ -2,14 +2,13 @@ package com.whiteclient.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 
 public final class WorldContext {
 	public final Minecraft client;
 	public final PoseStack matrices;
-	public final MultiBufferSource consumers;
+	public final WorldDraw draw;
 	public final Vec3 cam;
 	public final Quaternionf camRotation;
 	public final float tickDelta;
@@ -17,11 +16,11 @@ public final class WorldContext {
 	public final float frameDelta;
 	public final GlowBatch glow;
 
-	public WorldContext(Minecraft client, PoseStack matrices, MultiBufferSource consumers, Vec3 cam,
+	public WorldContext(Minecraft client, PoseStack matrices, WorldDraw draw, Vec3 cam,
 						Quaternionf camRotation, float tickDelta, float time, float frameDelta, GlowBatch glow) {
 		this.client = client;
 		this.matrices = matrices;
-		this.consumers = consumers;
+		this.draw = draw;
 		this.cam = cam;
 		this.camRotation = camRotation;
 		this.tickDelta = tickDelta;

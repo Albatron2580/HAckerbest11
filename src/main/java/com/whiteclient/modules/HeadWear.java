@@ -41,7 +41,7 @@ public class HeadWear extends Module {
 			any = true;
 		}
 		if (any) {
-			mesh.draw(ctx.consumers, ctx.matrices.last().pose());
+			mesh.draw(ctx.draw, ctx.matrices.last().pose());
 		}
 	}
 

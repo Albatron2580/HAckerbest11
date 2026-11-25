@@ -10,7 +10,6 @@ import org.joml.Matrix4f;
 import java.util.Arrays;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -112,7 +111,7 @@ public final class SolidBatch {
 		WhiteClient.LOGGER.warn("[WHITECLIENT] no solid render layer; models disabled");
 	}
 
-	public void draw(MultiBufferSource consumers, Matrix4f m) {
+	public void draw(WorldDraw out, Matrix4f m) {
 		if (count == 0) {
 			return;
 		}
@@ -130,7 +129,17 @@ public final class SolidBatch {
 			order[i] = ((long) Float.floatToIntBits(d) << 32) | (i & 0xFFFFFFFFL);
 		}
 		Arrays.sort(order, 0, count);
-		VertexConsumer vc = consumers.getBuffer(layer);
+		final int n = count;
+		final boolean now = out.immediate();
+		final float[] p0 = now ? pos : Arrays.copyOf(pos, n * FLOATS);
+		final int[] c0 = now ? col : Arrays.copyOf(col, n * 4);
+		final long[] o0 = now ? order : Arrays.copyOf(order, n);
+		final Matrix4f m0 = now ? m : new Matrix4f(m);
+		out.geometry(layer, vc -> emitAll(vc, m0, p0, c0, o0, n));
+		count = 0;
+	}
+
+	private static void emitAll(VertexConsumer vc, Matrix4f m, float[] pos, int[] col, long[] order, int count) {
 		for (int k = count - 1; k >= 0; k--) {
 			int i = (int) order[k];
 			int p = i * FLOATS, c = i * 4;
@@ -147,7 +156,6 @@ public final class SolidBatch {
 				emit(vc, m, x1, y1, z1, col[c], x4, y4, z4, col[c + 3], x3, y3, z3, col[c + 2], x2, y2, z2, col[c + 1]);
 			}
 		}
-		count = 0;
 	}
 
 	private static void emit(VertexConsumer vc, Matrix4f m, float x1, float y1, float z1, int c1, float x2, float y2, float z2, int c2,

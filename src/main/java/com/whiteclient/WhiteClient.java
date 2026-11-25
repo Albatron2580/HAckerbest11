@@ -28,7 +28,11 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+//#if MC < 26.2
 import net.minecraft.client.renderer.MultiBufferSource;
+import com.whiteclient.render.BufferDraw;
+//#endif
+import com.whiteclient.render.WorldDraw;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
@@ -229,7 +233,9 @@ public final class WhiteClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "hud"), this::renderHud);
-		//#if MC >= 1.21.9
+		//#if MC >= 26.2
+		//$ WorldRenderEvents.COLLECT_SUBMITS.register(this::renderWorld);
+		//#elif MC >= 1.21.9
 		WorldRenderEvents.END_MAIN.register(this::renderWorld);
 		//#else
 		//$ WorldRenderEvents.LAST.register(this::renderWorld);
@@ -330,14 +336,18 @@ public final class WhiteClient implements ClientModInitializer {
 		float frameDelta = Math.min(0.1f, Math.max(0f, (now - lastFrameNanos) / 1.0e9f));
 		lastFrameNanos = now;
 
-		//#if MC >= 1.21.9
+		//#if MC >= 26.2
+		//$ WorldDraw draw = new com.whiteclient.render.SubmitDraw(context.submitNodeCollector());
+		//#elif MC >= 1.21.9
 		MultiBufferSource consumers = context.consumers();
-		//#else
-		//$ MultiBufferSource consumers = context.consumers() != null ? context.consumers() : client.renderBuffers().bufferSource();
-		//#endif
 		if (consumers == null) {
 			return;
 		}
+		WorldDraw draw = new BufferDraw(consumers);
+		//#else
+		//$ MultiBufferSource consumers = context.consumers() != null ? context.consumers() : client.renderBuffers().bufferSource();
+		//$ WorldDraw draw = new BufferDraw(consumers);
+		//#endif
 		//#if MC >= 1.21.9
 		Vec3 cam = context.worldState().cameraRenderState.pos;
 		Quaternionf rotation = context.worldState().cameraRenderState.orientation;
@@ -355,7 +365,7 @@ public final class WhiteClient implements ClientModInitializer {
 		//#endif
 		float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 
-		WorldContext ctx = new WorldContext(client, matrices, consumers, cam,
+		WorldContext ctx = new WorldContext(client, matrices, draw, cam,
 				rotation != null ? rotation : new Quaternionf(), tickDelta, time(), frameDelta, glow);
 		glow.clear();
 		float camYaw = (float) Math.toRadians(client.gameRenderer.getMainCamera().yRot());
@@ -375,21 +385,25 @@ public final class WhiteClient implements ClientModInitializer {
 		}
 		try {
 			long d0 = System.nanoTime();
-			if (consumers instanceof MultiBufferSource.BufferSource immediate) {
-				immediate.endBatch();
-			}
+			flush(draw);
 			long d1 = System.nanoTime();
 			Perf.add("draw:solid+text", d1 - d0);
-			glow.draw(consumers, matrices.last().pose());
+			glow.draw(draw, matrices.last().pose());
 			Perf.add("draw:glow", System.nanoTime() - d1);
-			if (consumers instanceof MultiBufferSource.BufferSource immediate) {
-				immediate.endBatch();
-			}
+			flush(draw);
 		} catch (Throwable t) {
 			LOGGER.error("[WHITECLIENT] world draw failed", t);
 			glow.clear();
 		}
 		matrices.popPose();
+	}
+
+	private static void flush(WorldDraw draw) {
+		//#if MC < 26.2
+		if (draw instanceof BufferDraw b && b.consumers() instanceof MultiBufferSource.BufferSource immediate) {
+			immediate.endBatch();
+		}
+		//#endif
 	}
 
 	private void fail(Module module, Throwable t) {

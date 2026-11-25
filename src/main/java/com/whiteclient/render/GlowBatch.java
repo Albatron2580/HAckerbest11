@@ -7,7 +7,6 @@ import com.whiteclient.WhiteClient;
 import org.joml.Matrix4f;
 
 import java.util.Arrays;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 
@@ -208,7 +207,7 @@ public final class GlowBatch {
 		WhiteClient.LOGGER.warn("[WHITECLIENT] no usable glow render layer found; glow effects disabled");
 	}
 
-	public void draw(MultiBufferSource consumers, Matrix4f matrix) {
+	public void draw(WorldDraw out, Matrix4f matrix) {
 		if (count == 0) {
 			return;
 		}
@@ -233,7 +232,17 @@ public final class GlowBatch {
 			Arrays.sort(order, 0, count);
 		}
 
-		VertexConsumer vc = consumers.getBuffer(cachedLayer);
+		final int n = count;
+		final boolean now = out.immediate();
+		final float[] p0 = now ? pos : Arrays.copyOf(pos, n * FLOATS_PER_QUAD);
+		final int[] c0 = now ? col : Arrays.copyOf(col, n * 4);
+		final long[] o0 = now ? order : Arrays.copyOf(order, n);
+		final Matrix4f m0 = now ? matrix : new Matrix4f(matrix);
+		out.geometry(cachedLayer, vc -> emitAll(vc, m0, p0, c0, o0, n));
+		count = 0;
+	}
+
+	private static void emitAll(VertexConsumer vc, Matrix4f matrix, float[] pos, int[] col, long[] order, int count) {
 		for (int k = count - 1; k >= 0; k--) {
 			int i = (int) order[k];
 			int p = i * FLOATS_PER_QUAD;
@@ -254,7 +263,6 @@ public final class GlowBatch {
 				emit(vc, matrix, x1, y1, z1, col[c], x4, y4, z4, col[c + 3], x3, y3, z3, col[c + 2], x2, y2, z2, col[c + 1]);
 			}
 		}
-		count = 0;
 	}
 
 	private static void emit(VertexConsumer vc, Matrix4f m,

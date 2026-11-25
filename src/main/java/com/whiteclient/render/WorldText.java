@@ -25,9 +25,9 @@ public final class WorldText {
 			int dark = (Math.max(0, a - 40) << 24) | 0x101014;
 			ms.translate(0, 0, 0.01f);
 			Matrix4f back = ms.last().pose();
-			tr.drawInBatch(text, -w / 2f + 1, 1, dark, false, back, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			ctx.draw.text(tr, text, -w / 2f + 1, 1, dark, back, light);
 		}
-		tr.drawInBatch(text, -w / 2f, 0, argb, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+		ctx.draw.text(tr, text, -w / 2f, 0, argb, m, light);
 		ms.popPose();
 	}
 }

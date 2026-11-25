@@ -777,7 +777,7 @@ public class CarEmote extends Module {
 			case "Kart" -> kart();
 			default -> sports();
 		}
-		solid.draw(ctx.consumers, ctx.matrices.last().pose());
+		solid.draw(ctx.draw, ctx.matrices.last().pose());
 		glowParts(ctx.glow, ap);
 	}
 
