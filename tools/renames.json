@@ -336,8 +336,8 @@
 	},
 	{
 		"if": "MC >= 26.3",
-		"from": "com.mojang.blaze3d.pipeline.RenderPipeline",
-		"to": "com.mojang.renderpearl.api.pipeline.RenderPipeline"
+		"from": "com.mojang.blaze3d.pipeline.",
+		"to": "com.mojang.renderpearl.api.pipeline."
 	},
 	{
 		"if": "MC >= 26.3",
@@ -383,5 +383,15 @@
 		"if": "MC >= 26.2",
 		"from": "sp.getClientWorld()",
 		"to": "sp.getConnection()"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "com.mojang.blaze3d.PrimitiveTopology",
+		"to": "com.mojang.renderpearl.api.pipeline.PrimitiveTopology"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "com.mojang.blaze3d.platform.CompareOp",
+		"to": "com.mojang.renderpearl.api.pipeline.CompareOp"
 	}
 ]

@@ -21,7 +21,8 @@
 		"CameraFovMixin",
 		"ScreenTitleAccessor",
 		"GuiSetScreenMixin",
-		"HandItemsMixin"
+		"HandItemsMixin",
+		"RenderTypeInvoker"
 	],
 	"injectors": {
 		"defaultRequire": 0

@@ -186,6 +186,16 @@ public final class GlowBatch {
 			return;
 		}
 		layerResolved = true;
+		//#if MC >= 26.2
+		//$ RenderType own = GlowLayer.create();
+		//$ if (own != null) {
+		//$ 	cachedLayer = own;
+		//$ 	cachedTriangles = true;
+		//$ 	cachedNeedsSort = false;
+		//$ 	WhiteClient.LOGGER.info("[WHITECLIENT] glow layer: own (additive, no depth write)");
+		//$ 	return;
+		//$ }
+		//#endif
 		RenderType[] candidates = {RenderTypes.dragonRays(), RenderTypes.lightning()};
 		for (RenderType layer : candidates) {
 			try {
