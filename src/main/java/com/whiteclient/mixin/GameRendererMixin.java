@@ -1,3 +1,4 @@
+//#file MC < 26.1
 package com.whiteclient.mixin;
 
 import com.whiteclient.modules.Zoom;

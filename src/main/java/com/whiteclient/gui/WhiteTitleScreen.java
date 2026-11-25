@@ -259,7 +259,7 @@ public class WhiteTitleScreen extends Screen {
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> dock = new ArrayList<>();
 		dock.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> minecraft.setScreen(new SupportScreen(this))});
-		dock.add(new Object[]{"Options", (IconPainter) Icons::gear, (Runnable) () -> minecraft.setScreen(new OptionsScreen(this, minecraft.options))});
+		dock.add(new Object[]{"Options", (IconPainter) Icons::gear, (Runnable) () -> minecraft.setScreen(newOptionsScreen())});
 		dock.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()))});
 		dock.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> minecraft.setScreen(new RealmsMainScreen(this))});
 		if (modMenu) {
@@ -435,7 +435,7 @@ public class WhiteTitleScreen extends Screen {
 						minecraft.setScreen(minecraft.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this));
 					}
 				},
-				() -> minecraft.setScreen(new OptionsScreen(this, minecraft.options)),
+				() -> minecraft.setScreen(newOptionsScreen()),
 				() -> minecraft.setScreen(new ClickGuiScreen(this)),
 				() -> minecraft.stop()
 		};
@@ -591,6 +591,14 @@ public class WhiteTitleScreen extends Screen {
 		} catch (Throwable t) {
 			minecraft.setScreen(new ClickGuiScreen(this));
 		}
+	}
+
+	private OptionsScreen newOptionsScreen() {
+		//#if MC >= 26.1 && MC < 26.3
+		//$ return new OptionsScreen(this, minecraft.options, false);
+		//#else
+		return new OptionsScreen(this, minecraft.options);
+		//#endif
 	}
 
 	private void drawUpdateBadge(GuiGraphics ctx, int mouseX, int mouseY, float time) {

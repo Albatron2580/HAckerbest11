@@ -78,5 +78,190 @@
 		"if": "MC < 1.21.9",
 		"regex": "\\bSubmitNodeCollector queue\\b",
 		"to": "MultiBufferSource queue"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "import net.minecraft.client.gui.GuiGraphics;",
+		"to": "import net.minecraft.client.gui.GuiGraphicsExtractor;"
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\bGuiGraphics\\b",
+		"to": "GuiGraphicsExtractor"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": ".drawString(",
+		"to": ".text("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": ".drawCenteredString(",
+		"to": ".centeredText("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": ".renderItem(",
+		"to": ".item("
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "public void render\\(GuiGraphicsExtractor (\\w+), int (\\w+), int (\\w+), float (\\w+)\\)",
+		"to": "public void extractRenderState(GuiGraphicsExtractor \\1, int \\2, int \\3, float \\4)"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "super.render(",
+		"to": "super.extractRenderState("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "renderBackground(GuiGraphicsExtractor",
+		"to": "extractBackground(GuiGraphicsExtractor"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "super.renderBackground(",
+		"to": "super.extractBackground("
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\brenderPanorama\\(",
+		"to": "extractPanorama("
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\brenderBlurredBackground\\(",
+		"to": "extractBlurredBackground("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "\"renderDefaultSprite\"",
+		"to": "\"extractDefaultSprite\""
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "\"renderDefaultLabel\"",
+		"to": "\"extractDefaultLabel\""
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "method = \"renderWidget\"",
+		"to": "method = \"extractWidgetRenderState\""
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "\"renderLabels\"",
+		"to": "\"extractLabels\""
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "\"renderTooltipBackground\"",
+		"to": "\"extractTooltipBackground\""
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "@Invoker(\"submitBlit\")",
+		"to": "@Invoker(\"innerBlit\")"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "net.minecraft.client.gui.components.PlayerFaceRenderer",
+		"to": "net.minecraft.client.gui.components.PlayerFaceExtractor"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "PlayerFaceRenderer.draw(",
+		"to": "PlayerFaceExtractor.extractRenderState("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;",
+		"to": "import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "KeyBindingHelper.registerKeyBinding(",
+		"to": "KeyMappingHelper.registerKeyMapping("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "net.fabricmc.fabric.api.client.command.v2.ClientCommandManager",
+		"to": "net.fabricmc.fabric.api.client.command.v2.ClientCommands"
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\bClientCommandManager\\.",
+		"to": "ClientCommands."
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "Screens.getButtons(",
+		"to": "Screens.getWidgets("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext",
+		"to": "net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents",
+		"to": "net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents"
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\bWorldRenderContext\\b",
+		"to": "LevelRenderContext"
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\bWorldRenderEvents\\b",
+		"to": "LevelRenderEvents"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "VanillaHudElements.STATUS_EFFECTS",
+		"to": "VanillaHudElements.MOB_EFFECTS"
+	},
+	{
+		"if": "MC >= 26.1",
+		"regex": "\\bvanilla\\.render\\(",
+		"to": "vanilla.extractRenderState("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "import net.minecraft.client.renderer.LightTexture;",
+		"to": "import net.minecraft.util.LightCoordsUtil;"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "LightTexture.FULL_BRIGHT",
+		"to": "LightCoordsUtil.FULL_BRIGHT"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "DefaultVertexFormat.NEW_ENTITY",
+		"to": "DefaultVertexFormat.ENTITY"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": ".getDayTime()",
+		"to": ".getOverworldClockTime()"
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "getChat().addMessage(",
+		"to": "getChat().addClientSystemMessage("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": ";drawString(",
+		"to": ";text("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.getBoundKeyOf(",
+		"to": "net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf("
 	}
 ]

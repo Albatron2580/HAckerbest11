@@ -32,10 +32,12 @@ public class TimeChanger extends Module {
 			return;
 		}
 		long t = target();
+		//#if MC < 26.1
 		if (t >= 0) {
 			long days = Math.floorDiv(w.getDayTime(), 24000L);
 			w.setTimeFromServer(w.getGameTime(), days * 24000L + t, false);
 		}
+		//#endif
 		switch (weather.get()) {
 			case "Clear" -> {
 				w.setRainLevel(0f);

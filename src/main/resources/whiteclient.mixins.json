@@ -17,7 +17,8 @@
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin",
 		"SliderWidgetMixin",
-		"TooltipBackgroundMixin"
+		"TooltipBackgroundMixin",
+		"CameraFovMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
