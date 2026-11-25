@@ -28,7 +28,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: gradle-cache
         with:
           path: |
             ~/.gradle/caches
@@ -41,7 +42,24 @@ jobs:
           python3 tools/pp.py "${{ matrix.mc }}" src
           echo "gametest=$(python3 -c "import json; print(str(json.load(open('versions.json'))['${{ matrix.mc }}'].get('gametest', False)).lower())")" >> "$GITHUB_OUTPUT"
       - name: Build
-        run: chmod +x gradlew && ./gradlew build -Pmc="${{ matrix.mc }}" --stacktrace
+        run: |
+          chmod +x gradlew
+          for attempt in 1 2 3; do
+            ./gradlew build -Pmc="${{ matrix.mc }}" --stacktrace 2>&1 | tee build.log
+            code=${PIPESTATUS[0]}
+            [ "$code" = 0 ] && break
+            grep -q 'Could not GET\|Could not resolve\|Connection reset\|Read timed out' build.log || exit $code
+            echo "download problem, trying again ($attempt)"; sleep 20
+          done
+          exit $code
+      - uses: actions/cache/save@v4
+        if: always() && steps.gradle-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ matrix.mc }}-${{ hashFiles('gradle.properties', 'versions.json', 'gradle/wrapper/gradle-wrapper.properties') }}
       - name: Export JAR
         run: |
           ver=$(grep '^mod_version' gradle.properties | cut -d= -f2 | tr -d ' \r')
