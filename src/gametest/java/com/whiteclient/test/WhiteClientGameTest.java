@@ -99,7 +99,9 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		for (Entity e : client.level.entitiesForRendering()) {
 			if (e instanceof Husk h && h.isAlive()) {
 				client.gameMode.attack(client.player, h);
+				//#if MC < 26.3
 				client.player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+				//#endif
 				return;
 			}
 		}
