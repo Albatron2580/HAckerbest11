@@ -14,8 +14,10 @@ import com.whiteclient.setting.NumberSetting;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+//#if MC >= 1.21.2
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+//#endif
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -137,21 +139,35 @@ public class CarEmote extends Module {
 		};
 	}
 
-	public static void applyPose(Entity entity, EntityRenderState state) {
+	private static CarEmote seatedCar(Entity entity) {
 		CarEmote c = get();
-		if (c == null || !active || !c.isEnabled() || state == null || c.showOff) {
+		if (c == null || !active || !c.isEnabled() || c.showOff || entity != Minecraft.getInstance().player) {
+			return null;
+		}
+		return c;
+	}
+
+	public static boolean seated(Entity entity) {
+		CarEmote c = seatedCar(entity);
+		return c != null && c.appear > 0.3f;
+	}
+
+	public static float lift(Entity entity) {
+		CarEmote c = seatedCar(entity);
+		return c == null ? 0f : c.seatOffset() * Math.min(1f, c.appear * 1.5f);
+	}
+
+	//#if MC >= 1.21.2
+	public static void applyPose(Entity entity, EntityRenderState state) {
+		if (state == null || seatedCar(entity) == null) {
 			return;
 		}
-		Minecraft mc = Minecraft.getInstance();
-		if (entity != mc.player) {
-			return;
-		}
-		float k = c.appear;
-		if (state instanceof HumanoidRenderState b && k > 0.3f) {
+		if (state instanceof HumanoidRenderState b && seated(entity)) {
 			b.isPassenger = true;
 		}
-		state.y += c.seatOffset() * Math.min(1f, k * 1.5f);
+		state.y += lift(entity);
 	}
+	//#endif
 
 	@Override
 	public void onTick(Minecraft mc) {

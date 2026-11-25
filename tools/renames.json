@@ -403,5 +403,35 @@
 		"if": "MC < 1.21.5",
 		"regex": "super\\(\\(\\) -> [^,]+?, (\\w+, \\w+, false\\))",
 		"to": "super(\\1"
+	},
+	{
+		"if": "MC < 1.21.6",
+		"regex": "Math\\.max\\(1, ([\\w.()]+?)\\.getGuiScale\\(\\)\\)",
+		"to": "Math.max(1, (int) \\1.getGuiScale())"
+	},
+	{
+		"if": "MC < 1.21.2",
+		"regex": "\\.getDeltaTracker\\(\\)",
+		"to": ".getTimer()"
+	},
+	{
+		"if": "MC < 1.21.2",
+		"regex": "\\.getToastManager\\(\\)",
+		"to": ".getToasts()"
+	},
+	{
+		"if": "MC < 1.21.2",
+		"from": "net.minecraft.server.level.ParticleStatus",
+		"to": "net.minecraft.client.ParticleStatus"
+	},
+	{
+		"if": "MC < 1.21.2",
+		"from": "DefaultPlayerSkin.getDefaultSkin()",
+		"to": "DefaultPlayerSkin.get(new java.util.UUID(0L, 0L))"
+	},
+	{
+		"if": "MC < 1.21.2",
+		"regex": "(\\w+)\\.setTimeFromServer\\(\\1\\.getGameTime\\(\\), (.+?), false\\);",
+		"to": "\\1.setDayTime(\\2);"
 	}
 ]

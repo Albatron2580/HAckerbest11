@@ -11,6 +11,8 @@
 		"HeldItemRendererMixin",
 		"MinecraftClientMixin",
 		"EntityRenderManagerMixin",
+		"LegacyCarOffsetMixin",
+		"LegacySeatMixin",
 		"MouseMixin",
 		"MultiplayerScreenAccessor",
 		"DrawContextInvoker",

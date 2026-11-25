@@ -1,3 +1,4 @@
+//#file MC >= 1.21.2
 package com.whiteclient.mixin;
 
 import com.whiteclient.modules.CarEmote;

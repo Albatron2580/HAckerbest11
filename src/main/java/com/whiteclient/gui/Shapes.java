@@ -3,9 +3,9 @@ package com.whiteclient.gui;
 import com.whiteclient.render.Img;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+//#if MC >= 1.21.11
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
-//#if MC >= 1.21.11
 import com.mojang.blaze3d.textures.GpuSampler;
 //#endif
 import com.whiteclient.WhiteClient;
@@ -54,8 +54,12 @@ public final class Shapes {
 			this.linear = linear;
 			//#if MC < 1.21.11
 			//$ setFilter(linear, false);
-			//#if MC >= 1.21.2
+			//#if MC >= 1.21.4
 			//$ setClamp(true);
+			//#else
+			//$ bind();
+			//$ com.mojang.blaze3d.platform.GlStateManager._texParameter(3553, 10242, 33071);
+			//$ com.mojang.blaze3d.platform.GlStateManager._texParameter(3553, 10243, 33071);
 			//#endif
 			//#endif
 		}
