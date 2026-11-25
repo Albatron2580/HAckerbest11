@@ -41,6 +41,7 @@ public final class PauseStyle {
 	private static final Map<ClickableWidget, Item> ITEMS = new WeakHashMap<>();
 	private static final Map<ClickableWidget, IconPainter> ICONS = new WeakHashMap<>();
 	private static final Map<ClickableWidget, Float> HOVER = new WeakHashMap<>();
+	private static final Map<ClickableWidget, Boolean> BADGES = new WeakHashMap<>();
 	private static final Map<Screen, Long> OPENED = new WeakHashMap<>();
 
 	private static SkinPreview player;
@@ -65,7 +66,7 @@ public final class PauseStyle {
 	}
 
 	public static boolean owns(Object widget) {
-		return widget instanceof ClickableWidget w && (ITEMS.containsKey(w) || ICONS.containsKey(w))
+		return widget instanceof ClickableWidget w && (ITEMS.containsKey(w) || ICONS.containsKey(w) || BADGES.containsKey(w))
 				&& MinecraftClient.getInstance().currentScreen == current;
 	}
 
@@ -207,6 +208,13 @@ public final class PauseStyle {
 			ICONS.put(b, (IconPainter) d[1]);
 			all.add(b);
 			ix += is + ig;
+		}
+		float[] ub = com.whiteclient.update.AutoUpdater.readyVersion() != null ? UpdateBadge.bounds(tr, width) : null;
+		if (ub != null) {
+			ButtonWidget b = ButtonWidget.builder(Text.literal(""), x -> client.setScreen(new UpdateReadyScreen(screen)))
+					.dimensions(Math.round(ub[0]), Math.round(ub[1]), Math.round(ub[2]), Math.round(ub[3])).build();
+			BADGES.put(b, Boolean.TRUE);
+			all.add(b);
 		}
 
 		int ph = (int) Math.min(300, height * 0.62f), pw = (int) (ph * 0.6f);
@@ -360,7 +368,9 @@ public final class PauseStyle {
 
 		float fi = intro(s, 0.3f);
 		UiFont.draw(ctx, tr, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(0x9A9AA6, (int) (220 * fi)));
-		UpdateBadge.draw(ctx, tr, width, height, time);
+		float[] ub = UpdateBadge.bounds(tr, width);
+		boolean overBadge = ub != null && mouseX >= ub[0] && mouseX < ub[0] + ub[2] && mouseY >= ub[1] && mouseY < ub[1] + ub[3];
+		UpdateBadge.draw(ctx, tr, width, height, time, overBadge);
 	}
 
 	private static float modelX(int width) {

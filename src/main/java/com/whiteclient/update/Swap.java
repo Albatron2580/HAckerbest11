@@ -6,8 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public final class Swap {
 	private Swap() {
@@ -26,12 +24,7 @@ public final class Swap {
 
 		Optional<ProcessHandle> game = ProcessHandle.of(pid);
 		if (game.isPresent()) {
-			try {
-				game.get().onExit().get(15, TimeUnit.MINUTES);
-			} catch (TimeoutException e) {
-				log("game still running after 15 minutes, trying again next time");
-				return;
-			}
+			game.get().onExit().get();
 		}
 		if (!Files.isRegularFile(staged)) {
 			log("new jar missing: " + staged);

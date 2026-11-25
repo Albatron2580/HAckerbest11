@@ -1,4 +1,4 @@
-# WHITECLIENT 1.13.1 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.13.2 (Fabric, Minecraft 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -42,7 +42,7 @@ Client-side visuals mod in a white/black style. Works on any server. **Only visu
 | HUD | **Notifications** | Little toast when you toggle a module |
 | HUD | **Browser** | Press **B**: a floating web browser window that shows real websites (Google, YouTube...) right inside Minecraft. Drag it, resize it, and pin it so it stays on screen while you play. You can keep walking with WASD while it is open (click the page to type in it). The browser engine (MCEF Modern) is built in: the first time you open it, it downloads Chrome once |
 | Menu | **Support** | The heart button (main menu, Right Shift menu, Wardrobe) opens the Support screen: support the team with a PayPal donation (€2, €5, €10 or any amount). Donating is optional and unlocks nothing: everything in WHITECLIENT is free |
-| Menu | **Auto Update** | WHITECLIENT updates itself: it checks this project's GitHub releases at start, every 20 minutes and when you are on the main menu, downloads a new version in the background, checks it (SHA-256 + that it really is WHITECLIENT) and installs it when you close the game. Turn off **Install Automatically** to only get a message, or press **Check Now** |
+| Menu | **Auto Update** | WHITECLIENT updates itself: it checks this project's GitHub releases at start, every 20 minutes and when you are on the main menu, downloads and installs a new version in the background, checks it (SHA-256 + that it really is WHITECLIENT), then tells you with a pop-up, a chat message and a badge on the menus to restart Minecraft. Click the badge to close the game right away; the new version is active the next time you start it. Turn off **Install Automatically** to only get a message, or press **Check Now** |
 | Menu | **Discord Status** | Shows **Playing WhiteClient** with the logo on your Discord profile, plus where you are (main menu, singleplayer or the server), the dimension and your play time. Turn off the server name, skin head or time in its settings, or write your own text. Talks only to the Discord app on your PC |
 | HUD | **Cinematic** | Movie black bars + colour grade (Warm, Cool, Dream, Night) and a soft vignette |
 | World | **FPS Boost** | One click faster video settings: no clouds, no entity shadows, fewer particles, fast biome blend, unlocked FPS, no vignette, lighter client effects. Turn it off and your own settings come back |

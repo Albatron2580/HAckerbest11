@@ -9,7 +9,20 @@ public final class UpdateBadge {
 	private UpdateBadge() {
 	}
 
+	public static float[] bounds(TextRenderer tr, int width) {
+		String text = AutoUpdater.badge();
+		if (text == null) {
+			return null;
+		}
+		float w = UiFont.width(tr, text) * 0.85f + 30;
+		return new float[]{width / 2f - w / 2f, 36, w, 16};
+	}
+
 	public static void draw(DrawContext ctx, TextRenderer tr, int width, int height, float time) {
+		draw(ctx, tr, width, height, time, false);
+	}
+
+	public static void draw(DrawContext ctx, TextRenderer tr, int width, int height, float time, boolean hover) {
 		String text = AutoUpdater.badge();
 		if (text == null) {
 			return;
@@ -20,7 +33,7 @@ public final class UpdateBadge {
 		float w = tw + 30, h = 16;
 		float x = width / 2f - w / 2f, y = 36;
 		float pulse = 0.5f + 0.5f * (float) Math.sin(time * 3.0);
-		Render2D.roundRect(ctx, x, y, w, h, 8, Colors.argb(0x0B0B10, 0.88f));
+		Render2D.roundRect(ctx, x, y, w, h, 8, Colors.argb(hover && ready ? 0x18241B : 0x0B0B10, 0.88f));
 		Render2D.roundRectOutline(ctx, x, y, w, h, 8, 1, Colors.argb(ready ? 0x8BE39A : 0xFFFFFF, 0.35f + 0.3f * pulse));
 		float ax = x + 12, ay = y + h / 2f;
 		int c = Colors.argb(ready ? 0x8BE39A : 0xEDEDF2, 1f);

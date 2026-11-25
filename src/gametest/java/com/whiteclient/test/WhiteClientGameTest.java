@@ -216,6 +216,9 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.setScreen(WhiteTitleScreen::new);
 		context.waitTicks(30);
 		context.takeScreenshot("main_menu_update_ready");
+		context.setScreen(() -> new com.whiteclient.gui.UpdateReadyScreen(new TitleScreen()));
+		context.waitTicks(20);
+		context.takeScreenshot("update_ready_screen");
 		context.runOnClient(client -> com.whiteclient.update.AutoUpdater.previewReady(null));
 
 		context.setScreen(() -> new net.minecraft.client.gui.screen.MessageScreen(net.minecraft.text.Text.literal("Encrypting...")));
@@ -663,6 +666,22 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(30);
 			context.takeScreenshot("pause_menu");
 			context.setScreen(() -> null);
+			context.waitTicks(3);
+
+			context.runOnClient(client -> {
+				com.whiteclient.update.AutoUpdater.previewReady("9.9.9");
+				com.whiteclient.update.AutoUpdater.chatNotice(client);
+			});
+			context.waitTicks(5);
+			context.takeScreenshot("update_chat_notice");
+			context.setScreen(() -> new GameMenuScreen(true));
+			context.waitTicks(30);
+			context.takeScreenshot("pause_update_badge");
+			context.setScreen(() -> null);
+			context.runOnClient(client -> {
+				com.whiteclient.update.AutoUpdater.previewReady(null);
+				client.inGameHud.getChatHud().clear(false);
+			});
 			context.waitTicks(3);
 
 			context.setScreen(() -> new net.minecraft.client.gui.screen.ingame.InventoryScreen(net.minecraft.client.MinecraftClient.getInstance().player));

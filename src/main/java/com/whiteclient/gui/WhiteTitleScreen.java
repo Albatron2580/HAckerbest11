@@ -214,7 +214,7 @@ public class WhiteTitleScreen extends Screen {
 		if (showcase) {
 			renderShowcase(ctx, mouseX, mouseY, delta, dt, time);
 			super.render(ctx, mouseX, mouseY, delta);
-			UpdateBadge.draw(ctx, textRenderer, width, height, time);
+			drawUpdateBadge(ctx, mouseX, mouseY, time);
 			return;
 		}
 
@@ -341,7 +341,7 @@ public class WhiteTitleScreen extends Screen {
 		UiFont.draw(ctx, textRenderer, "Minecraft 1.21.11  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
 		UiFont.draw(ctx, textRenderer, copy, width - 10 - UiFont.width(textRenderer, copy), height - 14, Colors.withAlpha(SUB, (int) (160 * fi)));
-		UpdateBadge.draw(ctx, textRenderer, width, height, time);
+		drawUpdateBadge(ctx, mouseX, mouseY, time);
 
 		super.render(ctx, mouseX, mouseY, delta);
 	}
@@ -588,6 +588,15 @@ public class WhiteTitleScreen extends Screen {
 			client.setScreen((Screen) c.getConstructor(Screen.class).newInstance(this));
 		} catch (Throwable t) {
 			client.setScreen(new ClickGuiScreen(this));
+		}
+	}
+
+	private void drawUpdateBadge(DrawContext ctx, int mouseX, int mouseY, float time) {
+		float[] b = UpdateBadge.bounds(textRenderer, width);
+		boolean hover = b != null && mouseX >= b[0] && mouseX < b[0] + b[2] && mouseY >= b[1] && mouseY < b[1] + b[3];
+		UpdateBadge.draw(ctx, textRenderer, width, height, time, hover);
+		if (b != null && com.whiteclient.update.AutoUpdater.readyVersion() != null) {
+			hits.add(new Hit(b[0], b[1], b[0] + b[2], b[1] + b[3], () -> client.setScreen(new UpdateReadyScreen(this))));
 		}
 	}
 

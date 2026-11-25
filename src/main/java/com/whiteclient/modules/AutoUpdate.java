@@ -15,6 +15,8 @@ public class AutoUpdate extends Module {
 
 	private long nextCheck = System.currentTimeMillis() + 10_000;
 	private long lastCheck;
+	private Object connection;
+	private long joinedAt;
 
 	public AutoUpdate() {
 		super("Auto Update", "Keeps WHITECLIENT up to date by itself", Category.MENU, true);
@@ -29,6 +31,15 @@ public class AutoUpdate extends Module {
 			nextCheck = now + 20L * 60 * 1000;
 			lastCheck = now;
 			AutoUpdater.checkAsync(installAuto.isOn(), false);
+		}
+		Object conn = mc.getNetworkHandler();
+		if (conn != connection) {
+			connection = conn;
+			joinedAt = conn != null ? now : 0;
+		}
+		if (joinedAt != 0 && now - joinedAt > 2500 && mc.player != null) {
+			joinedAt = 0;
+			AutoUpdater.chatNotice(mc);
 		}
 	}
 }

@@ -8,6 +8,7 @@ import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.toast.SystemToast;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,7 +57,7 @@ public final class AutoUpdater {
 
 	public static String badge() {
 		if (readyVersion != null) {
-			return "Update " + readyVersion + " ready · installs when you close the game";
+			return "Update " + readyVersion + " installed · click to restart";
 		}
 		return status.startsWith("Downloading") ? "Downloading update..." : null;
 	}
@@ -170,9 +171,30 @@ public final class AutoUpdater {
 		Path target = download(http, latest, updateDir());
 		staged = target;
 		readyVersion = latest;
-		status = "WHITECLIENT " + latest + " is ready: it installs when you close the game";
-		WhiteClient.LOGGER.info("[WHITECLIENT] update {} downloaded, installs when the game closes", latest);
-		toast("WHITECLIENT " + latest + " downloaded", "It installs when you close the game");
+		armInstaller();
+		status = "WHITECLIENT " + latest + " is installed · restart Minecraft to use it";
+		WhiteClient.LOGGER.info("[WHITECLIENT] update {} installed, active after a restart", latest);
+		announce();
+	}
+
+	public static void announce() {
+		String v = readyVersion;
+		if (v == null) {
+			return;
+		}
+		toast("WHITECLIENT " + v + " installed", "Restart Minecraft to start using it");
+		MinecraftClient mc = MinecraftClient.getInstance();
+		mc.execute(() -> chatNotice(mc));
+	}
+
+	public static void chatNotice(MinecraftClient mc) {
+		String v = readyVersion;
+		if (v == null || mc.player == null || mc.inGameHud == null) {
+			return;
+		}
+		mc.inGameHud.getChatHud().addMessage(Text.literal("[WHITECLIENT] ").formatted(Formatting.WHITE)
+				.append(Text.literal("Update " + v + " is installed. ").formatted(Formatting.GREEN))
+				.append(Text.literal("Restart Minecraft to use it, rejoining isn't enough.").formatted(Formatting.GRAY)));
 	}
 
 	public static Path download(HttpClient http, String latest, Path dir) throws Exception {
@@ -261,6 +283,10 @@ public final class AutoUpdater {
 	}
 
 	public static void onGameClosing() {
+		armInstaller();
+	}
+
+	private static synchronized void armInstaller() {
 		if (armed || staged == null || readyVersion == null || !Files.isRegularFile(staged)) {
 			return;
 		}
@@ -269,15 +295,15 @@ public final class AutoUpdater {
 			return;
 		}
 		try {
-			armed = true;
 			Path target = own.getParent().resolve("whiteclient-" + readyVersion + ".jar");
-			String java = javaExecutable();
-			ProcessBuilder pb = new ProcessBuilder(java, "-cp", staged.toString(), Swap.class.getName(),
+			ProcessBuilder pb = new ProcessBuilder(javaExecutable(), "-Xmx24m", "-XX:+UseSerialGC", "-XX:TieredStopAtLevel=1",
+					"-cp", staged.toString(), Swap.class.getName(),
 					String.valueOf(ProcessHandle.current().pid()), own.toString(), staged.toString(), target.toString());
 			pb.redirectErrorStream(true);
 			pb.redirectOutput(ProcessBuilder.Redirect.appendTo(updateDir().resolve("swap.log").toFile()));
 			pb.start();
-			WhiteClient.LOGGER.info("[WHITECLIENT] installing {} after the game closes", readyVersion);
+			armed = true;
+			WhiteClient.LOGGER.info("[WHITECLIENT] {} installs as soon as the game closes", readyVersion);
 		} catch (Throwable t) {
 			WhiteClient.LOGGER.warn("[WHITECLIENT] could not start the update installer: {}", t.toString());
 		}
