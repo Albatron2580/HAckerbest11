@@ -192,10 +192,10 @@ public final class GlowBatch {
 				if (layer.format() != DefaultVertexFormat.POSITION_COLOR) {
 					continue;
 				}
-				VertexFormat.Mode mode = layer.mode();
-				if (mode == VertexFormat.Mode.TRIANGLES || mode == VertexFormat.Mode.QUADS) {
+				String mode = Layers.topology(layer);
+				if (mode.equals("TRIANGLES") || mode.equals("QUADS")) {
 					cachedLayer = layer;
-					cachedTriangles = mode == VertexFormat.Mode.TRIANGLES;
+					cachedTriangles = mode.equals("TRIANGLES");
 					cachedNeedsSort = layer != candidates[0];
 					WhiteClient.LOGGER.info("[WHITECLIENT] glow layer: {} ({})", layer, mode);
 					return;

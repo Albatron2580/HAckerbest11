@@ -19,7 +19,8 @@
 		"SliderWidgetMixin",
 		"TooltipBackgroundMixin",
 		"CameraFovMixin",
-		"ScreenTitleAccessor"
+		"ScreenTitleAccessor",
+		"GuiSetScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

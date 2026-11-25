@@ -85,7 +85,7 @@ public final class SolidBatch {
 			white.upload();
 			Minecraft.getInstance().getTextureManager().register(WHITE, white);
 			RenderType l = RenderTypes.entityTranslucent(WHITE);
-			if (l.format() == DefaultVertexFormat.NEW_ENTITY && l.mode() == VertexFormat.Mode.QUADS) {
+			if (l.format() == DefaultVertexFormat.NEW_ENTITY && Layers.topology(l).equals("QUADS")) {
 				layer = l;
 				entityFormat = true;
 				WhiteClient.LOGGER.info("[WHITECLIENT] solid layer: {} (entity, depth)", l);
@@ -97,10 +97,10 @@ public final class SolidBatch {
 		try {
 			RenderType l = RenderTypes.debugQuads();
 			if (l.format() == DefaultVertexFormat.POSITION_COLOR) {
-				VertexFormat.Mode mode = l.mode();
-				if (mode == VertexFormat.Mode.QUADS || mode == VertexFormat.Mode.TRIANGLES) {
+				String mode = Layers.topology(l);
+				if (mode.equals("QUADS") || mode.equals("TRIANGLES")) {
 					layer = l;
-					triangles = mode == VertexFormat.Mode.TRIANGLES;
+					triangles = mode.equals("TRIANGLES");
 					WhiteClient.LOGGER.info("[WHITECLIENT] solid layer: {} ({})", l, mode);
 					return;
 				}

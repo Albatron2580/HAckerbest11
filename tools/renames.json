@@ -288,5 +288,45 @@
 		"if": "MC >= 26.1",
 		"from": "sp.getClientWorld()",
 		"to": "sp.getClientLevel()"
+	},
+	{
+		"if": "MC >= 26.2",
+		"regex": "\\b(minecraft|client|mc)\\.setScreen\\(",
+		"to": "\\1.gui.setScreen("
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": "Minecraft.getInstance().setScreen(",
+		"to": "Minecraft.getInstance().gui.setScreen("
+	},
+	{
+		"if": "MC >= 26.2",
+		"regex": "\\b(minecraft|client|mc)\\.screen\\b(?!\\.v1)",
+		"to": "\\1.gui.screen()"
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": "Minecraft.getInstance().screen",
+		"to": "Minecraft.getInstance().gui.screen()"
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": ".getToastManager()",
+		"to": ".gui.toastManager()"
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": ".gui.getChat()",
+		"to": ".gui.hud.getChat()"
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": "client.options.hideGui",
+		"to": "client.gui.hud.isHidden()"
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": ".getMainCamera()",
+		"to": ".mainCamera()"
 	}
 ]

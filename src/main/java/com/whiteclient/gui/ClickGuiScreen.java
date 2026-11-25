@@ -1149,22 +1149,19 @@ public class ClickGuiScreen extends Screen {
 	//$ 	boolean paste = Screen.isPaste(key);
 	//#endif
 		if (editing != null) {
-			switch (key) {
-				case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> commitEdit();
-				case GLFW.GLFW_KEY_ESCAPE -> editing = null;
-				case GLFW.GLFW_KEY_BACKSPACE -> {
-					if (!editBuffer.isEmpty()) {
-						editBuffer = editBuffer.substring(0, editBuffer.length() - 1);
-					}
+			if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+				commitEdit();
+			} else if (key == GLFW.GLFW_KEY_ESCAPE) {
+				editing = null;
+			} else if (key == GLFW.GLFW_KEY_BACKSPACE) {
+				if (!editBuffer.isEmpty()) {
+					editBuffer = editBuffer.substring(0, editBuffer.length() - 1);
 				}
-				default -> {
-					if (paste && minecraft != null) {
-						String clip = minecraft.keyboardHandler.getClipboard();
-						if (clip != null) {
-							String combined = editBuffer + clip.replace('\n', ' ');
-							editBuffer = combined.length() > editing.getMaxLength() ? combined.substring(0, editing.getMaxLength()) : combined;
-						}
-					}
+			} else if (paste && minecraft != null) {
+				String clip = minecraft.keyboardHandler.getClipboard();
+				if (clip != null) {
+					String combined = editBuffer + clip.replace('\n', ' ');
+					editBuffer = combined.length() > editing.getMaxLength() ? combined.substring(0, editing.getMaxLength()) : combined;
 				}
 			}
 			return true;

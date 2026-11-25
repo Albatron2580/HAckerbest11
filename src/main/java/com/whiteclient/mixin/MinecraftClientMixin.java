@@ -1,3 +1,4 @@
+//#file MC < 26.2
 package com.whiteclient.mixin;
 
 import com.whiteclient.WhiteClient;
