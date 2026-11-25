@@ -367,7 +367,7 @@ public final class PauseStyle {
 		}
 
 		float fi = intro(s, 0.3f);
-		UiFont.draw(ctx, tr, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(0x9A9AA6, (int) (220 * fi)));
+		UiFont.draw(ctx, tr, "whiteclient " + WhiteClient.VERSION + "  ·  " + WhiteClient.gameVersion(), 10, height - 14, Colors.withAlpha(0x9A9AA6, (int) (220 * fi)));
 		float[] ub = UpdateBadge.bounds(tr, width, height, true);
 		boolean overBadge = ub != null && mouseX >= ub[0] && mouseX < ub[0] + ub[2] && mouseY >= ub[1] && mouseY < ub[1] + ub[3];
 		UpdateBadge.draw(ctx, tr, width, height, time, overBadge, true);

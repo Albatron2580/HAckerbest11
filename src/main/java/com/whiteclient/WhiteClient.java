@@ -42,8 +42,17 @@ import java.util.Set;
 
 public final class WhiteClient implements ClientModInitializer {
 	public static final String MOD_ID = "whiteclient";
-	public static final String VERSION = "1.13.3";
+	public static final String VERSION = "1.14.0";
 	public static final String MC_NODE = "1.21.11";
+	private static String gameVersion;
+
+	public static String gameVersion() {
+		if (gameVersion == null) {
+			gameVersion = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("minecraft")
+					.map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse(MC_NODE);
+		}
+		return gameVersion;
+	}
 	public static final Logger LOGGER = LoggerFactory.getLogger("WHITECLIENT");
 
 	private static WhiteClient instance;

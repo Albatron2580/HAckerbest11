@@ -233,7 +233,7 @@ public class WhiteTitleScreen extends Screen {
 		int la = (int) (255 * li);
 		Render2D.planetLogo(ctx, lx + logoW / 2f, logoY, 8.5f, time, la);
 		ctx.drawString(font, UiFont.title(word), Math.round(lx + logoW + 6), Math.round(logoY + 3), Colors.withAlpha(0xFFFFFF, la), false);
-		String tag = "visuals client  ·  1.21.11";
+		String tag = "visuals client  ·  " + WhiteClient.gameVersion();
 		UiFont.drawCentered(ctx, font, tag, cx, logoY + 16, Colors.withAlpha(SUB, la));
 		m.popMatrix();
 
@@ -338,7 +338,7 @@ public class WhiteTitleScreen extends Screen {
 
 		float fi = intro(0.5f);
 		UiFont.draw(ctx, font, "WHITECLIENT " + WhiteClient.VERSION, 10, height - 24, Colors.withAlpha(TEXT, (int) (200 * fi)));
-		UiFont.draw(ctx, font, "Minecraft 1.21.11  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
+		UiFont.draw(ctx, font, "Minecraft " + WhiteClient.gameVersion() + "  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
 		UiFont.draw(ctx, font, copy, width - 10 - UiFont.width(font, copy), height - 14, Colors.withAlpha(SUB, (int) (160 * fi)));
 		drawUpdateBadge(ctx, mouseX, mouseY, time);
@@ -537,7 +537,7 @@ public class WhiteTitleScreen extends Screen {
 		}
 
 		float fi = intro(0.5f);
-		UiFont.draw(ctx, font, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(SUB, (int) (220 * fi)));
+		UiFont.draw(ctx, font, "whiteclient " + WhiteClient.VERSION + "  ·  " + WhiteClient.gameVersion(), 10, height - 14, Colors.withAlpha(SUB, (int) (220 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
 		UiFont.drawScaled(ctx, font, copy, width - 10 - UiFont.width(font, copy) * 0.8f, height - 12, 0.8f, Colors.withAlpha(SUB, (int) (150 * fi)));
 	}

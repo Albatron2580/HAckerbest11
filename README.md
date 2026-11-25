@@ -1,4 +1,4 @@
-# WHITECLIENT 1.13.3 (Fabric, Minecraft 1.21.11)
+# WHITECLIENT 1.14.0 (Fabric, Minecraft 1.21.9 – 1.21.11)
 
 Client-side visuals mod in a white/black style. Works on any server. **Only visuals:** nothing gives an advantage (no x-ray, no ESP through walls, no aim help, no reach), so it is safe on servers.
 
@@ -94,9 +94,9 @@ Lyrics come from lrclib.net. If the lyrics are a bit early/late, change **Lyrics
 - `/whiteclient reload` – reload `config/whiteclient.json`
 
 ## Install
-Put `whiteclient-1.12.7.jar` and **Fabric API** (1.21.11) in `.minecraft/mods`.
+Download the jar for your Minecraft version from the latest release (`+mc1.21.11` for 1.21.11, `+mc1.21.10` for 1.21.9 – 1.21.10) and put it in `.minecraft/mods` together with **Fabric API** for that version. After that WHITECLIENT updates itself.
 
 The jar includes **MCEF Modern** (LGPL-2.1, by dimaskama) for the in-game browser; see `THIRD_PARTY_NOTICES.txt`.
 
 ## Build from source
-Gradle needs Java 25 (Loom 1.19); the mod targets Java 21. `gradlew build` → `build/libs/`.
+Gradle needs Java 25 (Loom 1.19). One source tree builds every Minecraft version: `versions.json` lists them, `tools/pp.py <version>` switches the sources to that version (code marked with `//#if MC >= ...`), then `gradlew build -Pmc=<version>` builds the jar into `build/libs/`. The files in git are always in the 1.21.11 state.
