@@ -107,5 +107,6 @@ jobs:
           sig() { for f in "$@"; do p=$(find . -path "*/$f.java" | head -1); echo "### $f ($p)"; [ -n "$p" ] && grep -nE '^\s*(public|protected|private|static|final|abstract|default|record|class|interface|enum|@)' "$p" | grep -v '^\s*//' | cut -c1-220; done; }
           has() { grep -rn --include=*.java -E "$1" . | head -${2:-40} | cut -c1-240; }
           cls() { find . -name "$1.java" | head -5; }
+          set +e
           echo "======== MC ${{ matrix.mc }}"
           eval "$QUERY"
