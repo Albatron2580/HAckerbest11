@@ -4,7 +4,9 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
+//#if MC >= 1.21.11
 import com.mojang.blaze3d.textures.GpuSampler;
+//#endif
 import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.render.BackgroundShader;
@@ -35,13 +37,20 @@ public final class MenuBackgroundRenderer {
 	}
 
 	private static final class SmoothTexture extends DynamicTexture {
+		//#if MC >= 1.21.11
 		private GpuSampler linear;
 		private boolean samplerFailed;
+		//#endif
 
 		SmoothTexture() {
 			super(() -> "whiteclient_menu_background", TEX_W, TEX_H, false);
+			//#if MC < 1.21.11
+			//$ setFilter(true, false);
+			//$ setClamp(true);
+			//#endif
 		}
 
+		//#if MC >= 1.21.11
 		@Override
 		public GpuSampler getSampler() {
 			if (linear == null && !samplerFailed) {
@@ -55,6 +64,7 @@ public final class MenuBackgroundRenderer {
 			}
 			return linear != null ? linear : super.getSampler();
 		}
+		//#endif
 	}
 
 	private static void ensureWorker() {

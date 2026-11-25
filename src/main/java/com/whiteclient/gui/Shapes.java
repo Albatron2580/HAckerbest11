@@ -4,7 +4,9 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
+//#if MC >= 1.21.11
 import com.mojang.blaze3d.textures.GpuSampler;
+//#endif
 import com.whiteclient.WhiteClient;
 import org.joml.Matrix3x2fStack;
 
@@ -43,14 +45,21 @@ public final class Shapes {
 
 	private static final class ShapeTexture extends DynamicTexture {
 		private final boolean linear;
+		//#if MC >= 1.21.11
 		private GpuSampler sampler;
 		private boolean samplerFailed;
+		//#endif
 
 		ShapeTexture(String name, int w, int h, boolean linear) {
 			super(() -> name, w, h, false);
 			this.linear = linear;
+			//#if MC < 1.21.11
+			//$ setFilter(linear, false);
+			//$ setClamp(true);
+			//#endif
 		}
 
+		//#if MC >= 1.21.11
 		@Override
 		public GpuSampler getSampler() {
 			if (!linear) {
@@ -66,6 +75,7 @@ public final class Shapes {
 			}
 			return sampler != null ? sampler : super.getSampler();
 		}
+		//#endif
 	}
 
 	private static Identifier upload(String name, int w, int h, int[] argb, boolean linear) {

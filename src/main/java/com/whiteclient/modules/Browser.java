@@ -3,7 +3,9 @@ package com.whiteclient.modules;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
+//#if MC >= 1.21.11
 import com.mojang.blaze3d.textures.GpuSampler;
+//#endif
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.browser.WebView;
@@ -36,7 +38,9 @@ public class Browser extends Module {
 	public final TextSetting lastUrl = add(new TextSetting("Last Page", "", 2000).visibleWhen(() -> false));
 
 	private WebView view;
+	//#if MC >= 1.21.11
 	private static GpuSampler sampler;
+	//#endif
 
 	public Browser() {
 		super("Browser", "Floating web browser window: press B (stays on screen while you play)", Category.HUD, true);
@@ -129,12 +133,19 @@ public class Browser extends Module {
 			return false;
 		}
 		try {
+			//#if MC >= 1.21.11
 			if (sampler == null) {
 				sampler = RenderSystem.getDevice().createSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE,
 						FilterMode.LINEAR, FilterMode.LINEAR, 1, OptionalDouble.empty());
 			}
 			((DrawContextInvoker) ctx).whiteclient$texturedQuad(RenderPipelines.GUI_TEXTURED, tex, sampler, x0, y0, x1, y1,
 					0f, 1f, 0f, 1f, Colors.argb(0xFFFFFF, alpha));
+			//#else
+			//$ tex.texture().setTextureFilter(FilterMode.LINEAR, false);
+			//$ tex.texture().setAddressMode(AddressMode.CLAMP_TO_EDGE);
+			//$ ((DrawContextInvoker) ctx).whiteclient$texturedQuad(RenderPipelines.GUI_TEXTURED, tex, x0, y0, x1, y1,
+			//$ 		0f, 1f, 0f, 1f, Colors.argb(0xFFFFFF, alpha));
+			//#endif
 			return true;
 		} catch (Throwable t) {
 			WhiteClient.LOGGER.debug("[WHITECLIENT] browser draw failed", t);

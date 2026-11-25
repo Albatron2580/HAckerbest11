@@ -91,11 +91,13 @@ public class FpsBoost extends Module {
 				o.framerateLimit().set(260);
 				changed = true;
 			}
+			//#if MC >= 1.21.11
 			if (vignette.isOn() && o.vignette().get()) {
 				remember(s, "vignette", "true");
 				o.vignette().set(false);
 				changed = true;
 			}
+			//#endif
 		} catch (Throwable t) {
 			WhiteClient.LOGGER.debug("[WHITECLIENT] fps boost", t);
 		}
@@ -138,9 +140,11 @@ public class FpsBoost extends Module {
 			if (s.has("maxfps")) {
 				o.framerateLimit().set(Integer.parseInt(s.get("maxfps").getAsString()));
 			}
+			//#if MC >= 1.21.11
 			if (s.has("vignette")) {
 				o.vignette().set(true);
 			}
+			//#endif
 			o.save();
 		} catch (Throwable t) {
 			WhiteClient.LOGGER.debug("[WHITECLIENT] fps boost restore", t);

@@ -1,0 +1,12 @@
+[
+	{"if": "MC < 1.21.11", "from": "net.minecraft.resources.Identifier", "to": "net.minecraft.resources.ResourceLocation"},
+	{"if": "MC < 1.21.11", "from": "net/minecraft/resources/Identifier", "to": "net/minecraft/resources/ResourceLocation"},
+	{"if": "MC < 1.21.11", "regex": "\\bIdentifier\\b", "to": "ResourceLocation"},
+	{"if": "MC < 1.21.11", "from": "import net.minecraft.util.Util;", "to": "import net.minecraft.Util;"},
+	{"if": "MC < 1.21.11", "from": "net.minecraft.client.renderer.rendertype.RenderType;", "to": "net.minecraft.client.renderer.RenderType;"},
+	{"if": "MC < 1.21.11", "regex": "import net\\.minecraft\\.client\\.renderer\\.rendertype\\.RenderTypes;\\n", "to": ""},
+	{"if": "MC < 1.21.11", "regex": "\\bRenderTypes\\.", "to": "RenderType."},
+	{"if": "MC < 1.21.11", "from": "getMainCamera().yRot()", "to": "getMainCamera().getYRot()"},
+	{"if": "MC < 1.21.11", "from": "getMainCamera().xRot()", "to": "getMainCamera().getXRot()"},
+	{"if": "MC < 1.21.11", "from": "net.minecraft.client.model.player.PlayerModel", "to": "net.minecraft.client.model.PlayerModel"}
+]

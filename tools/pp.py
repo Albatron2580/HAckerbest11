@@ -15,6 +15,9 @@ Lines of branches that don't match the target are commented out with "//$ ", the
 branch is uncommented. Running it again with another version switches back, so the files in
 git always stay in the 1.21.11 state.
 
+tools/renames.json lists plain renames (class moved or renamed between versions) that are
+applied to every file for the versions matching their condition; these are only done in CI.
+
 A file that starts with "//#file <condition>" is deleted when the condition doesn't match, and
 its mixin is dropped from whiteclient.mixins.json.
 
@@ -159,7 +162,28 @@ def main():
                     new = re.sub(r'(MC_NODE\s*=\s*")[^"]*(")', r'\g<1>' + mc + r'\g<2>', text)
                     if new != text:
                         open(p, 'w', encoding='utf-8').write(new)
-    print(f'pp: {mc}: {changed} files switched, {len(removed)} files removed')
+    renames = []
+    rp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'renames.json')
+    if os.path.exists(rp):
+        for r in json.load(open(rp, encoding='utf-8')):
+            if check(r['if'], mc):
+                pat = r['regex'] if 'regex' in r else re.escape(r['from'])
+                renames.append((re.compile(pat), r['to']))
+    renamed = 0
+    if renames:
+        for root in roots:
+            for d, _, files in os.walk(root):
+                for f in files:
+                    if f.endswith('.java'):
+                        p = os.path.join(d, f)
+                        text = open(p, encoding='utf-8').read()
+                        new = text
+                        for pat, to in renames:
+                            new = pat.sub(to, new)
+                        if new != text:
+                            open(p, 'w', encoding='utf-8').write(new)
+                            renamed += 1
+    print(f'pp: {mc}: {changed} files switched, {len(removed)} files removed, {renamed} files renamed')
 
 
 if __name__ == '__main__':
