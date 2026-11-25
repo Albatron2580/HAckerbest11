@@ -205,7 +205,11 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 						list.size() > 0 ? list.get(0).ip : "none");
 			}
 		});
+		//#if MC >= 26.1 && MC < 26.3
+		//$ context.setScreen(() -> new net.minecraft.client.gui.screens.options.OptionsScreen(new TitleScreen(), net.minecraft.client.Minecraft.getInstance().options, false));
+		//#else
 		context.setScreen(() -> new net.minecraft.client.gui.screens.options.OptionsScreen(new TitleScreen(), net.minecraft.client.Minecraft.getInstance().options));
+		//#endif
 		context.waitTicks(20);
 		context.takeScreenshot("options_planet");
 		context.setScreen(() -> new com.whiteclient.gui.SupportScreen(new TitleScreen()));

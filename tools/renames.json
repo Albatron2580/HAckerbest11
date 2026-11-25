@@ -283,5 +283,10 @@
 		"if": "MC >= 26.1",
 		"regex": "\\bwidget\\.render\\(",
 		"to": "widget.extractRenderState("
+	},
+	{
+		"if": "MC >= 26.1",
+		"from": "sp.getClientWorld()",
+		"to": "sp.getClientLevel()"
 	}
 ]
