@@ -52,11 +52,16 @@ jobs:
       - name: Migrate access wideners and class tweakers
         continue-on-error: true
         run: ./gradlew migrateClassTweakerMappings --mappings "net.minecraft:mappings:1.21.11" --overrideInputsIHaveABackup --stacktrace
-      - run: git status --short | head -50; git diff --stat | tail -3
-      - uses: actions/upload-artifact@v4
-        with:
-          name: migrated-src
-          path: src
+      - name: Export migrated sources through the log
+        run: |
+          git status --short --untracked-files=all | head -30
+          git diff --stat | tail -3
+          find . -path ./.git -prune -o -type d -name 'remapped*' -print
+          zip -qr /tmp/migrated.zip src $(find . -maxdepth 2 -type d -name 'remapped*' -not -path './.git*')
+          ls -la /tmp/migrated.zip
+          echo "@@BEGIN migrated.zip"
+          base64 -w 900 /tmp/migrated.zip
+          echo "@@END"
 
   sources:
     if: inputs.task == 'sources'
