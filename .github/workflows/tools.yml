@@ -10,6 +10,10 @@ on:
         description: "JSON list of Minecraft versions for sources"
         required: false
         default: '["1.21.11"]'
+      query:
+        description: "bash run inside the decompiled sources (helpers: sig Class..., has regex [n], cls Name)"
+        required: false
+        default: 'cls Minecraft'
 
 jobs:
   info:
@@ -77,19 +81,31 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: /tmp/mcsrc
+          key: mcsrc-v1-${{ matrix.mc }}
       - name: Decompile Minecraft ${{ matrix.mc }}
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           mc='${{ matrix.mc }}'
           p=/tmp/p; mkdir -p $p/src/main/java; cp -r gradlew gradle $p/
           case "$mc" in 2[0-9].*) plugin=net.fabricmc.fabric-loom; maps="";; *) plugin=net.fabricmc.fabric-loom-remap; maps="mappings loom.officialMojangMappings()";; esac
           cp settings.gradle $p/
           printf "plugins { id '%s' version '%s' }\ndependencies {\n minecraft 'com.mojang:minecraft:%s'\n %s\n}\n" "$plugin" "$(grep ^loom_version gradle.properties | cut -d= -f2)" "$mc" "$maps" > $p/build.gradle
-          cat $p/build.gradle
-          cd $p && chmod +x gradlew && ./gradlew genSources --stacktrace
-          find ~/.gradle $p/.gradle -name '*sources.jar' 2>/dev/null | grep -i minecraft
-          mkdir -p /tmp/out && find ~/.gradle $p/.gradle -name '*sources.jar' 2>/dev/null | grep -i minecraft | grep -v common | head -1 | xargs -I{} cp {} /tmp/out/mc-$mc-sources.jar
-          ls -la /tmp/out
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mc-${{ matrix.mc }}-sources
-          path: /tmp/out/*.jar
+          cd $p && chmod +x gradlew && ./gradlew genSources -q
+          jar=$(find ~/.gradle $p/.gradle -name '*sources.jar' 2>/dev/null | grep -i minecraft | grep -iv common | head -1)
+          echo "sources: $jar"
+          mkdir -p /tmp/mcsrc && cd /tmp/mcsrc && unzip -q -o "$jar" 'net/minecraft/*' 'com/mojang/*' || true
+          find /tmp/mcsrc -name '*.java' | wc -l
+      - name: Query
+        env:
+          QUERY: ${{ inputs.query }}
+        run: |
+          cd /tmp/mcsrc
+          sig() { for f in "$@"; do p=$(find . -path "*/$f.java" | head -1); echo "### $f ($p)"; [ -n "$p" ] && grep -nE '^\s*(public|protected|private|static|final|abstract|default|record|class|interface|enum|@)' "$p" | grep -v '^\s*//' | cut -c1-220; done; }
+          has() { grep -rn --include=*.java -E "$1" . | head -${2:-40} | cut -c1-240; }
+          cls() { find . -name "$1.java" | head -5; }
+          echo "======== MC ${{ matrix.mc }}"
+          eval "$QUERY"
