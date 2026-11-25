@@ -4,13 +4,13 @@ import com.whiteclient.browser.WebView;
 import com.whiteclient.modules.Browser;
 import com.whiteclient.modules.Theme;
 import com.whiteclient.render.Colors;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
@@ -32,7 +32,7 @@ public class BrowserScreen extends Screen {
 
 	private final Screen parent;
 	private final Browser mod;
-	private TextFieldWidget address;
+	private EditBox address;
 	private float wx, wy, ww, wh;
 	private int drag;
 	private double dragDx, dragDy;
@@ -48,7 +48,7 @@ public class BrowserScreen extends Screen {
 	}
 
 	public BrowserScreen(Screen parent, Browser mod) {
-		super(Text.literal("Browser"));
+		super(Component.literal("Browser"));
 		this.parent = parent;
 		this.mod = mod;
 	}
@@ -62,14 +62,14 @@ public class BrowserScreen extends Screen {
 		ww = r[2];
 		wh = r[3];
 		if (address == null) {
-			address = new TextFieldWidget(textRenderer, 0, 0, 100, 12, Text.literal("Address"));
+			address = new EditBox(font, 0, 0, 100, 12, Component.literal("Address"));
 			address.setMaxLength(2048);
-			address.setDrawsBackground(false);
-			address.setText(mod.lastUrl.get().isBlank() ? mod.home.get() : mod.lastUrl.get());
-			address.setPlaceholder(Text.literal("Search Google or type a web address"));
-			address.setCursorToStart(false);
+			address.setBordered(false);
+			address.setValue(mod.lastUrl.get().isBlank() ? mod.home.get() : mod.lastUrl.get());
+			address.setHint(Component.literal("Search Google or type a web address"));
+			address.moveCursorToStart(false);
 		}
-		addDrawableChild(address);
+		addRenderableWidget(address);
 		layoutAddress();
 		opened = System.currentTimeMillis();
 		WebView v = mod.view();
@@ -113,14 +113,14 @@ public class BrowserScreen extends Screen {
 	}
 
 	private int scale() {
-		return Math.max(1, client.getWindow().getScaleFactor());
+		return Math.max(1, minecraft.getWindow().getGuiScale());
 	}
 
 	private void go(String typed) {
 		String url = Browser.toUrl(typed);
 		mod.lastUrl.set(url);
-		address.setText(url);
-		address.setCursorToStart(false);
+		address.setValue(url);
+		address.moveCursorToStart(false);
 		WebView v = mod.view();
 		if (v != null) {
 			v.load(url);
@@ -133,25 +133,25 @@ public class BrowserScreen extends Screen {
 
 	private static void openOutside(String url) {
 		try {
-			Util.getOperatingSystem().open(URI.create(url));
+			Util.getPlatform().openUri(URI.create(url));
 		} catch (Throwable ignored) {
 		}
 	}
 
 	@Override
-	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
-		if (client.world == null) {
+	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+		if (minecraft.level == null) {
 			ctx.fillGradient(0, 0, width, height, 0xFF0B0B10, 0xFF16161D);
 		}
 	}
 
 	@Override
-	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		Theme th = Theme.get();
 		hits.clear();
 		float k = Math.min(1f, (System.currentTimeMillis() - opened) / 180f);
 		float ease = 1f - (1f - k) * (1f - k);
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(0, (1 - ease) * 8);
 
@@ -188,8 +188,8 @@ public class BrowserScreen extends Screen {
 			String u = v.url();
 			if (!u.isBlank() && !u.equals(shownUrl)) {
 				shownUrl = u;
-				address.setText(u);
-				address.setCursorToStart(false);
+				address.setValue(u);
+				address.moveCursorToStart(false);
 				mod.lastUrl.set(u);
 			}
 		}
@@ -205,7 +205,7 @@ public class BrowserScreen extends Screen {
 		hits.add(new Hit(px - 8, by - 8, 16, 16, () -> mod.pin.set(!mod.pin.get())));
 		hits.add(new Hit(cx2 - 8, by - 8, 16, 16, () -> {
 			mod.closePage();
-			close();
+			onClose();
 		}));
 
 		if (v != null && v.loading()) {
@@ -222,15 +222,15 @@ public class BrowserScreen extends Screen {
 		if (!Browser.drawPage(ctx, v, pX, pY, pW, pH, 1f)) {
 			drawPlaceholder(ctx, mouseX, mouseY, pX, pY, pW, pH, th);
 		}
-		if (client.world != null) {
+		if (minecraft.level != null) {
 			String hint = address.isFocused() ? "Enter to open · Esc to stop typing"
 					: pageFocus ? "Typing on the page · Esc or click outside it to walk again"
 					: "Walk with WASD · click the page to type · B or Esc to close (it stays pinned)";
-			float hw = UiFont.width(textRenderer, hint) * 0.7f + 14;
+			float hw = UiFont.width(font, hint) * 0.7f + 14;
 			float hx = wx + ww / 2f - hw / 2f, hy = wy + wh + 4;
 			if (hy + 12 < height) {
 				Render2D.roundRect(ctx, hx, hy, hw, 11, 5.5f, Colors.argb(0x0B0B10, 0.85f));
-				UiFont.drawScaled(ctx, textRenderer, hint, hx + 7, hy + 2.5f, 0.7f, Colors.argb(0xFFFFFF, 0.8f));
+				UiFont.drawScaled(ctx, font, hint, hx + 7, hy + 2.5f, 0.7f, Colors.argb(0xFFFFFF, 0.8f));
 			}
 		}
 		Icons.resize(ctx, wx + ww - 8, wy + wh - 8, 7, Colors.argb(0xFFFFFF, 0.35f));
@@ -239,7 +239,7 @@ public class BrowserScreen extends Screen {
 		super.render(ctx, mouseX, mouseY, delta);
 	}
 
-	private void drawPlaceholder(DrawContext ctx, int mouseX, int mouseY, float x, float y, float w, float h, Theme th) {
+	private void drawPlaceholder(GuiGraphics ctx, int mouseX, int mouseY, float x, float y, float w, float h, Theme th) {
 		float cx = x + w / 2f;
 		float top = y + Math.max(10, h * 0.12f);
 		Icons.globe(ctx, cx, top + 10, 16, Colors.argb(0xFFFFFF, 0.85f));
@@ -257,10 +257,10 @@ public class BrowserScreen extends Screen {
 			title = "Setting up the browser";
 			body = "First start only: downloading the Chrome engine (" + WebView.progress() + "). You can keep playing; this window fills in by itself.";
 		}
-		UiFont.drawCentered(ctx, textRenderer, title, cx, top + 30, th.text());
+		UiFont.drawCentered(ctx, font, title, cx, top + 30, th.text());
 		float ty = top + 44;
 		for (String line : wrap(body, (int) (w - 30) / 0.8f)) {
-			UiFont.drawScaled(ctx, textRenderer, line, cx - UiFont.width(textRenderer, line) * 0.4f, ty, 0.8f, th.sub());
+			UiFont.drawScaled(ctx, font, line, cx - UiFont.width(font, line) * 0.4f, ty, 0.8f, th.sub());
 			ty += 9;
 		}
 		if (!needMod && WebView.error() == null) {
@@ -285,18 +285,18 @@ public class BrowserScreen extends Screen {
 			boolean hov = mouseX >= qx && mouseX < qx + qw && mouseY >= qy && mouseY < qy + qh;
 			Render2D.roundRect(ctx, qx, qy, qw, qh, 6, Colors.argb(0xFFFFFF, hov ? 0.14f : 0.06f));
 			String label = QUICK[i][0];
-			UiFont.drawScaled(ctx, textRenderer, label, qx + qw / 2f - UiFont.width(textRenderer, label) * 0.39f, qy + 5.5f, 0.78f, th.text());
+			UiFont.drawScaled(ctx, font, label, qx + qw / 2f - UiFont.width(font, label) * 0.39f, qy + 5.5f, 0.78f, th.text());
 			final String url = QUICK[i][1];
 			hits.add(new Hit(qx, qy, qw, qh, () -> go(url)));
 		}
 	}
 
-	private float button(DrawContext ctx, int mx, int my, float cx, float y, String label, boolean primary, Runnable action, Theme th) {
-		float w = UiFont.width(textRenderer, label) + 24, h = 18;
+	private float button(GuiGraphics ctx, int mx, int my, float cx, float y, String label, boolean primary, Runnable action, Theme th) {
+		float w = UiFont.width(font, label) + 24, h = 18;
 		float x = cx - w / 2f;
 		boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
 		Render2D.roundRect(ctx, x, y, w, h, 9, primary ? Colors.argb(th.accent.rgb(), hov ? 1f : 0.88f) : Colors.argb(0xFFFFFF, hov ? 0.14f : 0.07f));
-		UiFont.drawCentered(ctx, textRenderer, label, cx, y + 5, primary ? th.onAccent() : th.text());
+		UiFont.drawCentered(ctx, font, label, cx, y + 5, primary ? th.onAccent() : th.text());
 		hits.add(new Hit(x, y, w, h, action));
 		return y + h;
 	}
@@ -306,7 +306,7 @@ public class BrowserScreen extends Screen {
 		StringBuilder cur = new StringBuilder();
 		for (String word : text.split(" ")) {
 			String test = cur.length() == 0 ? word : cur + " " + word;
-			if (UiFont.width(textRenderer, test) > maxW && cur.length() > 0) {
+			if (UiFont.width(font, test) > maxW && cur.length() > 0) {
 				lines.add(cur.toString());
 				cur = new StringBuilder(word);
 			} else {
@@ -319,7 +319,7 @@ public class BrowserScreen extends Screen {
 		return lines;
 	}
 
-	private static void reloadIcon(DrawContext ctx, float cx, float cy, int c) {
+	private static void reloadIcon(GuiGraphics ctx, float cx, float cy, int c) {
 		float r = 3.6f;
 		for (int i = 0; i < 9; i++) {
 			double a0 = Math.toRadians(-60 + i * 30), a1 = Math.toRadians(-60 + (i + 1) * 30);
@@ -329,12 +329,12 @@ public class BrowserScreen extends Screen {
 		Render2D.polygon(ctx, new float[]{ex - 2.2f, ey - 1.6f, ex + 1.8f, ey - 1.8f, ex + 0.2f, ey + 1.9f}, c);
 	}
 
-	private static void homeIcon(DrawContext ctx, float cx, float cy, int c) {
+	private static void homeIcon(GuiGraphics ctx, float cx, float cy, int c) {
 		Render2D.polygon(ctx, new float[]{cx, cy - 4.2f, cx + 4.2f, cy - 0.4f, cx - 4.2f, cy - 0.4f}, c);
 		Render2D.roundRect(ctx, cx - 3, cy - 0.6f, 6, 4.4f, 0.6f, c);
 	}
 
-	private static void pinIcon(DrawContext ctx, float cx, float cy, int c) {
+	private static void pinIcon(GuiGraphics ctx, float cx, float cy, int c) {
 		Render2D.circle(ctx, cx, cy - 1.2f, 2.4f, c);
 		Render2D.line(ctx, cx, cy, cx, cy + 4f, 1.1f, c);
 	}
@@ -370,7 +370,7 @@ public class BrowserScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(Click click, boolean doubled) {
+	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		double mx = click.x(), my = click.y();
 		pageFocus = false;
 		if (click.button() == 0) {
@@ -415,7 +415,7 @@ public class BrowserScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseReleased(Click click) {
+	public boolean mouseReleased(MouseButtonEvent click) {
 		int was = drag;
 		drag = 0;
 		if (was == 1 || was == 2) {
@@ -431,7 +431,7 @@ public class BrowserScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+	public boolean mouseDragged(MouseButtonEvent click, double offsetX, double offsetY) {
 		double mx = click.x(), my = click.y();
 		if (drag == 1) {
 			wx = (float) Math.max(0, Math.min(width - ww, mx - dragDx));
@@ -473,11 +473,11 @@ public class BrowserScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(KeyInput input) {
-		int key = input.getKeycode();
+	public boolean keyPressed(KeyEvent input) {
+		int key = input.input();
 		if (address.isFocused()) {
 			if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
-				go(address.getText());
+				go(address.getValue());
 				return true;
 			}
 			if (key == GLFW.GLFW_KEY_ESCAPE) {
@@ -492,7 +492,7 @@ public class BrowserScreen extends Screen {
 				pageFocus = false;
 				return true;
 			}
-			close();
+			onClose();
 			return true;
 		}
 		WebView v = mod.view();
@@ -501,14 +501,14 @@ public class BrowserScreen extends Screen {
 			return true;
 		}
 		if (key == GLFW.GLFW_KEY_B) {
-			close();
+			onClose();
 			return true;
 		}
 		return true;
 	}
 
 	@Override
-	public boolean keyReleased(KeyInput input) {
+	public boolean keyReleased(KeyEvent input) {
 		WebView v = mod.view();
 		if (v != null && !address.isFocused() && pageFocus) {
 			v.keyUp(input);
@@ -518,7 +518,7 @@ public class BrowserScreen extends Screen {
 	}
 
 	@Override
-	public boolean charTyped(CharInput input) {
+	public boolean charTyped(CharacterEvent input) {
 		WebView v = mod.view();
 		if (v != null && !address.isFocused() && pageFocus) {
 			v.type(input);
@@ -528,47 +528,47 @@ public class BrowserScreen extends Screen {
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
-	private net.minecraft.client.option.KeyBinding[] moveKeys() {
-		var o = client.options;
-		return new net.minecraft.client.option.KeyBinding[]{o.forwardKey, o.backKey, o.leftKey, o.rightKey, o.jumpKey, o.sneakKey, o.sprintKey};
+	private net.minecraft.client.KeyMapping[] moveKeys() {
+		var o = minecraft.options;
+		return new net.minecraft.client.KeyMapping[]{o.keyUp, o.keyDown, o.keyLeft, o.keyRight, o.keyJump, o.keyShift, o.keySprint};
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		if (client.world == null || client.player == null) {
+		if (minecraft.level == null || minecraft.player == null) {
 			return;
 		}
 		boolean walk = !address.isFocused() && !pageFocus;
-		for (net.minecraft.client.option.KeyBinding k : moveKeys()) {
+		for (net.minecraft.client.KeyMapping k : moveKeys()) {
 			boolean down = false;
 			if (walk) {
 				try {
-					net.minecraft.client.util.InputUtil.Key bound = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.getBoundKeyOf(k);
-					if (bound.getCategory() == net.minecraft.client.util.InputUtil.Type.KEYSYM) {
-						down = net.minecraft.client.util.InputUtil.isKeyPressed(client.getWindow(), bound.getCode());
+					com.mojang.blaze3d.platform.InputConstants.Key bound = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.getBoundKeyOf(k);
+					if (bound.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM) {
+						down = com.mojang.blaze3d.platform.InputConstants.isKeyDown(minecraft.getWindow(), bound.getValue());
 					}
 				} catch (Throwable ignored) {
 				}
 			}
-			k.setPressed(down);
+			k.setDown(down);
 		}
 	}
 
 	@Override
 	public void removed() {
-		for (net.minecraft.client.option.KeyBinding k : moveKeys()) {
-			k.setPressed(false);
+		for (net.minecraft.client.KeyMapping k : moveKeys()) {
+			k.setDown(false);
 		}
 		super.removed();
 	}
 
 	@Override
-	public void close() {
+	public void onClose() {
 		mod.setRect(wx, wy, ww, wh, width, height);
 		WebView v = mod.view();
 		if (v != null) {
@@ -577,6 +577,6 @@ public class BrowserScreen extends Screen {
 		if (!mod.pin.isOn()) {
 			mod.closePage();
 		}
-		client.setScreen(parent);
+		minecraft.setScreen(parent);
 	}
 }

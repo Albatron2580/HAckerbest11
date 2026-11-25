@@ -13,15 +13,15 @@ import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.Setting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 
@@ -80,7 +80,7 @@ public class ClickGuiScreen extends Screen {
 	private float pickX, pickW;
 	private TextSetting editing;
 	private String editBuffer = "";
-	private Supplier<SkinTextures> skin;
+	private Supplier<PlayerSkin> skin;
 
 	private record Hit(float x1, float y1, float x2, float y2, Object owner, Action action, float[] clip) {
 	}
@@ -91,7 +91,7 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	public ClickGuiScreen(Screen parent) {
-		super(Text.literal("WHITECLIENT"));
+		super(Component.literal("WHITECLIENT"));
 		this.parent = parent;
 		Random r = new Random(7);
 		for (int i = 0; i < 160; i++) {
@@ -135,7 +135,7 @@ public class ClickGuiScreen extends Screen {
 		}
 		clampWindow();
 		try {
-			skin = client.getSkinProvider().supplySkinTextures(client.getGameProfile(), false);
+			skin = minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false);
 		} catch (Throwable t) {
 			skin = null;
 		}
@@ -149,12 +149,12 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
 	@Override
-	public void close() {
+	public void onClose() {
 		if (animations() && view == View.HOME && !searching && closingAt == 0) {
 			closingAt = System.nanoTime();
 			return;
@@ -166,8 +166,8 @@ public class ClickGuiScreen extends Screen {
 		commitEdit();
 		WhiteClient.get().config().save();
 		lastCategory = category;
-		if (client != null) {
-			client.setScreen(parent);
+		if (minecraft != null) {
+			minecraft.setScreen(parent);
 		}
 	}
 
@@ -242,7 +242,7 @@ public class ClickGuiScreen extends Screen {
 		return j;
 	}
 
-	private void shoveCard(DrawContext ctx, float fx, float fy, float sx, float sy, float t, float stackTilt, float nudge) {
+	private void shoveCard(GuiGraphics ctx, float fx, float fy, float sx, float sy, float t, float stackTilt, float nudge) {
 		float dx = fx - sx, dy = fy - sy;
 		float len = (float) Math.sqrt(dx * dx + dy * dy);
 		float ux = len > 0.01f ? dx / len : 0f, uy = len > 0.01f ? dy / len : 1f;
@@ -256,7 +256,7 @@ public class ClickGuiScreen extends Screen {
 		float ang = stackTilt * (1f - e) + ux * 0.035f * impact(t) * (1f - back);
 		float scX = 1f - sq * Math.abs(ux) + sq * 0.7f * Math.abs(uy);
 		float scY = 1f - sq * Math.abs(uy) + sq * 0.7f * Math.abs(ux);
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(px, py);
 		m.rotate(ang);
@@ -283,7 +283,7 @@ public class ClickGuiScreen extends Screen {
 	private static void openLink(String url) {
 		try {
 			if (url != null && !url.isBlank()) {
-				Util.getOperatingSystem().open(URI.create(url.trim()));
+				Util.getPlatform().openUri(URI.create(url.trim()));
 			}
 		} catch (Throwable ignored) {
 		}
@@ -294,7 +294,7 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		Theme th = Theme.get();
 		float open = Math.min(1f, (System.nanoTime() - opened) / 2.5e8f) * (1f - closeK());
 		if (view == View.HOME) {
@@ -307,7 +307,7 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
-	private void drawNightSky(DrawContext ctx, float alpha) {
+	private void drawNightSky(GuiGraphics ctx, float alpha) {
 		float t = WhiteClient.get().time();
 		for (int band = 0; band < 3; band++) {
 			int slices = 48;
@@ -343,7 +343,7 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext ctx, int mouseX, int mouseY, float deltaTicks) {
+	public void render(GuiGraphics ctx, int mouseX, int mouseY, float deltaTicks) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
@@ -366,7 +366,7 @@ public class ClickGuiScreen extends Screen {
 		super.render(ctx, mouseX, mouseY, deltaTicks);
 	}
 
-	private void categoryIcon(DrawContext ctx, Category c, float cx, float cy, float s, int col, int cut) {
+	private void categoryIcon(GuiGraphics ctx, Category c, float cx, float cy, float s, int col, int cut) {
 		switch (c) {
 			case COSMETICS -> Icons.sparkle(ctx, cx, cy, s, col);
 			case PVP -> Icons.shield(ctx, cx, cy, s, col, cut);
@@ -378,7 +378,7 @@ public class ClickGuiScreen extends Screen {
 		}
 	}
 
-	private void drawHome(DrawContext ctx, int mx, int my, float dt) {
+	private void drawHome(GuiGraphics ctx, int mx, int my, float dt) {
 		Theme th = Theme.get();
 		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
 		float t = WhiteClient.get().time();
@@ -386,14 +386,14 @@ public class ClickGuiScreen extends Screen {
 
 		String title = "WHITECLIENT";
 		float titleY = Math.max(22, height * 0.17f);
-		float tw = textRenderer.getWidth(UiFont.title(title));
-		Matrix3x2fStack m = ctx.getMatrices();
+		float tw = font.width(UiFont.title(title));
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(0, (1 - k) * -8);
 		float logoW = 30;
 		float lx = cx - (logoW + 6 + tw) / 2f;
 		Render2D.planetLogo(ctx, lx + logoW / 2f, titleY - 1, 7f, t, (int) (255 * k));
-		ctx.drawText(textRenderer, UiFont.title(title), Math.round(lx + logoW + 6), Math.round(titleY + 2), Colors.argb(th.text.rgb(), k), false);
+		ctx.drawString(font, UiFont.title(title), Math.round(lx + logoW + 6), Math.round(titleY + 2), Colors.argb(th.text.rgb(), k), false);
 		m.popMatrix();
 
 		if (searching) {
@@ -449,7 +449,7 @@ public class ClickGuiScreen extends Screen {
 			Render2D.roundRectOutline(ctx, bx, by, bs, bs, r, 1, Colors.argb(th.accent.rgb(), (0.16f + 0.5f * h) * ci));
 			int iconC = Colors.argb(Colors.mix(th.subtext.rgb(), th.text.rgb(), 0.6f + 0.4f * h), ci);
 			categoryIcon(ctx, c, bx + bs / 2f, by + bs * 0.4f, bs * 0.26f, iconC, Colors.argb(th.card.rgb(), ci));
-			UiFont.drawCentered(ctx, textRenderer, c.title, bx + bs / 2f, by + bs * 0.64f, Colors.argb(th.text.rgb(), ci));
+			UiFont.drawCentered(ctx, font, c.title, bx + bs / 2f, by + bs * 0.64f, Colors.argb(th.text.rgb(), ci));
 			float ul = 8 + 6 * h;
 			Render2D.roundRect(ctx, bx + bs / 2f - ul / 2f, by + bs * 0.64f + 11, ul, 1.2f, 0.6f, Colors.argb(th.accent.rgb(), (0.35f + 0.6f * h) * ci));
 			int on = 0;
@@ -458,8 +458,8 @@ public class ClickGuiScreen extends Screen {
 					on++;
 				}
 			}
-			UiFont.drawScaled(ctx, textRenderer, on + "/" + modules(c).size(), bx + bs - 18, by + 5, 0.7f, Colors.argb(th.subtext.rgb(), ci));
-			ctx.getMatrices().popMatrix();
+			UiFont.drawScaled(ctx, font, on + "/" + modules(c).size(), bx + bs - 18, by + 5, 0.7f, Colors.argb(th.subtext.rgb(), ci));
+			ctx.pose().popMatrix();
 			final Category cat = c;
 			hit(x, y, cs, cs, null, null, (a, b, btn) -> {
 				category = cat;
@@ -513,17 +513,17 @@ public class ClickGuiScreen extends Screen {
 				case 3 -> Icons.palette(ctx, icx, icy, 9, ic, Colors.argb(th.card.rgb(), si));
 				default -> Icons.heart(ctx, icx, icy, 9, ic);
 			}
-			UiFont.drawScaled(ctx, textRenderer, labels[i], icx - UiFont.width(textRenderer, labels[i]) * 0.36f, y - h + 20, 0.72f, Colors.argb(th.text.rgb(), si));
-			ctx.getMatrices().popMatrix();
+			UiFont.drawScaled(ctx, font, labels[i], icx - UiFont.width(font, labels[i]) * 0.36f, y - h + 20, 0.72f, Colors.argb(th.text.rgb(), si));
+			ctx.pose().popMatrix();
 			final int idx = i;
 			hit(x, y, sw, sh, null, null, (a, b, btn) -> {
 				switch (idx) {
-					case 0 -> client.setScreen(new WardrobeScreen(this));
+					case 0 -> minecraft.setScreen(new WardrobeScreen(this));
 					case 1 -> {
 						com.whiteclient.modules.Browser br = com.whiteclient.modules.Browser.get();
 						if (br != null) {
 							com.whiteclient.browser.WebView.startEngine();
-							client.setScreen(new BrowserScreen(this, br));
+							minecraft.setScreen(new BrowserScreen(this, br));
 						}
 					}
 					case 2 -> {
@@ -535,14 +535,14 @@ public class ClickGuiScreen extends Screen {
 						selected = null;
 						go(View.WINDOW);
 					}
-					default -> client.setScreen(new SupportScreen(this));
+					default -> minecraft.setScreen(new SupportScreen(this));
 				}
 			});
 		}
-		UiFont.drawCentered(ctx, textRenderer, "Right Shift to close  ·  everything is free", cx, height - 16, Colors.argb(th.subtext.rgb(), 0.7f * k));
+		UiFont.drawCentered(ctx, font, "Right Shift to close  ·  everything is free", cx, height - 16, Colors.argb(th.subtext.rgb(), 0.7f * k));
 	}
 
-	private void drawSearch(DrawContext ctx, int mx, int my, float dt, float y) {
+	private void drawSearch(GuiGraphics ctx, int mx, int my, float dt, float y) {
 		Theme th = Theme.get();
 		float w = Math.min(260, width - 40);
 		float x = (width - w) / 2f;
@@ -550,7 +550,7 @@ public class ClickGuiScreen extends Screen {
 		Render2D.roundRectOutline(ctx, x, y, w, 20, 10, 1, th.accent(0.6f));
 		Icons.search(ctx, x + 12, y + 10, 9, th.sub());
 		boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
-		UiFont.draw(ctx, textRenderer, search.isEmpty() ? "Search modules..." : search + (blink ? "_" : ""), x + 22, y + 6, search.isEmpty() ? th.sub() : th.text());
+		UiFont.draw(ctx, font, search.isEmpty() ? "Search modules..." : search + (blink ? "_" : ""), x + 22, y + 6, search.isEmpty() ? th.sub() : th.text());
 		hit(x + w - 18, y, 18, 20, null, null, (a, b, btn) -> searching = false);
 		Icons.close(ctx, x + w - 10, y + 10, 7, th.sub());
 
@@ -566,9 +566,9 @@ public class ClickGuiScreen extends Screen {
 			}
 			boolean hover = in(mx, my, x, ry, w, ROW - 2);
 			Render2D.roundRect(ctx, x, ry, w, ROW - 2, 6, hover ? th.card(0.95f) : th.card(0.6f));
-			UiFont.draw(ctx, textRenderer, mod.getName(), x + 10, ry + 6, th.text());
+			UiFont.draw(ctx, font, mod.getName(), x + 10, ry + 6, th.text());
 			String cat = mod.getCategory().title;
-			UiFont.drawScaled(ctx, textRenderer, cat, x + w - 10 - UiFont.width(textRenderer, cat) * 0.72f, ry + 7, 0.72f, th.sub());
+			UiFont.drawScaled(ctx, font, cat, x + w - 10 - UiFont.width(font, cat) * 0.72f, ry + 7, 0.72f, th.sub());
 			final Module target = mod;
 			hit(x, ry, w, ROW - 2, null, null, (a, b, btn) -> {
 				searching = false;
@@ -581,15 +581,15 @@ public class ClickGuiScreen extends Screen {
 			shown++;
 		}
 		if (shown == 0) {
-			UiFont.drawCentered(ctx, textRenderer, "No modules found", width / 2f, ry + 4, th.sub());
+			UiFont.drawCentered(ctx, font, "No modules found", width / 2f, ry + 4, th.sub());
 		}
 	}
 
-	private void drawWindow(DrawContext ctx, int mx, int my, float dt) {
+	private void drawWindow(GuiGraphics ctx, int mx, int my, float dt) {
 		Theme th = Theme.get();
 		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
 		float r = th.roundness.getFloat();
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		float wcx = winX + winW / 2f, wcy = winY + winH / 2f;
 		float s = 0.95f + 0.05f * k;
@@ -606,8 +606,8 @@ public class ClickGuiScreen extends Screen {
 		ctx.fill((int) (x + SIDEBAR - r), (int) y, (int) (x + SIDEBAR), (int) (y + h), Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), th.opacity.getFloat()));
 		ctx.fill((int) (x + SIDEBAR), (int) (y + 8), (int) (x + SIDEBAR) + 1, (int) (y + h - 8), th.accent(0.08f));
 		Render2D.logo(ctx, x + 15, y + 15, 6, WhiteClient.get().time());
-		UiFont.draw(ctx, textRenderer, "WHITECLIENT", x + 26, y + 10, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "Modules", x + 12, y + 30, 0.72f, th.sub());
+		UiFont.draw(ctx, font, "WHITECLIENT", x + 26, y + 10, th.text());
+		UiFont.drawScaled(ctx, font, "Modules", x + 12, y + 30, 0.72f, th.sub());
 		float sy = y + 40;
 		for (Category c : Category.values()) {
 			if (!c.listed()) {
@@ -624,7 +624,7 @@ public class ClickGuiScreen extends Screen {
 			}
 			int col = Colors.mixArgb(th.sub(), th.text(), Math.max(a, hover ? 0.6f : 0f));
 			categoryIcon(ctx, c, x + 18, sy + 8.5f, 8, col, Colors.argb(Colors.shade(th.panel.rgb(), 0.82f), 1f));
-			UiFont.draw(ctx, textRenderer, c.title, x + 28, sy + 4, col);
+			UiFont.draw(ctx, font, c.title, x + 28, sy + 4, col);
 			final Category cat = c;
 			hit(x + 6, sy, SIDEBAR - 12, 17, null, null, (aa, b, btn) -> {
 				if (category != cat || themePage) {
@@ -636,7 +636,7 @@ public class ClickGuiScreen extends Screen {
 			});
 			sy += 19;
 		}
-		UiFont.drawScaled(ctx, textRenderer, "Client", x + 12, sy + 6, 0.72f, th.sub());
+		UiFont.drawScaled(ctx, font, "Client", x + 12, sy + 6, 0.72f, th.sub());
 		sy += 16;
 		String[] clientItems = {"Theme", "Wardrobe", "Home"};
 		for (int i = 0; i < clientItems.length; i++) {
@@ -656,7 +656,7 @@ public class ClickGuiScreen extends Screen {
 				case 1 -> Icons.shirt(ctx, x + 18, sy + 8.5f, 8, col);
 				default -> Icons.back(ctx, x + 18, sy + 8.5f, 8, col);
 			}
-			UiFont.draw(ctx, textRenderer, clientItems[i], x + 28, sy + 4, col);
+			UiFont.draw(ctx, font, clientItems[i], x + 28, sy + 4, col);
 			final int idx = i;
 			hit(x + 6, sy, SIDEBAR - 12, 17, null, null, (aa, b, btn) -> {
 				if (idx == 0) {
@@ -664,7 +664,7 @@ public class ClickGuiScreen extends Screen {
 					selected = null;
 					go(View.WINDOW);
 				} else if (idx == 1) {
-					client.setScreen(new WardrobeScreen(this));
+					minecraft.setScreen(new WardrobeScreen(this));
 				} else {
 					go(View.HOME);
 				}
@@ -672,33 +672,33 @@ public class ClickGuiScreen extends Screen {
 			sy += 19;
 		}
 		if (h > 230) {
-			String name = client.getSession().getUsername();
+			String name = minecraft.getUser().getName();
 			Render2D.roundRect(ctx, x + 6, y + h - FOOTER - 24, SIDEBAR - 12, 20, 6, th.card(0.7f));
 			if (skin != null) {
 				try {
-					PlayerSkinDrawer.draw(ctx, skin.get(), (int) (x + 10), (int) (y + h - FOOTER - 20), 12);
+					PlayerFaceRenderer.draw(ctx, skin.get(), (int) (x + 10), (int) (y + h - FOOTER - 20), 12);
 				} catch (Throwable ignored) {
 				}
 			}
 			String shown = name;
-			while (UiFont.width(textRenderer, shown) > SIDEBAR - 38 && shown.length() > 2) {
+			while (UiFont.width(font, shown) > SIDEBAR - 38 && shown.length() > 2) {
 				shown = shown.substring(0, shown.length() - 1);
 			}
-			UiFont.draw(ctx, textRenderer, shown, x + 26, y + h - FOOTER - 18, th.text());
+			UiFont.draw(ctx, font, shown, x + 26, y + h - FOOTER - 18, th.text());
 		}
 
 		float cx0 = x + SIDEBAR + 10;
 		float cw = w - SIDEBAR - 20;
 		String crumb = themePage ? "Client" : "Modules";
 		String page = themePage ? "Theme" : category.title;
-		UiFont.draw(ctx, textRenderer, crumb + "  /  ", cx0, y + 10, th.sub());
-		UiFont.draw(ctx, textRenderer, page, cx0 + UiFont.width(textRenderer, crumb + "  /  "), y + 10, th.text());
+		UiFont.draw(ctx, font, crumb + "  /  ", cx0, y + 10, th.sub());
+		UiFont.draw(ctx, font, page, cx0 + UiFont.width(font, crumb + "  /  "), y + 10, th.text());
 		hit(x + SIDEBAR, y, w - SIDEBAR - 48, HEADER - 4, "drag", null, (a, b, btn) -> startMove(a, b));
 		float bx = x + w - 22;
 		boolean hc = in(mx, my, bx, y + 6, 16, 16);
 		Render2D.circle(ctx, bx + 8, y + 14, 8, th.accent(hc ? 0.2f : 0.07f));
 		Icons.close(ctx, bx + 8, y + 14, 6, hc ? th.text() : th.sub());
-		hit(bx, y + 6, 16, 16, null, null, (a, b, btn) -> close());
+		hit(bx, y + 6, 16, 16, null, null, (a, b, btn) -> onClose());
 		float hb = bx - 20;
 		boolean hh = in(mx, my, hb, y + 6, 16, 16);
 		Render2D.circle(ctx, hb + 8, y + 14, 8, th.accent(hh ? 0.2f : 0.07f));
@@ -723,12 +723,12 @@ public class ClickGuiScreen extends Screen {
 		ctx.fill((int) (x + SIDEBAR), (int) fy, (int) (x + w - 6), (int) fy + 1, th.accent(0.06f));
 		boolean hd = in(mx, my, x + SIDEBAR + 4, fy, 60, FOOTER);
 		Icons.drag(ctx, x + SIDEBAR + 12, fy + FOOTER / 2f, 8, hd ? th.text() : th.sub());
-		UiFont.drawScaled(ctx, textRenderer, "drag", x + SIDEBAR + 20, fy + 6, 0.72f, hd ? th.text() : th.sub());
+		UiFont.drawScaled(ctx, font, "drag", x + SIDEBAR + 20, fy + 6, 0.72f, hd ? th.text() : th.sub());
 		hit(x + SIDEBAR + 4, fy, 60, FOOTER, "drag", null, (a, b, btn) -> startMove(a, b));
 		String ver = "WHITECLIENT " + WhiteClient.VERSION;
-		UiFont.drawScaled(ctx, textRenderer, ver, x + SIDEBAR + (w - SIDEBAR) / 2f - UiFont.width(textRenderer, ver) * 0.36f, fy + 6, 0.72f, Colors.mulAlpha(th.sub(), 0.6f));
+		UiFont.drawScaled(ctx, font, ver, x + SIDEBAR + (w - SIDEBAR) / 2f - UiFont.width(font, ver) * 0.36f, fy + 6, 0.72f, Colors.mulAlpha(th.sub(), 0.6f));
 		boolean hr = in(mx, my, x + w - 64, fy, 62, FOOTER);
-		UiFont.drawScaled(ctx, textRenderer, "resize", x + w - 50, fy + 6, 0.72f, hr ? th.text() : th.sub());
+		UiFont.drawScaled(ctx, font, "resize", x + w - 50, fy + 6, 0.72f, hr ? th.text() : th.sub());
 		Icons.resize(ctx, x + w - 12, fy + FOOTER / 2f, 8, hr ? th.text() : th.sub());
 		hit(x + w - 64, fy, 62, FOOTER, "resize", null, (a, b, btn) -> {
 			dragMode = 2;
@@ -744,7 +744,7 @@ public class ClickGuiScreen extends Screen {
 		dragDy = my - winY;
 	}
 
-	private void drawModuleList(DrawContext ctx, float x, float y, float w, float h, int mx, int my, float dt, int columns) {
+	private void drawModuleList(GuiGraphics ctx, float x, float y, float w, float h, int mx, int my, float dt, int columns) {
 		Theme th = Theme.get();
 		int col = 0;
 		scrollArea[0] = new float[]{x, y, w, h};
@@ -764,7 +764,7 @@ public class ClickGuiScreen extends Screen {
 			if (sel) {
 				Render2D.roundRectOutline(ctx, rx, ry, colW, ROW - 3, 6, 1, th.accent(0.7f));
 			}
-			UiFont.draw(ctx, textRenderer, mod.getName(), rx + 9, ry + 5, mod.isEnabled() ? th.text() : Colors.mixArgb(th.sub(), th.text(), 0.4f));
+			UiFont.draw(ctx, font, mod.getName(), rx + 9, ry + 5, mod.isEnabled() ? th.text() : Colors.mixArgb(th.sub(), th.text(), 0.4f));
 			float t = anim(mod.getName() + "#on", mod.isEnabled() ? 1f : 0f, dt, 14f);
 			float tx = rx + colW - 27;
 			drawToggle(ctx, tx, ry + 4, t);
@@ -787,7 +787,7 @@ public class ClickGuiScreen extends Screen {
 		ctx.disableScissor();
 	}
 
-	private void drawToggle(DrawContext ctx, float x, float y, float t) {
+	private void drawToggle(GuiGraphics ctx, float x, float y, float t) {
 		Theme th = Theme.get();
 		float w = 20, h = 11;
 		int track = Colors.mixArgb(Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.08f), 1f), th.toggleOn.argb(), t);
@@ -814,7 +814,7 @@ public class ClickGuiScreen extends Screen {
 		return 19;
 	}
 
-	private void drawSettingsColumn(DrawContext ctx, Module mod, float x, float y, float w, float h, int mx, int my, float dt, float k, boolean theme) {
+	private void drawSettingsColumn(GuiGraphics ctx, Module mod, float x, float y, float w, float h, int mx, int my, float dt, float k, boolean theme) {
 		Theme th = Theme.get();
 		scrollArea[1] = new float[]{x, y, w, h};
 		Render2D.roundRect(ctx, x, y, w, h, 7, th.card(0.45f));
@@ -822,8 +822,8 @@ public class ClickGuiScreen extends Screen {
 		ctx.enableScissor((int) clip[0], (int) clip[1], (int) clip[2], (int) clip[3]);
 		float sy = y + 8 - scroll[1];
 		float start = sy;
-		UiFont.draw(ctx, textRenderer, mod.getName(), x + 10, sy, th.text());
-		UiFont.drawScaled(ctx, textRenderer, mod.getDescription(), x + 10, sy + 11, 0.72f, th.sub());
+		UiFont.draw(ctx, font, mod.getName(), x + 10, sy, th.text());
+		UiFont.drawScaled(ctx, font, mod.getDescription(), x + 10, sy + 11, 0.72f, th.sub());
 		if (!theme) {
 			float t = anim(mod.getName() + "#on", mod.isEnabled() ? 1f : 0f, dt, 14f);
 			drawToggle(ctx, x + w - 30, sy + 2, t);
@@ -842,17 +842,17 @@ public class ClickGuiScreen extends Screen {
 		ctx.disableScissor();
 	}
 
-	private void drawSetting(DrawContext ctx, Setting<?> s, float x, float y, float w, int mx, int my, float dt, float[] clip) {
+	private void drawSetting(GuiGraphics ctx, Setting<?> s, float x, float y, float w, int mx, int my, float dt, float[] clip) {
 		Theme th = Theme.get();
 		int label = Colors.mixArgb(th.sub(), th.text(), 0.75f);
 		if (s instanceof BoolSetting b) {
-			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+			UiFont.draw(ctx, font, s.getName(), x, y + 4, label);
 			drawToggle(ctx, x + w - 20, y + 3, anim(b, b.isOn() ? 1f : 0f, dt, 14f));
 			hit(x, y, w, 16, null, clip, (a, c, btn) -> b.toggle());
 		} else if (s instanceof NumberSetting n) {
-			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 2, label);
+			UiFont.draw(ctx, font, s.getName(), x, y + 2, label);
 			String v = n.format();
-			UiFont.draw(ctx, textRenderer, v, x + w - UiFont.width(textRenderer, v), y + 2, th.sub());
+			UiFont.draw(ctx, font, v, x + w - UiFont.width(font, v), y + 2, th.sub());
 			float barY = y + 15;
 			float f = anim(n, (float) n.getFraction(), dt, 18f);
 			Render2D.roundRect(ctx, x, barY, w, 3, 1.5f, Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.1f), 1f));
@@ -865,10 +865,10 @@ public class ClickGuiScreen extends Screen {
 				n.setFraction((a - x) / w);
 			});
 		} else if (s instanceof ColorSetting c) {
-			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+			UiFont.draw(ctx, font, s.getName(), x, y + 4, label);
 			String hex = String.format("#%06X", c.rgb());
-			float hw = UiFont.width(textRenderer, hex) * 0.8f;
-			UiFont.drawScaled(ctx, textRenderer, hex, x + w - 24 - hw, y + 5, 0.8f, th.sub());
+			float hw = UiFont.width(font, hex) * 0.8f;
+			UiFont.drawScaled(ctx, font, hex, x + w - 24 - hw, y + 5, 0.8f, th.sub());
 			Render2D.roundRect(ctx, x + w - 18, y + 2, 18, 12, 4, c.argb());
 			Render2D.roundRectOutline(ctx, x + w - 18, y + 2, 18, 12, 4, 1, th.accent(0.3f));
 			hit(x, y, w, 16, c, clip, (a, b2, btn) -> {
@@ -881,7 +881,7 @@ public class ClickGuiScreen extends Screen {
 			}
 		} else if (s instanceof ModeSetting mode) {
 			if (mode.getModes().size() > 3) {
-				UiFont.draw(ctx, textRenderer, s.getName(), x, y + 2, label);
+				UiFont.draw(ctx, font, s.getName(), x, y + 2, label);
 				List<String> modes = mode.getModes();
 				float cw = (w - 8) / 3f;
 				for (int i = 0; i < modes.size(); i++) {
@@ -891,41 +891,41 @@ public class ClickGuiScreen extends Screen {
 					boolean hover = in(mx, my, px, py, cw, 14);
 					Render2D.roundRect(ctx, px, py, cw, 14, 5, sel ? th.accent(0.95f) : (hover ? th.card(1f) : th.card(0.65f)));
 					String name = modes.get(i);
-					float ts = Math.min(0.8f, (cw - 6) / Math.max(1f, UiFont.width(textRenderer, name)));
-					UiFont.drawScaled(ctx, textRenderer, name, px + cw / 2f - UiFont.width(textRenderer, name) * ts / 2f, py + 7 - 4.5f * ts, ts, sel ? th.onAccent() : th.text());
+					float ts = Math.min(0.8f, (cw - 6) / Math.max(1f, UiFont.width(font, name)));
+					UiFont.drawScaled(ctx, font, name, px + cw / 2f - UiFont.width(font, name) * ts / 2f, py + 7 - 4.5f * ts, ts, sel ? th.onAccent() : th.text());
 					final String pick = name;
 					hit(px, py, cw, 14, null, clip, (a, b2, btn) -> mode.set(pick));
 				}
 			} else {
-				UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+				UiFont.draw(ctx, font, s.getName(), x, y + 4, label);
 				String v = mode.get();
-				float vw = UiFont.width(textRenderer, v) + 18;
+				float vw = UiFont.width(font, v) + 18;
 				boolean hover = in(mx, my, x + w - vw, y + 1, vw, 14);
 				Render2D.roundRect(ctx, x + w - vw, y + 1, vw, 14, 5, hover ? th.card(1f) : th.card(0.65f));
-				UiFont.draw(ctx, textRenderer, v, x + w - vw + 9, y + 4, th.text());
+				UiFont.draw(ctx, font, v, x + w - vw + 9, y + 4, th.text());
 				hit(x, y, w, 16, null, clip, (a, b2, btn) -> mode.cycle(btn == 1 ? -1 : 1));
 			}
 		} else if (s instanceof ActionSetting action) {
-			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+			UiFont.draw(ctx, font, s.getName(), x, y + 4, label);
 			String bt = action.buttonText();
-			float bw = UiFont.width(textRenderer, bt) + 16;
+			float bw = UiFont.width(font, bt) + 16;
 			boolean hover = in(mx, my, x + w - bw, y, bw, 16);
 			Render2D.roundRect(ctx, x + w - bw, y + 1, bw, 14, 7, th.accent(hover ? 1f : 0.88f));
-			UiFont.draw(ctx, textRenderer, bt, x + w - bw + 8, y + 4, th.onAccent());
+			UiFont.draw(ctx, font, bt, x + w - bw + 8, y + 4, th.onAccent());
 			hit(x + w - bw, y, bw, 16, null, clip, (a, b2, btn) -> action.run());
 		} else if (s instanceof InfoSetting info) {
-			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 4, label);
+			UiFont.draw(ctx, font, s.getName(), x, y + 4, label);
 			String v = info.text();
-			float maxW = w - UiFont.width(textRenderer, s.getName()) - 12;
-			if (UiFont.width(textRenderer, v) > maxW) {
-				while (UiFont.width(textRenderer, v + "…") > maxW && v.length() > 1) {
+			float maxW = w - UiFont.width(font, s.getName()) - 12;
+			if (UiFont.width(font, v) > maxW) {
+				while (UiFont.width(font, v + "…") > maxW && v.length() > 1) {
 					v = v.substring(0, v.length() - 1);
 				}
 				v = v + "…";
 			}
-			UiFont.draw(ctx, textRenderer, v, x + w - UiFont.width(textRenderer, v), y + 4, th.sub());
+			UiFont.draw(ctx, font, v, x + w - UiFont.width(font, v), y + 4, th.sub());
 		} else if (s instanceof TextSetting text) {
-			UiFont.draw(ctx, textRenderer, s.getName(), x, y + 6, label);
+			UiFont.draw(ctx, font, s.getName(), x, y + 6, label);
 			float bw = Math.min(160, w * 0.58f);
 			float bx = x + w - bw;
 			boolean active = editing == text;
@@ -933,11 +933,11 @@ public class ClickGuiScreen extends Screen {
 			Render2D.roundRectOutline(ctx, bx, y + 2, bw, 15, 5, 1, th.accent(active ? 0.8f : 0.18f));
 			String value = active ? editBuffer : text.get();
 			String shownText = value;
-			while (UiFont.width(textRenderer, shownText) > bw - 12 && shownText.length() > 1) {
+			while (UiFont.width(font, shownText) > bw - 12 && shownText.length() > 1) {
 				shownText = shownText.substring(1);
 			}
 			boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
-			UiFont.draw(ctx, textRenderer, shownText + (active && blink ? "_" : ""), bx + 6, y + 5, active ? th.text() : Colors.mixArgb(th.sub(), th.text(), 0.6f));
+			UiFont.draw(ctx, font, shownText + (active && blink ? "_" : ""), bx + 6, y + 5, active ? th.text() : Colors.mixArgb(th.sub(), th.text(), 0.6f));
 			hit(bx, y, x + w - bx, 18, text, clip, (a, b2, btn) -> {
 				if (editing != text) {
 					editing = text;
@@ -957,13 +957,13 @@ public class ClickGuiScreen extends Screen {
 		return hsv;
 	}
 
-	private void drawPicker(DrawContext ctx, ColorSetting c, float x, float y, float w, float[] clip) {
+	private void drawPicker(GuiGraphics ctx, ColorSetting c, float x, float y, float w, float[] clip) {
 		Theme th = Theme.get();
 		float[] hsv = hsvOf(c);
 		String[] names = {"H", "S", "B"};
 		for (int ch = 0; ch < 3; ch++) {
 			float by = y + ch * 12;
-			UiFont.drawScaled(ctx, textRenderer, names[ch], x, by + 1, 0.75f, th.sub());
+			UiFont.drawScaled(ctx, font, names[ch], x, by + 1, 0.75f, th.sub());
 			float bx = x + 10, bw = w - 10;
 			int steps = Math.max(32, (int) (bw / 2));
 			for (int i = 0; i < steps; i++) {
@@ -1031,7 +1031,7 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(Click click, boolean doubled) {
+	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		double[] p = local(click.x(), click.y());
 		double mx = p[0], my = p[1];
 		int button = click.button();
@@ -1058,7 +1058,7 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseReleased(Click click) {
+	public boolean mouseReleased(MouseButtonEvent click) {
 		boolean was = slider != null || picking != null || dragMode != 0;
 		slider = null;
 		picking = null;
@@ -1067,7 +1067,7 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+	public boolean mouseDragged(MouseButtonEvent click, double offsetX, double offsetY) {
 		if (dragMode == 1) {
 			winX = (float) (click.x() - dragDx);
 			winY = (float) (click.y() - dragDy);
@@ -1106,8 +1106,8 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(KeyInput input) {
-		int key = input.getKeycode();
+	public boolean keyPressed(KeyEvent input) {
+		int key = input.input();
 		if (editing != null) {
 			switch (key) {
 				case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> commitEdit();
@@ -1118,8 +1118,8 @@ public class ClickGuiScreen extends Screen {
 					}
 				}
 				default -> {
-					if (input.isPaste() && client != null) {
-						String clip = client.keyboard.getClipboard();
+					if (input.isPaste() && minecraft != null) {
+						String clip = minecraft.keyboardHandler.getClipboard();
 						if (clip != null) {
 							String combined = editBuffer + clip.replace('\n', ' ');
 							editBuffer = combined.length() > editing.getMaxLength() ? combined.substring(0, editing.getMaxLength()) : combined;
@@ -1138,14 +1138,14 @@ public class ClickGuiScreen extends Screen {
 			return true;
 		}
 		if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-			close();
+			onClose();
 			return true;
 		}
 		if (key == GLFW.GLFW_KEY_ESCAPE) {
 			if (view == View.WINDOW) {
 				go(View.HOME);
 			} else {
-				close();
+				onClose();
 			}
 			return true;
 		}
@@ -1153,8 +1153,8 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
-	public boolean charTyped(CharInput input) {
-		String s = input.asString();
+	public boolean charTyped(CharacterEvent input) {
+		String s = input.codepointAsString();
 		if (editing != null) {
 			if (s != null && !s.isEmpty() && editBuffer.length() < editing.getMaxLength()) {
 				editBuffer += s;

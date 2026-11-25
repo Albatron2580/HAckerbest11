@@ -10,8 +10,8 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
 public class ChinaHat extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -30,22 +30,22 @@ public class ChinaHat extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		for (PlayerEntity p : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), 48)) {
+		for (Player p : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), 48)) {
 			render(ctx, p);
 		}
 	}
 
-	private void render(WorldContext ctx, PlayerEntity player) {
+	private void render(WorldContext ctx, Player player) {
 		float td = ctx.tickDelta;
-		Vec3d p = player.getLerpedPos(td);
-		float yaw = player.getYaw(td);
-		float pitch = player.getPitch(td);
+		Vec3 p = player.getPosition(td);
+		float yaw = player.getViewYRot(td);
+		float pitch = player.getViewXRot(td);
 		V3 right = V3.right(yaw);
 		float tilt = (float) Math.toRadians(-pitch * 0.6f);
 		V3 up = V3.UP.rotate(right, tilt);
 		V3 ringX = right;
 		V3 ringZ = V3.forward(yaw).rotate(right, tilt);
-		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getHeight() - 0.32), ctx.rz(p.z));
+		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getBbHeight() - 0.32), ctx.rz(p.z));
 		V3 base = neck.add(up, 0.38f);
 		V3 apex = base.add(up, height.getFloat());
 		float r = radius.getFloat();

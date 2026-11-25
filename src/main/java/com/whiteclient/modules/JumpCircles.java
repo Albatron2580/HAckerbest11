@@ -9,13 +9,12 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 
 public class JumpCircles extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -37,23 +36,23 @@ public class JumpCircles extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
-		if (mc.world == null || mc.player == null) {
+	public void onTick(Minecraft mc) {
+		if (mc.level == null || mc.player == null) {
 			onGround.clear();
 			circles.clear();
 			return;
 		}
 		float now = com.whiteclient.WhiteClient.get().time();
-		for (PlayerEntity p : mc.world.getPlayers()) {
-			if (p != mc.player && (!others.isOn() || !CosmeticTargets.visible(p) || p.squaredDistanceTo(mc.player) > 40 * 40)) {
+		for (Player p : mc.level.players()) {
+			if (p != mc.player && (!others.isOn() || !CosmeticTargets.visible(p) || p.distanceToSqr(mc.player) > 40 * 40)) {
 				continue;
 			}
-			boolean ground = p.isOnGround();
+			boolean ground = p.onGround();
 			Boolean was = onGround.put(p.getId(), ground);
 			if (was == null) {
 				continue;
 			}
-			if (was && !ground && p.getVelocity().y > 0.05) {
+			if (was && !ground && p.getDeltaMovement().y > 0.05) {
 				spawn(p.getX(), p.getY() + 0.02, p.getZ(), now, 1f);
 			} else if (!was && ground && landing.isOn()) {
 				spawn(p.getX(), p.getY() + 0.02, p.getZ(), now, 0.75f);

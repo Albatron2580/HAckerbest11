@@ -13,16 +13,16 @@ import com.whiteclient.modules.Wings;
 import com.whiteclient.render.Colors;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.Setting;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.lwjgl.glfw.GLFW;
 
 import java.net.URI;
@@ -38,7 +38,7 @@ public class WardrobeScreen extends Screen {
 	private final Screen parent;
 	private Tab tab = Tab.SKINS;
 	private SkinPreview preview;
-	private Supplier<SkinTextures> baseSkin;
+	private Supplier<PlayerSkin> baseSkin;
 	private List<String> skins = new ArrayList<>();
 	private final Map<String, Float> anims = new HashMap<>();
 	private final List<Hit> hits = new ArrayList<>();
@@ -51,7 +51,7 @@ public class WardrobeScreen extends Screen {
 	}
 
 	public WardrobeScreen(Screen parent) {
-		super(Text.literal("Wardrobe"));
+		super(Component.literal("Wardrobe"));
 		this.parent = parent;
 	}
 
@@ -63,28 +63,28 @@ public class WardrobeScreen extends Screen {
 	@Override
 	protected void init() {
 		try {
-			baseSkin = client.getSkinProvider().supplySkinTextures(client.getGameProfile(), false);
+			baseSkin = minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false);
 		} catch (Throwable t) {
 			baseSkin = null;
 		}
 		skins = Wardrobe.available();
 		int ph = Math.max(120, height - 96);
 		int pw = Math.max(70, (int) (ph * 0.55f));
-		Supplier<SkinTextures> s = () -> {
-			SkinTextures base = null;
+		Supplier<PlayerSkin> s = () -> {
+			PlayerSkin base = null;
 			try {
 				base = baseSkin != null ? baseSkin.get() : null;
 			} catch (Throwable ignored) {
 			}
 			if (base == null) {
-				base = DefaultSkinHelper.getSteve();
+				base = DefaultPlayerSkin.getDefaultSkin();
 			}
 			return Wardrobe.apply(base);
 		};
 		try {
 			preview = new SkinPreview(pw, ph, s);
 			preview.setRotation(0, -25);
-			addDrawableChild(preview.widget());
+			addRenderableWidget(preview.widget());
 		} catch (Throwable t) {
 			preview = null;
 		}
@@ -107,14 +107,14 @@ public class WardrobeScreen extends Screen {
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
 	@Override
-	public void close() {
+	public void onClose() {
 		WhiteClient.get().config().save();
-		client.setScreen(parent);
+		minecraft.setScreen(parent);
 	}
 
 	private float anim(String key, float target, float dt) {
@@ -133,7 +133,7 @@ public class WardrobeScreen extends Screen {
 	}
 
 	@Override
-	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		Theme th = Theme.get();
 		ctx.fillGradient(0, 0, width, height, th.bg(0.985f), Colors.argb(Colors.shade(th.background.rgb(), 1.7f), 0.99f));
 		float t = WhiteClient.get().time();
@@ -145,7 +145,7 @@ public class WardrobeScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
@@ -157,26 +157,26 @@ public class WardrobeScreen extends Screen {
 
 		Render2D.roundRect(ctx, 16, 10, 20, 20, 6, th.card(0.8f));
 		Icons.shirt(ctx, 26, 20, 10, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "Wardrobe", 42, 10, 1.25f, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "Everything is free  ·  no pay-to-win", 42, 23, 0.75f, th.sub());
+		UiFont.drawScaled(ctx, font, "Wardrobe", 42, 10, 1.25f, th.text());
+		UiFont.drawScaled(ctx, font, "Everything is free  ·  no pay-to-win", 42, 23, 0.75f, th.sub());
 
 		float px = panelX(), pw = panelW(), py = 40, ph = height - 64;
 		Render2D.roundRect(ctx, px, py, pw, ph, 10, th.card(0.45f * k));
 		Render2D.roundRectOutline(ctx, px, py, pw, ph, 10, 1, th.accent(0.1f));
-		String name = client.getSession().getUsername();
-		UiFont.drawCentered(ctx, textRenderer, name, px + pw / 2f, py + 4, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "drag to rotate", px + pw / 2f - UiFont.width(textRenderer, "drag to rotate") * 0.36f, py + ph - 11, 0.72f, th.sub());
+		String name = minecraft.getUser().getName();
+		UiFont.drawCentered(ctx, font, name, px + pw / 2f, py + 4, th.text());
+		UiFont.drawScaled(ctx, font, "drag to rotate", px + pw / 2f - UiFont.width(font, "drag to rotate") * 0.36f, py + ph - 11, 0.72f, th.sub());
 
 		float rx = px + pw + 14, rw = width - rx - 16;
 		String[] tabs = {"Skins", "Cosmetics", "Pets"};
 		float tx = rx;
 		for (int i = 0; i < tabs.length; i++) {
-			float tw = UiFont.width(textRenderer, tabs[i]) + 22;
+			float tw = UiFont.width(font, tabs[i]) + 22;
 			boolean sel = tab.ordinal() == i;
 			boolean hover = in(mouseX, mouseY, tx, py, tw, 18);
 			float a = anim("tab" + i, sel ? 1f : 0f, dt);
 			Render2D.roundRect(ctx, tx, py, tw, 18, 9, Colors.mixArgb(th.card(hover ? 0.8f : 0.5f), th.accent(0.95f), a));
-			UiFont.draw(ctx, textRenderer, tabs[i], tx + 11, py + 5, Colors.mixArgb(th.text(), th.onAccent(), a));
+			UiFont.draw(ctx, font, tabs[i], tx + 11, py + 5, Colors.mixArgb(th.text(), th.onAccent(), a));
 			final Tab target = Tab.values()[i];
 			hit(tx, py, tw, 18, () -> {
 				tab = target;
@@ -185,21 +185,21 @@ public class WardrobeScreen extends Screen {
 			tx += tw + 6;
 		}
 		String sup = "Support";
-		float sw = UiFont.width(textRenderer, sup) + 26;
+		float sw = UiFont.width(font, sup) + 26;
 		float sx = width - 16 - sw;
 		boolean hs = in(mouseX, mouseY, sx, 10, sw, 18);
 		Render2D.roundRect(ctx, sx, 10, sw, 18, 9, hs ? th.accent(1f) : th.card(0.75f));
 		Render2D.roundRectOutline(ctx, sx, 10, sw, 18, 9, 1, th.accent(0.35f));
 		Icons.heart(ctx, sx + 11, 19, 8, hs ? th.onAccent() : 0xFFFF6B8A);
-		UiFont.draw(ctx, textRenderer, sup, sx + 19, 15, hs ? th.onAccent() : th.text());
-		hit(sx, 10, sw, 18, () -> client.setScreen(new SupportScreen(this)));
+		UiFont.draw(ctx, font, sup, sx + 19, 15, hs ? th.onAccent() : th.text());
+		hit(sx, 10, sw, 18, () -> minecraft.setScreen(new SupportScreen(this)));
 		String done = "Done";
-		float dw = UiFont.width(textRenderer, done) + 20;
+		float dw = UiFont.width(font, done) + 20;
 		float dx = sx - 6 - dw;
 		boolean hd = in(mouseX, mouseY, dx, 10, dw, 18);
 		Render2D.roundRect(ctx, dx, 10, dw, 18, 9, th.card(hd ? 1f : 0.75f));
-		UiFont.draw(ctx, textRenderer, done, dx + 10, 15, th.text());
-		hit(dx, 10, dw, 18, this::close);
+		UiFont.draw(ctx, font, done, dx + 10, 15, th.text());
+		hit(dx, 10, dw, 18, this::onClose);
 
 		listX = rx;
 		listY = py + 26;
@@ -214,7 +214,7 @@ public class WardrobeScreen extends Screen {
 		ctx.disableScissor();
 		maxScroll = Math.max(0, contentH - listH);
 		scrollTarget = Math.max(0, Math.min(maxScroll, scrollTarget));
-		UiFont.drawScaled(ctx, textRenderer, "Custom skins are only visible to you.  Esc to go back.", rx, height - 14, 0.75f, Colors.mulAlpha(th.sub(), 0.8f));
+		UiFont.drawScaled(ctx, font, "Custom skins are only visible to you.  Esc to go back.", rx, height - 14, 0.75f, Colors.mulAlpha(th.sub(), 0.8f));
 
 		if (preview != null) {
 			float t = WhiteClient.get().time();
@@ -234,7 +234,7 @@ public class WardrobeScreen extends Screen {
 		return y + h > listY && y < listY + listH;
 	}
 
-	private float drawSkins(DrawContext ctx, int mx, int my, float dt) {
+	private float drawSkins(GuiGraphics ctx, int mx, int my, float dt) {
 		Theme th = Theme.get();
 		Wardrobe w = Wardrobe.get();
 		float y0 = listY - scroll;
@@ -260,28 +260,28 @@ public class WardrobeScreen extends Screen {
 			try {
 				if (s.isEmpty()) {
 					if (baseSkin != null) {
-						PlayerSkinDrawer.draw(ctx, baseSkin.get(), fx, fy, face);
+						PlayerFaceRenderer.draw(ctx, baseSkin.get(), fx, fy, face);
 					}
 				} else {
 					Identifier tex = Wardrobe.texturePathFor(s);
 					if (tex != null) {
-						PlayerSkinDrawer.draw(ctx, tex, fx, fy, face, true, false, 0xFFFFFFFF);
+						PlayerFaceRenderer.draw(ctx, tex, fx, fy, face, true, false, 0xFFFFFFFF);
 					} else {
 						Render2D.roundRect(ctx, fx, fy, face, face, 4, 0x40FF4D6A);
-						UiFont.drawCentered(ctx, textRenderer, "!", fx + face / 2f, fy + 12, 0xFFFF8095);
+						UiFont.drawCentered(ctx, font, "!", fx + face / 2f, fy + 12, 0xFFFF8095);
 					}
 				}
 			} catch (Throwable ignored) {
 			}
 			String label = s.isEmpty() ? "Default" : s;
-			while (UiFont.width(textRenderer, label) * 0.8f > card - 6 && label.length() > 2) {
+			while (UiFont.width(font, label) * 0.8f > card - 6 && label.length() > 2) {
 				label = label.substring(0, label.length() - 1);
 			}
-			UiFont.drawScaled(ctx, textRenderer, label, x + card / 2f - UiFont.width(textRenderer, label) * 0.4f, y - h + 48, 0.8f, th.text());
+			UiFont.drawScaled(ctx, font, label, x + card / 2f - UiFont.width(font, label) * 0.4f, y - h + 48, 0.8f, th.text());
 			if (sel) {
-				UiFont.drawScaled(ctx, textRenderer, "wearing", x + card / 2f - UiFont.width(textRenderer, "wearing") * 0.34f, y - h + 59, 0.68f, th.sub());
+				UiFont.drawScaled(ctx, font, "wearing", x + card / 2f - UiFont.width(font, "wearing") * 0.34f, y - h + 59, 0.68f, th.sub());
 			} else if (!s.isEmpty() && Wardrobe.error(s) != null) {
-				UiFont.drawScaled(ctx, textRenderer, "64x64 only", x + card / 2f - UiFont.width(textRenderer, "64x64 only") * 0.34f, y - h + 59, 0.68f, 0xFFFF8095);
+				UiFont.drawScaled(ctx, font, "64x64 only", x + card / 2f - UiFont.width(font, "64x64 only") * 0.34f, y - h + 59, 0.68f, 0xFFFF8095);
 			}
 			final String pick = s;
 			listHit(x, y, card, card + 14, () -> {
@@ -298,16 +298,16 @@ public class WardrobeScreen extends Screen {
 		String[] labels = {"Open Skins Folder", "Reload", "Slim Arms: " + (w != null && w.slim.isOn() ? "On" : "Off")};
 		float bx = listX;
 		for (int i = 0; i < labels.length; i++) {
-			float bw = UiFont.width(textRenderer, labels[i]) + 18;
+			float bw = UiFont.width(font, labels[i]) + 18;
 			boolean hover = in(mx, my, bx, by, bw, 18);
 			Render2D.roundRect(ctx, bx, by, bw, 18, 9, i == 0 ? th.accent(hover ? 1f : 0.88f) : th.card(hover ? 1f : 0.7f));
-			UiFont.draw(ctx, textRenderer, labels[i], bx + 9, by + 5, i == 0 ? th.onAccent() : th.text());
+			UiFont.draw(ctx, font, labels[i], bx + 9, by + 5, i == 0 ? th.onAccent() : th.text());
 			final int idx = i;
 			listHit(bx, by, bw, 18, () -> {
 				switch (idx) {
 					case 0 -> {
 						try {
-							Util.getOperatingSystem().open(Wardrobe.folder().toFile());
+							Util.getPlatform().openFile(Wardrobe.folder().toFile());
 						} catch (Throwable ignored) {
 						}
 					}
@@ -331,13 +331,13 @@ public class WardrobeScreen extends Screen {
 		return ty - y0 + 10;
 	}
 
-	private float wrapped(DrawContext ctx, String text, float x, float y, float maxW, float scale, int color) {
+	private float wrapped(GuiGraphics ctx, String text, float x, float y, float maxW, float scale, int color) {
 		String[] words = text.split(" ");
 		StringBuilder line = new StringBuilder();
 		for (String w : words) {
 			String test = line.isEmpty() ? w : line + " " + w;
-			if (UiFont.width(textRenderer, test) * scale > maxW && !line.isEmpty()) {
-				UiFont.drawScaled(ctx, textRenderer, line.toString(), x, y, scale, color);
+			if (UiFont.width(font, test) * scale > maxW && !line.isEmpty()) {
+				UiFont.drawScaled(ctx, font, line.toString(), x, y, scale, color);
 				y += 10 * scale + 2;
 				line = new StringBuilder(w);
 			} else {
@@ -345,13 +345,13 @@ public class WardrobeScreen extends Screen {
 			}
 		}
 		if (!line.isEmpty()) {
-			UiFont.drawScaled(ctx, textRenderer, line.toString(), x, y, scale, color);
+			UiFont.drawScaled(ctx, font, line.toString(), x, y, scale, color);
 			y += 10 * scale + 2;
 		}
 		return y;
 	}
 
-	private void drawToggle(DrawContext ctx, float x, float y, float t) {
+	private void drawToggle(GuiGraphics ctx, float x, float y, float t) {
 		Theme th = Theme.get();
 		float w = 20, h = 11;
 		int track = Colors.mixArgb(Colors.argb(Colors.mix(th.card.rgb(), 0xFFFFFF, 0.08f), 1f), th.toggleOn.argb(), t);
@@ -360,7 +360,7 @@ public class WardrobeScreen extends Screen {
 		Render2D.circle(ctx, x + 5.5f + (w - 11f) * t, y + h / 2f, 3.6f, Colors.mixArgb(0xFF8C8C98, onKnob, t));
 	}
 
-	private float drawCosmetics(DrawContext ctx, int mx, int my, float dt) {
+	private float drawCosmetics(GuiGraphics ctx, int mx, int my, float dt) {
 		Theme th = Theme.get();
 		var mm = WhiteClient.get().modules();
 		List<Module> list = new ArrayList<>();
@@ -377,8 +377,8 @@ public class WardrobeScreen extends Screen {
 			if (visible(y, rowH)) {
 				boolean hover = in(mx, my, listX, y, listW, rowH - 4);
 				Render2D.roundRect(ctx, listX, y, listW, rowH - 4, 8, th.card(hover ? 0.85f : 0.6f));
-				UiFont.draw(ctx, textRenderer, m.getName(), listX + 10, y + 7, th.text());
-				UiFont.drawScaled(ctx, textRenderer, m.getDescription(), listX + 10, y + 19, 0.75f, th.sub());
+				UiFont.draw(ctx, font, m.getName(), listX + 10, y + 7, th.text());
+				UiFont.drawScaled(ctx, font, m.getDescription(), listX + 10, y + 19, 0.75f, th.sub());
 				float t = anim("on" + m.getName(), m.isEnabled() ? 1f : 0f, dt);
 				drawToggle(ctx, listX + listW - 30, y + 12, t);
 				listHit(listX + listW - 34, y, 34, rowH - 4, m::toggle);
@@ -405,20 +405,20 @@ public class WardrobeScreen extends Screen {
 					}
 				}
 				String more = "Settings";
-				float mw = UiFont.width(textRenderer, more) * 0.75f + 12;
+				float mw = UiFont.width(font, more) * 0.75f + 12;
 				float mxp = sx - 10 - mw;
 				boolean hm = in(mx, my, mxp, y + 11, mw, 13);
 				Render2D.roundRect(ctx, mxp, y + 11, mw, 13, 6, th.card(hm ? 1f : 0.5f));
-				UiFont.drawScaled(ctx, textRenderer, more, mxp + 6, y + 14.5f, 0.75f, th.text());
+				UiFont.drawScaled(ctx, font, more, mxp + 6, y + 14.5f, 0.75f, th.text());
 				final Module target = m;
-				listHit(mxp, y + 11, mw, 13, () -> client.setScreen(new ClickGuiScreen(this, Category.COSMETICS, target)));
+				listHit(mxp, y + 11, mw, 13, () -> minecraft.setScreen(new ClickGuiScreen(this, Category.COSMETICS, target)));
 			}
 			y += rowH;
 		}
 		return y - (listY - scroll);
 	}
 
-	private float drawPets(DrawContext ctx, int mx, int my, float dt) {
+	private float drawPets(GuiGraphics ctx, int mx, int my, float dt) {
 		Theme th = Theme.get();
 		Pets pets = WhiteClient.get().modules().get(Pets.class);
 		float y0 = listY - scroll;
@@ -427,8 +427,8 @@ public class WardrobeScreen extends Screen {
 		}
 		Render2D.roundRect(ctx, listX, y0, listW, 26, 8, th.card(0.6f));
 		Icons.paw(ctx, listX + 14, y0 + 13, 9, th.text());
-		UiFont.draw(ctx, textRenderer, "Pet", listX + 26, y0 + 9, th.text());
-		UiFont.drawScaled(ctx, textRenderer, "made of light · only you see it", listX + 48, y0 + 10, 0.75f, th.sub());
+		UiFont.draw(ctx, font, "Pet", listX + 26, y0 + 9, th.text());
+		UiFont.drawScaled(ctx, font, "made of light · only you see it", listX + 48, y0 + 10, 0.75f, th.sub());
 		drawToggle(ctx, listX + listW - 30, y0 + 7.5f, anim("petOn", pets.isEnabled() ? 1f : 0f, dt));
 		listHit(listX + listW - 34, y0, 34, 26, pets::toggle);
 
@@ -453,7 +453,7 @@ public class WardrobeScreen extends Screen {
 			} else {
 				Icons.paw(ctx, x + card / 2f, y - h + 12, 8, col);
 			}
-			UiFont.drawScaled(ctx, textRenderer, type, x + card / 2f - UiFont.width(textRenderer, type) * 0.4f, y - h + 22, 0.8f, col);
+			UiFont.drawScaled(ctx, font, type, x + card / 2f - UiFont.width(font, type) * 0.4f, y - h + 22, 0.8f, col);
 			listHit(x, y, card, 34, () -> {
 				pets.pet.set(type);
 				if (!pets.isEnabled()) {
@@ -470,14 +470,14 @@ public class WardrobeScreen extends Screen {
 	private static void openLink(String url) {
 		try {
 			if (url != null && !url.isBlank()) {
-				Util.getOperatingSystem().open(URI.create(url.trim()));
+				Util.getPlatform().openUri(URI.create(url.trim()));
 			}
 		} catch (Throwable ignored) {
 		}
 	}
 
 	@Override
-	public boolean mouseClicked(Click click, boolean doubled) {
+	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		double mx = click.x(), my = click.y();
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit h = hits.get(i);
@@ -499,9 +499,9 @@ public class WardrobeScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(KeyInput input) {
-		if (input.getKeycode() == GLFW.GLFW_KEY_ESCAPE) {
-			close();
+	public boolean keyPressed(KeyEvent input) {
+		if (input.input() == GLFW.GLFW_KEY_ESCAPE) {
+			onClose();
 			return true;
 		}
 		return super.keyPressed(input);

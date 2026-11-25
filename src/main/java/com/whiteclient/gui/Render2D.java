@@ -1,9 +1,9 @@
 package com.whiteclient.gui;
 
 import com.whiteclient.render.Colors;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import org.joml.Matrix3x2fStack;
 
 public final class Render2D {
@@ -13,10 +13,10 @@ public final class Render2D {
 	public static boolean legacy;
 
 	private static int scale() {
-		return Math.max(1, MinecraftClient.getInstance().getWindow().getScaleFactor());
+		return Math.max(1, Minecraft.getInstance().getWindow().getGuiScale());
 	}
 
-	public static void roundRect(DrawContext ctx, float x, float y, float w, float h, float radius, int argb) {
+	public static void roundRect(GuiGraphics ctx, float x, float y, float w, float h, float radius, int argb) {
 		if (w <= 0 || h <= 0 || (argb >>> 24) == 0) {
 			return;
 		}
@@ -24,7 +24,7 @@ public final class Render2D {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 
@@ -91,7 +91,7 @@ public final class Render2D {
 		return new float[]{X + inset, X + W - inset};
 	}
 
-	private static void fillSpan(DrawContext ctx, float l, float r, int py, int argb) {
+	private static void fillSpan(GuiGraphics ctx, float l, float r, int py, int argb) {
 		if (r <= l) {
 			return;
 		}
@@ -113,7 +113,7 @@ public final class Render2D {
 		}
 	}
 
-	public static void roundRectOutline(DrawContext ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
+	public static void roundRectOutline(GuiGraphics ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
 		if (w <= 0 || h <= 0 || (argb >>> 24) == 0) {
 			return;
 		}
@@ -121,7 +121,7 @@ public final class Render2D {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 		float X = x * s, Y = y * s, W = w * s, H = h * s;
@@ -148,12 +148,12 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	public static void roundRectGradient(DrawContext ctx, float x, float y, float w, float h, float radius, int topArgb, int bottomArgb) {
+	public static void roundRectGradient(GuiGraphics ctx, float x, float y, float w, float h, float radius, int topArgb, int bottomArgb) {
 		if (w <= 0 || h <= 0) {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 		float X = x * s, Y = y * s, W = w * s, H = h * s;
@@ -172,13 +172,13 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	public static void polygon(DrawContext ctx, float[] pts, int argb) {
+	public static void polygon(GuiGraphics ctx, float[] pts, int argb) {
 		int n = pts.length / 2;
 		if (n < 3 || (argb >>> 24) == 0) {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 		float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
@@ -209,7 +209,7 @@ public final class Render2D {
 		m.popMatrix();
 	}
 
-	public static void line(DrawContext ctx, float x1, float y1, float x2, float y2, float width, int argb) {
+	public static void line(GuiGraphics ctx, float x1, float y1, float x2, float y2, float width, int argb) {
 		float dx = x2 - x1, dy = y2 - y1;
 		float len = (float) Math.sqrt(dx * dx + dy * dy);
 		if (len < 1.0e-4f) {
@@ -219,7 +219,7 @@ public final class Render2D {
 		polygon(ctx, new float[]{x1 + nx, y1 + ny, x2 + nx, y2 + ny, x2 - nx, y2 - ny, x1 - nx, y1 - ny}, argb);
 	}
 
-	public static void hGradient(DrawContext ctx, float x, float y, float w, float h, int left, int right) {
+	public static void hGradient(GuiGraphics ctx, float x, float y, float w, float h, int left, int right) {
 		int steps = Math.max(2, Math.min(64, (int) w));
 		for (int i = 0; i < steps; i++) {
 			float x0 = x + w * i / steps;
@@ -229,26 +229,26 @@ public final class Render2D {
 		}
 	}
 
-	public static void roundRectBordered(DrawContext ctx, float x, float y, float w, float h, float radius, int fill, int border) {
+	public static void roundRectBordered(GuiGraphics ctx, float x, float y, float w, float h, float radius, int fill, int border) {
 		roundRect(ctx, x - 1, y - 1, w + 2, h + 2, radius + 1, border);
 		roundRect(ctx, x, y, w, h, radius, fill);
 	}
 
-	public static void circle(DrawContext ctx, float cx, float cy, float r, int argb) {
+	public static void circle(GuiGraphics ctx, float cx, float cy, float r, int argb) {
 		if (!legacy && Shapes.circle(ctx, cx, cy, r, argb)) {
 			return;
 		}
 		roundRect(ctx, cx - r, cy - r, r * 2, r * 2, r, argb);
 	}
 
-	public static void shadow(DrawContext ctx, float x, float y, float w, float h, float radius, int layers, int alpha) {
+	public static void shadow(GuiGraphics ctx, float x, float y, float w, float h, float radius, int layers, int alpha) {
 		for (int i = layers; i >= 1; i--) {
 			float a = alpha / (float) layers;
 			roundRect(ctx, x - i, y - i + 1, w + i * 2, h + i * 2, radius + i, Colors.withAlpha(0, (int) a));
 		}
 	}
 
-	public static void toggle(DrawContext ctx, float x, float y, float t) {
+	public static void toggle(GuiGraphics ctx, float x, float y, float t) {
 		float w = 20, h = 11;
 		int track = Colors.mixArgb(0xFF2A2A33, 0xFFF2F2F5, t);
 		roundRect(ctx, x, y, w, h, h / 2f, track);
@@ -257,24 +257,24 @@ public final class Render2D {
 		circle(ctx, knobX, y + h / 2f, 3.6f, knob);
 	}
 
-	public static void text(DrawContext ctx, TextRenderer tr, String s, float x, float y, int color) {
-		ctx.drawText(tr, s, Math.round(x), Math.round(y), color, false);
+	public static void text(GuiGraphics ctx, Font tr, String s, float x, float y, int color) {
+		ctx.drawString(tr, s, Math.round(x), Math.round(y), color, false);
 	}
 
-	public static void textCentered(DrawContext ctx, TextRenderer tr, String s, float cx, float y, int color) {
-		ctx.drawText(tr, s, Math.round(cx - tr.getWidth(s) / 2f), Math.round(y), color, false);
+	public static void textCentered(GuiGraphics ctx, Font tr, String s, float cx, float y, int color) {
+		ctx.drawString(tr, s, Math.round(cx - tr.width(s) / 2f), Math.round(y), color, false);
 	}
 
-	public static void textScaled(DrawContext ctx, TextRenderer tr, String s, float x, float y, float scale, int color) {
-		Matrix3x2fStack m = ctx.getMatrices();
+	public static void textScaled(GuiGraphics ctx, Font tr, String s, float x, float y, float scale, int color) {
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(x, y);
 		m.scale(scale, scale);
-		ctx.drawText(tr, s, 0, 0, color, false);
+		ctx.drawString(tr, s, 0, 0, color, false);
 		m.popMatrix();
 	}
 
-	public static void planetLogo(DrawContext ctx, float cx, float cy, float r, float time, int alpha) {
+	public static void planetLogo(GuiGraphics ctx, float cx, float cy, float r, float time, int alpha) {
 		double tilt = Math.toRadians(-20);
 		float ra = r * 1.95f, rb = r * 0.52f;
 		float dot = Math.max(0.45f, r * 0.085f);
@@ -309,12 +309,12 @@ public final class Render2D {
 
 	public static final float BIG_RING = 1.55f;
 
-	public static void bigPlanet(DrawContext ctx, float cx, float cy, float r, float time, float alpha) {
+	public static void bigPlanet(GuiGraphics ctx, float cx, float cy, float r, float time, float alpha) {
 		if (alpha <= 0.01f || r < 4) {
 			return;
 		}
 		if (!legacy && Shapes.ok()) {
-			net.minecraft.util.Identifier[] tex = Shapes.planet();
+			net.minecraft.resources.Identifier[] tex = Shapes.planet();
 			if (tex != null) {
 				bigPlanetFast(ctx, tex, cx, cy, r, time, alpha);
 			}
@@ -379,7 +379,7 @@ public final class Render2D {
 		}
 	}
 
-	private static void bigPlanetFast(DrawContext ctx, net.minecraft.util.Identifier[] tex, float cx, float cy, float r, float time, float alpha) {
+	private static void bigPlanetFast(GuiGraphics ctx, net.minecraft.resources.Identifier[] tex, float cx, float cy, float r, float time, float alpha) {
 		double tilt = Math.toRadians(-18);
 		float cos = (float) Math.cos(tilt), sin = (float) Math.sin(tilt);
 		float ra = r * BIG_RING, rb = r * 0.4f;
@@ -426,7 +426,7 @@ public final class Render2D {
 		}
 	}
 
-	public static void logo(DrawContext ctx, float cx, float cy, float size, float time) {
+	public static void logo(GuiGraphics ctx, float cx, float cy, float size, float time) {
 		float r = size * 0.42f;
 		roundRect(ctx, cx - size * 0.95f, cy - size * 0.16f, size * 1.9f, size * 0.32f, size * 0.16f, 0x55FFFFFF);
 		circle(ctx, cx, cy, r + 0.8f, 0x33FFFFFF);

@@ -1,23 +1,23 @@
 package com.whiteclient.render;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Vec3d;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 
 public final class WorldContext {
-	public final MinecraftClient client;
-	public final MatrixStack matrices;
-	public final VertexConsumerProvider consumers;
-	public final Vec3d cam;
+	public final Minecraft client;
+	public final PoseStack matrices;
+	public final MultiBufferSource consumers;
+	public final Vec3 cam;
 	public final Quaternionf camRotation;
 	public final float tickDelta;
 	public final float time;
 	public final float frameDelta;
 	public final GlowBatch glow;
 
-	public WorldContext(MinecraftClient client, MatrixStack matrices, VertexConsumerProvider consumers, Vec3d cam,
+	public WorldContext(Minecraft client, PoseStack matrices, MultiBufferSource consumers, Vec3 cam,
 						Quaternionf camRotation, float tickDelta, float time, float frameDelta, GlowBatch glow) {
 		this.client = client;
 		this.matrices = matrices;
@@ -43,6 +43,6 @@ public final class WorldContext {
 	}
 
 	public boolean thirdPerson() {
-		return client.options != null && !client.options.getPerspective().isFirstPerson();
+		return client.options != null && !client.options.getCameraType().isFirstPerson();
 	}
 }

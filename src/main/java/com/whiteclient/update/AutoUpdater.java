@@ -5,11 +5,10 @@ import com.google.gson.JsonParser;
 import com.whiteclient.WhiteClient;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.network.chat.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -183,18 +182,18 @@ public final class AutoUpdater {
 			return;
 		}
 		toast("WHITECLIENT " + v + " installed", "Restart Minecraft to start using it");
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		mc.execute(() -> chatNotice(mc));
 	}
 
-	public static void chatNotice(MinecraftClient mc) {
+	public static void chatNotice(Minecraft mc) {
 		String v = readyVersion;
-		if (v == null || mc.player == null || mc.inGameHud == null) {
+		if (v == null || mc.player == null || mc.gui == null) {
 			return;
 		}
-		mc.inGameHud.getChatHud().addMessage(Text.literal("[WHITECLIENT] ").formatted(Formatting.WHITE)
-				.append(Text.literal("Update " + v + " is installed. ").formatted(Formatting.GREEN))
-				.append(Text.literal("Restart Minecraft to use it, rejoining isn't enough.").formatted(Formatting.GRAY)));
+		mc.gui.getChat().addMessage(Component.literal("[WHITECLIENT] ").withStyle(ChatFormatting.WHITE)
+				.append(Component.literal("Update " + v + " is installed. ").withStyle(ChatFormatting.GREEN))
+				.append(Component.literal("Restart Minecraft to use it, rejoining isn't enough.").withStyle(ChatFormatting.GRAY)));
 	}
 
 	public static Path download(HttpClient http, String latest, Path dir) throws Exception {
@@ -326,9 +325,9 @@ public final class AutoUpdater {
 
 	private static void toast(String title, String text) {
 		try {
-			MinecraftClient mc = MinecraftClient.getInstance();
-			mc.execute(() -> SystemToast.show(mc.getToastManager(), SystemToast.Type.PERIODIC_NOTIFICATION,
-					Text.literal(title), Text.literal(text)));
+			Minecraft mc = Minecraft.getInstance();
+			mc.execute(() -> SystemToast.addOrUpdate(mc.getToastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+					Component.literal(title), Component.literal(text)));
 		} catch (Throwable ignored) {
 		}
 	}

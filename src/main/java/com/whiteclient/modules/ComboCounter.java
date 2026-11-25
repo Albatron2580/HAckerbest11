@@ -8,9 +8,9 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ModeSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class ComboCounter extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Right", HudLayout.POSITIONS));
@@ -24,8 +24,8 @@ public class ComboCounter extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
-		MinecraftClient mc = MinecraftClient.getInstance();
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
+		Minecraft mc = Minecraft.getInstance();
 		int combo = CombatTracker.combo();
 		long age = System.currentTimeMillis() - CombatTracker.comboAt();
 		if (combo != lastCombo) {
@@ -38,15 +38,15 @@ public class ComboCounter extends Module {
 		if (a <= 0.02f) {
 			return;
 		}
-		TextRenderer tr = mc.textRenderer;
+		Font tr = mc.font;
 		String num = String.valueOf(combo);
 		String label = combo == 1 ? " hit" : " combo";
-		float w = tr.getWidth(num) * 1.5f + tr.getWidth(label) + 16, h = 20;
+		float w = tr.width(num) * 1.5f + tr.width(label) + 16, h = 20;
 		float[] p = HudLayout.place(position.get(), w, h);
 		Hud.panel(ctx, p[0], p[1], w, h, a);
 		float pop = 1f + 0.35f * Math.max(0f, 1f - (System.currentTimeMillis() - popAt) / 250f);
 		float s = 1.5f * pop;
 		Render2D.textScaled(ctx, tr, num, p[0] + 8, p[1] + 10 - 4 * s, s, Hud.alpha(Hud.TEXT, a));
-		Render2D.text(ctx, tr, label, p[0] + 8 + tr.getWidth(num) * 1.5f, p[1] + 7, Hud.alpha(Hud.SUB, a));
+		Render2D.text(ctx, tr, label, p[0] + 8 + tr.width(num) * 1.5f, p[1] + 7, Hud.alpha(Hud.SUB, a));
 	}
 }

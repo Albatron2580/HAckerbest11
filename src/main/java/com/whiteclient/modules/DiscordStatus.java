@@ -9,12 +9,11 @@ import com.whiteclient.setting.ActionSetting;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.World;
-
 import java.util.UUID;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.world.level.Level;
 
 public class DiscordStatus extends Module {
 	public static final String APP_ID = "1574503180992249856";
@@ -76,14 +75,14 @@ public class DiscordStatus extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
+	public void onTick(Minecraft mc) {
 		ensure();
-		boolean focused = mc.isWindowFocused();
+		boolean focused = mc.isWindowActive();
 		if (focused && !wasFocused) {
 			ipc.bump();
 		}
 		wasFocused = focused;
-		boolean inWorld = mc.world != null;
+		boolean inWorld = mc.level != null;
 		if (inWorld && !wasInWorld) {
 			worldStart = System.currentTimeMillis() / 1000L;
 			tick = 0;
@@ -102,30 +101,30 @@ public class DiscordStatus extends Module {
 		}
 	}
 
-	private JsonObject build(MinecraftClient mc) {
+	private JsonObject build(Minecraft mc) {
 		JsonObject act = new JsonObject();
 		String details;
 		String state = null;
-		ClientWorld world = mc.world;
+		ClientLevel world = mc.level;
 		if (world == null) {
 			details = "In the main menu";
 		} else {
-			ServerInfo info = mc.getCurrentServerEntry();
-			if (mc.isInSingleplayer() || mc.isIntegratedServerRunning()) {
+			ServerData info = mc.getCurrentServer();
+			if (mc.isLocalServer() || mc.hasSingleplayerServer()) {
 				details = "Playing singleplayer";
 			} else if (info != null && info.isRealm()) {
 				details = "Playing on Realms";
-			} else if (info != null && showServer.isOn() && info.address != null && !info.address.isBlank()) {
-				details = "Playing on " + info.address.trim();
+			} else if (info != null && showServer.isOn() && info.ip != null && !info.ip.isBlank()) {
+				details = "Playing on " + info.ip.trim();
 			} else {
 				details = "Playing multiplayer";
 			}
 			if (showWorld.isOn()) {
-				if (world.getRegistryKey() == World.NETHER) {
+				if (world.dimension() == Level.NETHER) {
 					state = "In the Nether";
-				} else if (world.getRegistryKey() == World.END) {
+				} else if (world.dimension() == Level.END) {
 					state = "In the End";
-				} else if (world.getRegistryKey() == World.OVERWORLD) {
+				} else if (world.dimension() == Level.OVERWORLD) {
 					state = "In the Overworld";
 				}
 			}
@@ -150,8 +149,8 @@ public class DiscordStatus extends Module {
 			assets.addProperty("large_text", "WHITECLIENT " + WhiteClient.VERSION + " · visuals client");
 		}
 		if (showHead.isOn()) {
-			String name = mc.getSession().getUsername();
-			UUID id = mc.getSession().getUuidOrNull();
+			String name = mc.getUser().getName();
+			UUID id = mc.getUser().getProfileId();
 			String who = id != null ? id.toString().replace("-", "") : name;
 			assets.addProperty("small_image", "https://mc-heads.net/avatar/" + who + "/64");
 			assets.addProperty("small_text", fit(name));

@@ -1,21 +1,21 @@
 package com.whiteclient.render;
 
 import com.whiteclient.WhiteClient;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
 
 import java.util.Arrays;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.Identifier;
 
 public final class SolidBatch {
 	private static final int FLOATS = 12;
@@ -24,11 +24,11 @@ public final class SolidBatch {
 	private long[] order = new long[256];
 	private int count;
 
-	private static RenderLayer layer;
+	private static RenderType layer;
 	private static boolean triangles;
 	private static boolean resolved;
 	private static boolean entityFormat;
-	private static final Identifier WHITE = Identifier.of(WhiteClient.MOD_ID, "dynamic/solid_white");
+	private static final Identifier WHITE = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "dynamic/solid_white");
 
 	private void ensure() {
 		if (count >= order.length) {
@@ -76,17 +76,17 @@ public final class SolidBatch {
 		}
 		resolved = true;
 		try {
-			NativeImageBackedTexture white = new NativeImageBackedTexture(() -> "whiteclient_solid_white", 4, 4, false);
-			NativeImage img = white.getImage();
+			DynamicTexture white = new DynamicTexture(() -> "whiteclient_solid_white", 4, 4, false);
+			NativeImage img = white.getPixels();
 			for (int y = 0; y < 4; y++) {
 				for (int x = 0; x < 4; x++) {
-					img.setColorArgb(x, y, 0xFFFFFFFF);
+					img.setPixel(x, y, 0xFFFFFFFF);
 				}
 			}
 			white.upload();
-			MinecraftClient.getInstance().getTextureManager().registerTexture(WHITE, white);
-			RenderLayer l = RenderLayers.entityTranslucent(WHITE);
-			if (l.getVertexFormat() == VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL && l.getDrawMode() == VertexFormat.DrawMode.QUADS) {
+			Minecraft.getInstance().getTextureManager().register(WHITE, white);
+			RenderType l = RenderTypes.entityTranslucent(WHITE);
+			if (l.format() == DefaultVertexFormat.NEW_ENTITY && l.mode() == VertexFormat.Mode.QUADS) {
 				layer = l;
 				entityFormat = true;
 				WhiteClient.LOGGER.info("[WHITECLIENT] solid layer: {} (entity, depth)", l);
@@ -96,12 +96,12 @@ public final class SolidBatch {
 			WhiteClient.LOGGER.warn("[WHITECLIENT] entity solid layer unavailable, using debug quads", t);
 		}
 		try {
-			RenderLayer l = RenderLayers.debugQuads();
-			if (l.getVertexFormat() == VertexFormats.POSITION_COLOR) {
-				VertexFormat.DrawMode mode = l.getDrawMode();
-				if (mode == VertexFormat.DrawMode.QUADS || mode == VertexFormat.DrawMode.TRIANGLES) {
+			RenderType l = RenderTypes.debugQuads();
+			if (l.format() == DefaultVertexFormat.POSITION_COLOR) {
+				VertexFormat.Mode mode = l.mode();
+				if (mode == VertexFormat.Mode.QUADS || mode == VertexFormat.Mode.TRIANGLES) {
 					layer = l;
-					triangles = mode == VertexFormat.DrawMode.TRIANGLES;
+					triangles = mode == VertexFormat.Mode.TRIANGLES;
 					WhiteClient.LOGGER.info("[WHITECLIENT] solid layer: {} ({})", l, mode);
 					return;
 				}
@@ -112,7 +112,7 @@ public final class SolidBatch {
 		WhiteClient.LOGGER.warn("[WHITECLIENT] no solid render layer; models disabled");
 	}
 
-	public void draw(VertexConsumerProvider consumers, Matrix4f m) {
+	public void draw(MultiBufferSource consumers, Matrix4f m) {
 		if (count == 0) {
 			return;
 		}
@@ -160,22 +160,22 @@ public final class SolidBatch {
 			return;
 		}
 		if (triangles) {
-			vc.vertex(m, x1, y1, z1).color(c1);
-			vc.vertex(m, x2, y2, z2).color(c2);
-			vc.vertex(m, x3, y3, z3).color(c3);
-			vc.vertex(m, x1, y1, z1).color(c1);
-			vc.vertex(m, x3, y3, z3).color(c3);
-			vc.vertex(m, x4, y4, z4).color(c4);
+			vc.addVertex(m, x1, y1, z1).setColor(c1);
+			vc.addVertex(m, x2, y2, z2).setColor(c2);
+			vc.addVertex(m, x3, y3, z3).setColor(c3);
+			vc.addVertex(m, x1, y1, z1).setColor(c1);
+			vc.addVertex(m, x3, y3, z3).setColor(c3);
+			vc.addVertex(m, x4, y4, z4).setColor(c4);
 		} else {
-			vc.vertex(m, x1, y1, z1).color(c1);
-			vc.vertex(m, x2, y2, z2).color(c2);
-			vc.vertex(m, x3, y3, z3).color(c3);
-			vc.vertex(m, x4, y4, z4).color(c4);
+			vc.addVertex(m, x1, y1, z1).setColor(c1);
+			vc.addVertex(m, x2, y2, z2).setColor(c2);
+			vc.addVertex(m, x3, y3, z3).setColor(c3);
+			vc.addVertex(m, x4, y4, z4).setColor(c4);
 		}
 	}
 
 	private static void ent(VertexConsumer vc, Matrix4f m, float x, float y, float z, int c) {
-		vc.vertex(m, x, y, z).color(c).texture(0.5f, 0.5f).overlay(OverlayTexture.DEFAULT_UV)
-				.light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 1f, 0f);
+		vc.addVertex(m, x, y, z).setColor(c).setUv(0.5f, 0.5f).setOverlay(OverlayTexture.NO_OVERLAY)
+				.setLight(LightTexture.FULL_BRIGHT).setNormal(0f, 1f, 0f);
 	}
 }

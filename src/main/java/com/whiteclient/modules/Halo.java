@@ -8,9 +8,9 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import com.whiteclient.render.CosmeticTargets;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
 
 public class Halo extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -31,16 +31,16 @@ public class Halo extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		for (PlayerEntity player : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), range.get())) {
+		for (Player player : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), range.get())) {
 			render(ctx, player);
 		}
 	}
 
-	private void render(WorldContext ctx, PlayerEntity player) {
+	private void render(WorldContext ctx, Player player) {
 		float td = ctx.tickDelta;
-		Vec3d p = player.getLerpedPos(td);
-		float yaw = player.getYaw(td);
-		float pitch = player.getPitch(td);
+		Vec3 p = player.getPosition(td);
+		float yaw = player.getViewYRot(td);
+		float pitch = player.getViewXRot(td);
 
 		V3 fwd = V3.forward(yaw);
 		V3 right = V3.right(yaw);
@@ -49,7 +49,7 @@ public class Halo extends Module {
 		V3 ringX = right;
 		V3 ringZ = fwd.rotate(right, tilt);
 
-		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getHeight() - 0.32), ctx.rz(p.z));
+		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getBbHeight() - 0.32), ctx.rz(p.z));
 		V3 center = neck.add(up, 0.36f + height.getFloat());
 
 		GlowBatch g = ctx.glow;

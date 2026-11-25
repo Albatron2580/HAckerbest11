@@ -1,11 +1,10 @@
 package com.whiteclient.render;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerEntity;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
 
 public final class CosmeticTargets {
 	private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
@@ -13,22 +12,22 @@ public final class CosmeticTargets {
 	private CosmeticTargets() {
 	}
 
-	public static boolean visible(PlayerEntity p) {
+	public static boolean visible(Player p) {
 		if (!p.isInvisible()) {
 			return true;
 		}
 		for (EquipmentSlot slot : ARMOR) {
-			if (p.hasStackEquipped(slot)) {
+			if (p.hasItemInSlot(slot)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public static List<PlayerEntity> collect(WorldContext ctx, boolean self, boolean selfFirstPerson, boolean others, double maxDist) {
-		List<PlayerEntity> out = new ArrayList<>();
-		MinecraftClient mc = ctx.client;
-		if (mc.player == null || mc.world == null) {
+	public static List<Player> collect(WorldContext ctx, boolean self, boolean selfFirstPerson, boolean others, double maxDist) {
+		List<Player> out = new ArrayList<>();
+		Minecraft mc = ctx.client;
+		if (mc.player == null || mc.level == null) {
 			return out;
 		}
 		if (self && (ctx.thirdPerson() || selfFirstPerson) && visible(mc.player)) {
@@ -36,7 +35,7 @@ public final class CosmeticTargets {
 		}
 		if (others) {
 			double max2 = maxDist * maxDist;
-			for (PlayerEntity p : mc.world.getPlayers()) {
+			for (Player p : mc.level.players()) {
 				if (p == mc.player || p.isSpectator() || !p.isAlive() || !visible(p)) {
 					continue;
 				}

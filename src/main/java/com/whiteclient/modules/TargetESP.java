@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
@@ -10,14 +11,13 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -40,7 +40,7 @@ public class TargetESP extends Module {
 
 	private Entity shown;
 	private float alpha;
-	private Vec3d smoothPos;
+	private Vec3 smoothPos;
 	private float smoothW = 0.6f, smoothH = 1.8f;
 	private float spin;
 
@@ -48,29 +48,29 @@ public class TargetESP extends Module {
 		super("Target ESP", "Effects that spin around your target", Category.PVP, true);
 	}
 
-	private boolean valid(Entity e, MinecraftClient mc) {
+	private boolean valid(Entity e, Minecraft mc) {
 		if (!(e instanceof LivingEntity living) || e == mc.player || !living.isAlive() || Pets.isPet(e)) {
 			return false;
 		}
 		if (e.isInvisible()) {
 			return false;
 		}
-		boolean isPlayer = e instanceof PlayerEntity;
+		boolean isPlayer = e instanceof Player;
 		if (isPlayer ? !players.isOn() : !mobs.isOn()) {
 			return false;
 		}
-		return mc.player == null || e.squaredDistanceTo(mc.player) < 48 * 48;
+		return mc.player == null || e.distanceToSqr(mc.player) < 48 * 48;
 	}
 
-	private Entity pick(MinecraftClient mc) {
+	private Entity pick(Minecraft mc) {
 		if (forcedTarget != null && forcedTarget.isAlive()) {
 			return forcedTarget;
 		}
 		Entity hit = com.whiteclient.combat.CombatTracker.lastHit((long) (hold.get() * 1000));
-		if (hit != null && (mc.world == null || mc.world.getEntityById(hit.getId()) != hit || !valid(hit, mc))) {
+		if (hit != null && (mc.level == null || mc.level.getEntity(hit.getId()) != hit || !valid(hit, mc))) {
 			hit = null;
 		}
-		Entity look = valid(mc.targetedEntity, mc) ? mc.targetedEntity : null;
+		Entity look = valid(mc.crosshairPickEntity, mc) ? mc.crosshairPickEntity : null;
 		return switch (target.get()) {
 			case "Last Hit" -> hit;
 			case "Crosshair" -> look;
@@ -80,7 +80,7 @@ public class TargetESP extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		MinecraftClient mc = ctx.client;
+		Minecraft mc = ctx.client;
 		Entity now = pick(mc);
 		float dt = ctx.frameDelta;
 		if (now != null) {
@@ -100,16 +100,16 @@ public class TargetESP extends Module {
 			}
 			return;
 		}
-		Vec3d p = shown.getLerpedPos(ctx.tickDelta);
+		Vec3 p = shown.getPosition(ctx.tickDelta);
 		if (smoothPos == null) {
 			smoothPos = p;
-			smoothW = shown.getWidth();
-			smoothH = shown.getHeight();
+			smoothW = shown.getBbWidth();
+			smoothH = shown.getBbHeight();
 		} else {
 			float k = Math.min(1f, dt * 20f);
-			smoothPos = smoothPos.add(p.subtract(smoothPos).multiply(k));
-			smoothW += (shown.getWidth() - smoothW) * k;
-			smoothH += (shown.getHeight() - smoothH) * k;
+			smoothPos = smoothPos.add(p.subtract(smoothPos).scale(k));
+			smoothW += (shown.getBbWidth() - smoothW) * k;
+			smoothH += (shown.getBbHeight() - smoothH) * k;
 		}
 		spin += dt * speed.getFloat();
 
@@ -234,9 +234,9 @@ public class TargetESP extends Module {
 		GlowBatch g = ctx.glow;
 		int count = 5;
 		String[] suits = {"♠", "♥", "♦", "♣", "★"};
-		TextRenderer tr = ctx.client.textRenderer;
-		MatrixStack ms = ctx.matrices;
-		int light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
+		Font tr = ctx.client.font;
+		PoseStack ms = ctx.matrices;
+		int light = LightTexture.FULL_BRIGHT;
 		float cw = 0.34f * size.getFloat(), ch = 0.48f * size.getFloat();
 		for (int i = 0; i < count; i++) {
 			double ang = spin * 1.1 + Math.PI * 2 * i / count;
@@ -263,19 +263,19 @@ public class TargetESP extends Module {
 			g.disc(center.x(), center.y(), center.z(), ch * 0.9f, col, 0.08f * a, 12);
 
 			if (a > 0.15f) {
-				ms.push();
+				ms.pushPose();
 				V3 tp = center.add(out, 0.01f);
 				ms.translate(tp.x(), tp.y(), tp.z());
 				float yaw = (float) Math.atan2(out.x(), out.z());
-				ms.multiply(new Quaternionf().rotationY(yaw).rotateZ(-tilt));
+				ms.mulPose(new Quaternionf().rotationY(yaw).rotateZ(-tilt));
 				float s = 0.034f * size.getFloat();
 				ms.scale(s, -s, s);
-				Matrix4f m = ms.peek().getPositionMatrix();
+				Matrix4f m = ms.last().pose();
 				String suit = suits[i % suits.length];
 				boolean red = i % suits.length == 1 || i % suits.length == 2;
 				int tc = Colors.argb(red ? 0xFF4D6A : 0x15151B, Math.min(1f, alpha));
-				tr.draw(suit, -tr.getWidth(suit) / 2f, -4f, tc, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-				ms.pop();
+				tr.drawInBatch(suit, -tr.width(suit) / 2f, -4f, tc, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+				ms.popPose();
 			}
 		}
 	}

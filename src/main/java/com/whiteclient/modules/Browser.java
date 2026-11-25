@@ -3,6 +3,7 @@ package com.whiteclient.modules;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.browser.WebView;
@@ -16,14 +17,12 @@ import com.whiteclient.render.Colors;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.GpuSampler;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.OptionalDouble;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
 
 public class Browser extends Module {
 	public final TextSetting home = add(new TextSetting("Home Page", "https://www.google.com", 300));
@@ -72,9 +71,9 @@ public class Browser extends Module {
 	}
 
 	public void open() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		WebView.startEngine();
-		mc.setScreen(new BrowserScreen(mc.currentScreen, this));
+		mc.setScreen(new BrowserScreen(mc.screen, this));
 	}
 
 	@Override
@@ -113,7 +112,7 @@ public class Browser extends Module {
 		winH.set((double) (h / screenH));
 	}
 
-	public static boolean drawPage(DrawContext ctx, WebView v, float x, float y, float w, float h, float alpha) {
+	public static boolean drawPage(GuiGraphics ctx, WebView v, float x, float y, float w, float h, float alpha) {
 		if (v == null) {
 			return false;
 		}
@@ -121,8 +120,8 @@ public class Browser extends Module {
 		if (b != null) {
 			v.zoom(b.zoom.get());
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
-		int s = Math.max(1, mc.getWindow().getScaleFactor());
+		Minecraft mc = Minecraft.getInstance();
+		int s = Math.max(1, mc.getWindow().getGuiScale());
 		int x0 = Math.round(x), y0 = Math.round(y), x1 = Math.round(x + w), y1 = Math.round(y + h);
 		v.resize((x1 - x0) * s, (y1 - y0) * s);
 		GpuTextureView tex = v.texture();
@@ -144,20 +143,20 @@ public class Browser extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		if (!pin.isOn() || view == null || mc.currentScreen != null) {
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!pin.isOn() || view == null || mc.screen != null) {
 			return;
 		}
-		float[] r = rect(ctx.getScaledWindowWidth(), ctx.getScaledWindowHeight());
+		float[] r = rect(ctx.guiWidth(), ctx.guiHeight());
 		float a = opacity.getFloat();
 		Render2D.shadow(ctx, r[0], r[1], r[2], r[3], 9, 6, (int) (70 * a));
 		Render2D.roundRect(ctx, r[0], r[1], r[2], r[3], 9, Colors.argb(0x0B0B0F, 0.92f * a));
 		float bar = 13;
 		String host = host(view.url());
-		UiFont.drawScaled(ctx, mc.textRenderer, host, r[0] + 9, r[1] + 3.5f, 0.72f, Colors.argb(0xFFFFFF, 0.75f * a));
+		UiFont.drawScaled(ctx, mc.font, host, r[0] + 9, r[1] + 3.5f, 0.72f, Colors.argb(0xFFFFFF, 0.75f * a));
 		String hint = "B to use";
-		UiFont.drawScaled(ctx, mc.textRenderer, hint, r[0] + r[2] - 9 - UiFont.width(mc.textRenderer, hint) * 0.72f, r[1] + 3.5f, 0.72f,
+		UiFont.drawScaled(ctx, mc.font, hint, r[0] + r[2] - 9 - UiFont.width(mc.font, hint) * 0.72f, r[1] + 3.5f, 0.72f,
 				Colors.argb(0xFFFFFF, 0.45f * a));
 		drawPage(ctx, view, r[0] + 3, r[1] + bar, r[2] - 6, r[3] - bar - 3, a);
 	}

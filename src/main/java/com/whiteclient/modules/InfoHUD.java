@@ -8,16 +8,15 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ModeSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.util.math.Vec3d;
-
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.world.phys.Vec3;
 
 public class InfoHUD extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Top Left", HudLayout.POSITIONS));
@@ -30,7 +29,7 @@ public class InfoHUD extends Module {
 	public final BoolSetting clock = add(new BoolSetting("Clock", true));
 	public final BoolSetting day = add(new BoolSetting("Day", false));
 
-	private Vec3d lastPos;
+	private Vec3 lastPos;
 	private float speedBps;
 
 	public InfoHUD() {
@@ -38,12 +37,12 @@ public class InfoHUD extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
+	public void onTick(Minecraft mc) {
 		if (mc.player == null) {
 			lastPos = null;
 			return;
 		}
-		Vec3d p = mc.player.getEntityPos();
+		Vec3 p = mc.player.position();
 		if (lastPos != null) {
 			double dx = p.x - lastPos.x, dz = p.z - lastPos.z;
 			float bps = (float) Math.sqrt(dx * dx + dz * dz) * 20f;
@@ -59,8 +58,8 @@ public class InfoHUD extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
-		MinecraftClient mc = MinecraftClient.getInstance();
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
+		Minecraft mc = Minecraft.getInstance();
 		if (mc.player == null) {
 			return;
 		}
@@ -69,7 +68,7 @@ public class InfoHUD extends Module {
 			rows.add(new String[]{"XYZ", String.format(Locale.ROOT, "%d  %d  %d", (int) Math.floor(mc.player.getX()), (int) Math.floor(mc.player.getY()), (int) Math.floor(mc.player.getZ()))});
 		}
 		if (direction.isOn()) {
-			rows.add(new String[]{"Facing", facing(mc.player.getYaw())});
+			rows.add(new String[]{"Facing", facing(mc.player.getYRot())});
 		}
 		if (speed.isOn()) {
 			rows.add(new String[]{"Speed", String.format(Locale.ROOT, "%.1f m/s", speedBps)});
@@ -78,27 +77,27 @@ public class InfoHUD extends Module {
 			rows.add(new String[]{"CPS", ClickCounter.left() + "  |  " + ClickCounter.right()});
 		}
 		if (fps.isOn()) {
-			rows.add(new String[]{"FPS", String.valueOf(mc.getCurrentFps())});
+			rows.add(new String[]{"FPS", String.valueOf(mc.getFps())});
 		}
 		if (ping.isOn()) {
-			PlayerListEntry e = mc.getNetworkHandler() == null ? null : mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+			PlayerInfo e = mc.getConnection() == null ? null : mc.getConnection().getPlayerInfo(mc.player.getUUID());
 			rows.add(new String[]{"Ping", (e == null ? 0 : e.getLatency()) + " ms"});
 		}
 		if (clock.isOn()) {
 			LocalTime t = LocalTime.now();
 			rows.add(new String[]{"Time", String.format(Locale.ROOT, "%02d:%02d", t.getHour(), t.getMinute())});
 		}
-		if (day.isOn() && mc.world != null) {
-			rows.add(new String[]{"Day", String.valueOf(mc.world.getTimeOfDay() / 24000L + 1)});
+		if (day.isOn() && mc.level != null) {
+			rows.add(new String[]{"Day", String.valueOf(mc.level.getDayTime() / 24000L + 1)});
 		}
 		if (rows.isEmpty()) {
 			return;
 		}
-		TextRenderer tr = mc.textRenderer;
+		Font tr = mc.font;
 		float labelW = 0, valueW = 0;
 		for (String[] r : rows) {
-			labelW = Math.max(labelW, tr.getWidth(r[0]));
-			valueW = Math.max(valueW, tr.getWidth(r[1]));
+			labelW = Math.max(labelW, tr.width(r[0]));
+			valueW = Math.max(valueW, tr.width(r[1]));
 		}
 		float lh = 11;
 		float w = 8 + labelW + 10 + valueW + 8, h = 6 + rows.size() * lh + 2;

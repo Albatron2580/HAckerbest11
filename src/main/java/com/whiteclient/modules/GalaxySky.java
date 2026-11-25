@@ -90,7 +90,7 @@ public class GalaxySky extends Module {
 		if (builtFor != count) {
 			build(count);
 		}
-		int viewBlocks = ctx.client.options.getClampedViewDistance() * 16;
+		int viewBlocks = ctx.client.options.getEffectiveRenderDistance() * 16;
 		float dist = Math.max(40f, Math.min(110f, viewBlocks * 0.55f));
 		GlowBatch g = ctx.glow;
 		float bright = brightness.getFloat();

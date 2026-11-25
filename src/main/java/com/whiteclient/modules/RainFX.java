@@ -9,20 +9,19 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.LightType;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.Heightmap;
-
 import java.util.Random;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class RainFX extends Module {
 	public final BoolSetting streaks = add(new BoolSetting("Glow Streaks", true));
@@ -70,7 +69,7 @@ public class RainFX extends Module {
 	private int wcx = Integer.MIN_VALUE, wcz, wcy;
 	private float wRefresh;
 	private float wetness;
-	private ClientWorld wetWorld;
+	private ClientLevel wetWorld;
 	private final SolidBatch puddleBase = new SolidBatch();
 
 	public RainFX() {
@@ -84,26 +83,26 @@ public class RainFX extends Module {
 		wetness = 0;
 	}
 
-	private float rainStrength(MinecraftClient mc, float td) {
-		if (mc.world == null) {
+	private float rainStrength(Minecraft mc, float td) {
+		if (mc.level == null) {
 			return 0;
 		}
-		float g = mc.world.getRainGradient(td);
+		float g = mc.level.getRainLevel(td);
 		return always.isOn() ? Math.max(g, 1f) : g;
 	}
 
-	private double surface(ClientWorld world, double x, double z, double playerY) {
+	private double surface(ClientLevel world, double x, double z, double playerY) {
 		int bx = (int) Math.floor(x), bz = (int) Math.floor(z);
-		int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, bx, bz);
+		int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
 		if (Math.abs(top - playerY) > 24) {
 			return Double.NaN;
 		}
 		BlockPos pos = new BlockPos(bx, top, bz);
-		if (!always.isOn() && !world.hasRain(pos)) {
+		if (!always.isOn() && !world.isRainingAt(pos)) {
 			return Double.NaN;
 		}
 		double y = top;
-		if (!world.getFluidState(pos.down()).isEmpty()) {
+		if (!world.getFluidState(pos.below()).isEmpty()) {
 			y -= 0.11;
 		}
 		return y + 0.02;
@@ -140,7 +139,7 @@ public class RainFX extends Module {
 		}
 	}
 
-	private void respawnStreak(int i, Vec3d p, ClientWorld world, float r, boolean anywhere) {
+	private void respawnStreak(int i, Vec3 p, ClientLevel world, float r, boolean anywhere) {
 		double ang = random.nextDouble() * Math.PI * 2;
 		double dist = Math.sqrt(random.nextDouble()) * r;
 		sx[i] = p.x + Math.cos(ang) * dist;
@@ -154,15 +153,15 @@ public class RainFX extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		MinecraftClient mc = ctx.client;
-		ClientWorld world = mc.world;
+		Minecraft mc = ctx.client;
+		ClientLevel world = mc.level;
 		if (world == null || mc.player == null) {
 			return;
 		}
 		float strength = rainStrength(mc, ctx.tickDelta);
 		rainLevel = strength;
 		float dt = Math.min(0.05f, ctx.frameDelta);
-		Vec3d p = mc.player.getLerpedPos(ctx.tickDelta);
+		Vec3 p = mc.player.getPosition(ctx.tickDelta);
 		float r = radius.getFloat();
 		GlowBatch g = ctx.glow;
 		int rgb = color.rgb();
@@ -249,7 +248,7 @@ public class RainFX extends Module {
 		wetGround(ctx, world, p, strength, dt);
 	}
 
-	private void wetGround(WorldContext ctx, ClientWorld world, Vec3d p, float strength, float dt) {
+	private void wetGround(WorldContext ctx, ClientLevel world, Vec3 p, float strength, float dt) {
 		if (world != wetWorld) {
 			wetWorld = world;
 			wetness = strength;
@@ -336,12 +335,12 @@ public class RainFX extends Module {
 		}
 		debugWetQuads = quads;
 		debugPuddleCells = cells;
-		puddleBase.draw(ctx.consumers, ctx.matrices.peek().getPositionMatrix());
+		puddleBase.draw(ctx.consumers, ctx.matrices.last().pose());
 	}
 
 	public int debugWetQuads, debugPuddleCells;
 
-	private int puddle(WorldContext ctx, GlowBatch g, int gx, int gz, int x0, int z0, float top, Vec3d p, float reach,
+	private int puddle(WorldContext ctx, GlowBatch g, int gx, int gz, int x0, int z0, float top, Vec3 p, float reach,
 					   float th, float alpha, int sky, float warmW) {
 		float yb = ctx.ry(top + 0.006f), ys = ctx.ry(top + 0.014f);
 		float step = 1f / SUB;
@@ -417,7 +416,7 @@ public class RainFX extends Module {
 		return 0.05f + 0.95f * k * k * (float) Math.sqrt(k);
 	}
 
-	private static float edgeFade(Vec3d p, double wx, double wz, float reach) {
+	private static float edgeFade(Vec3 p, double wx, double wz, float reach) {
 		double hx = wx - p.x, hz = wz - p.z;
 		double hd = Math.sqrt(hx * hx + hz * hz);
 		return (float) Math.max(0, Math.min(1, (reach - hd) / 3.5));
@@ -427,7 +426,7 @@ public class RainFX extends Module {
 		return warm > 0.02f ? Colors.mix(sky, 0xFFB466, Math.min(1f, warm * 0.9f)) : sky;
 	}
 
-	private static int wetCol(float vx, float vy, float vz, Vec3d p, double wx, double wz, float reach, float noise, float alpha,
+	private static int wetCol(float vx, float vy, float vz, Vec3 p, double wx, double wz, float reach, float noise, float alpha,
 							  int sky, float warm) {
 		if (vy > 0) {
 			return 0;
@@ -436,7 +435,7 @@ public class RainFX extends Module {
 		return Colors.argb(tint(sky, warm), Math.min(1f, a));
 	}
 
-	private static int puddleCol(float vx, float vy, float vz, Vec3d p, double wx, double wz, float reach, float m, float alpha,
+	private static int puddleCol(float vx, float vy, float vz, Vec3 p, double wx, double wz, float reach, float m, float alpha,
 								 int sky, float warm) {
 		if (vy > 0 || m <= 0) {
 			return 0;
@@ -447,17 +446,17 @@ public class RainFX extends Module {
 		return Colors.argb(tint(sky, warm), Math.min(1f, a));
 	}
 
-	private static float dayLight(ClientWorld world) {
-		long tod = Math.floorMod(world.getTimeOfDay(), 24000L);
+	private static float dayLight(ClientLevel world) {
+		long tod = Math.floorMod(world.getDayTime(), 24000L);
 		double ang = (tod - 6000) / 24000.0 * Math.PI * 2;
 		return (float) Math.max(0, Math.min(1, 0.5 + Math.cos(ang) * 0.9));
 	}
 
-	private void refreshWet(ClientWorld world, int bx, int by, int bz) {
+	private void refreshWet(ClientLevel world, int bx, int by, int bz) {
 		wcx = bx;
 		wcz = bz;
 		wcy = by;
-		BlockPos.Mutable m = new BlockPos.Mutable();
+		BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
 		boolean any = always.isOn();
 		for (int gz = 0; gz < WN; gz++) {
 			for (int gx = 0; gx < WN; gx++) {
@@ -475,10 +474,10 @@ public class RainFX extends Module {
 					continue;
 				}
 				m.set(bx - WR + gx, (int) Math.ceil(t - 0.01f), bz - WR + gz);
-				wLight[i] = Math.max(0, world.getLightLevel(LightType.BLOCK, m) - 5) / 10f;
+				wLight[i] = Math.max(0, world.getBrightness(LightLayer.BLOCK, m) - 5) / 10f;
 				m.set(bx - WR + gx, (int) Math.ceil(t - 0.01f) - 1, bz - WR + gz);
 				BlockState st = world.getBlockState(m);
-				wMat[i] = st.isIn(BlockTags.DIRT) ? 0.7f : st.isIn(BlockTags.SAND) ? 0.85f : 1.15f;
+				wMat[i] = st.is(BlockTags.DIRT) ? 0.7f : st.is(BlockTags.SAND) ? 0.85f : 1.15f;
 				wFlat[i] = gx > 0 && gz > 0 && gx < WN - 1 && gz < WN - 1
 						&& same(t, wTop[i - 1]) && same(t, wTop[i + 1]) && same(t, wTop[i - WN]) && same(t, wTop[i + WN]);
 			}
@@ -541,27 +540,27 @@ public class RainFX extends Module {
 		return !Float.isNaN(b) && Math.abs(a - b) < 0.01f;
 	}
 
-	private static float wetTop(ClientWorld world, BlockPos.Mutable m, int x, int z, int playerY, boolean any) {
-		int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z);
+	private static float wetTop(ClientLevel world, BlockPos.MutableBlockPos m, int x, int z, int playerY, boolean any) {
+		int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
 		if (top - playerY > 14 || playerY - top > 18) {
 			return Float.NaN;
 		}
 		m.set(x, top - 1, z);
 		BlockState st = world.getBlockState(m);
-		if (st.isAir() || !st.getFluidState().isEmpty() || st.isIn(BlockTags.LEAVES)) {
+		if (st.isAir() || !st.getFluidState().isEmpty() || st.is(BlockTags.LEAVES)) {
 			return Float.NaN;
 		}
 		VoxelShape shape = st.getCollisionShape(world, m);
 		if (shape.isEmpty()) {
 			return Float.NaN;
 		}
-		double h = shape.getMax(Direction.Axis.Y);
+		double h = shape.max(Direction.Axis.Y);
 		if (h > 1.0 || h < 0.05) {
 			return Float.NaN;
 		}
 		if (!any) {
 			m.set(x, top, z);
-			if (world.getPrecipitation(m) != Biome.Precipitation.RAIN) {
+			if (world.precipitationAt(m) != Biome.Precipitation.RAIN) {
 				return Float.NaN;
 			}
 		}
@@ -623,15 +622,15 @@ public class RainFX extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
 		if (!mood.isOn() || rainLevel < 0.01f) {
 			return;
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
-		if (mc.world == null) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null) {
 			return;
 		}
-		int w = ctx.getScaledWindowWidth(), h = ctx.getScaledWindowHeight();
+		int w = ctx.guiWidth(), h = ctx.guiHeight();
 		float a = moodStrength.getFloat() * rainLevel;
 		int c = moodColor.rgb();
 		ctx.fill(0, 0, w, h, Colors.argb(c, a * 0.6f));

@@ -3,13 +3,12 @@ package com.whiteclient.gui;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.render.Colors;
 import com.whiteclient.update.AutoUpdater;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Text;
-
 import java.util.List;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 public class UpdateReadyScreen extends Screen {
 	private final Screen parent;
@@ -17,7 +16,7 @@ public class UpdateReadyScreen extends Screen {
 	private float cardX, cardY, cardW, cardH;
 
 	public UpdateReadyScreen(Screen parent) {
-		super(Text.literal("Update installed"));
+		super(Component.literal("Update installed"));
 		this.parent = parent;
 	}
 
@@ -32,18 +31,18 @@ public class UpdateReadyScreen extends Screen {
 		cardY = Math.max(10, height / 2f - cardH / 2f - 6);
 
 		int bw = Math.round(Math.min(210, cardW - 40));
-		ButtonWidget restart = ButtonWidget.builder(Text.literal("Close Game Now"), b -> client.scheduleStop())
-				.dimensions(Math.round(width / 2f - bw / 2f), Math.round(cardY + 106), bw, 22).build();
+		Button restart = Button.builder(Component.literal("Close Game Now"), b -> minecraft.stop())
+				.bounds(Math.round(width / 2f - bw / 2f), Math.round(cardY + 106), bw, 22).build();
 		ButtonStyle.markAccent(restart);
-		addDrawableChild(restart);
+		addRenderableWidget(restart);
 		int sw = 100;
-		addDrawableChild(ButtonWidget.builder(Text.literal("Later"), b -> close())
-				.dimensions(Math.round(width / 2f - sw / 2f), Math.round(cardY + cardH - 30), sw, 18).build());
+		addRenderableWidget(Button.builder(Component.literal("Later"), b -> onClose())
+				.bounds(Math.round(width / 2f - sw / 2f), Math.round(cardY + cardH - 30), sw, 18).build());
 	}
 
 	@Override
-	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
-		if (client != null && client.world == null) {
+	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+		if (minecraft != null && minecraft.level == null) {
 			MenuScene.draw(ctx, this, cardW / 2f);
 		} else {
 			super.renderBackground(ctx, mouseX, mouseY, delta);
@@ -51,7 +50,7 @@ public class UpdateReadyScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		float k = Math.min(1f, (System.nanoTime() - opened) / 1.0e9f / 0.35f);
 		k = 1f - (1f - k) * (1f - k) * (1f - k);
 		float time = WhiteClient.get().time();
@@ -72,28 +71,28 @@ public class UpdateReadyScreen extends Screen {
 
 		String version = AutoUpdater.readyVersion() == null ? WhiteClient.VERSION : AutoUpdater.readyVersion();
 		String title = "Update " + version + " installed";
-		float tw = UiFont.width(textRenderer, title) * 1.3f;
-		UiFont.drawScaled(ctx, textRenderer, title, cx - tw / 2f, cardY + 44, 1.3f, Colors.argb(0xFFFFFF, k));
+		float tw = UiFont.width(font, title) * 1.3f;
+		UiFont.drawScaled(ctx, font, title, cx - tw / 2f, cardY + 44, 1.3f, Colors.argb(0xFFFFFF, k));
 
 		String msg = "Close Minecraft and open it again from your launcher to start using it. "
 				+ "Rejoining a server or world isn't enough, the game has to restart.";
-		List<OrderedText> lines = textRenderer.wrapLines(Text.literal(msg), (int) (cardW - 36));
+		List<FormattedCharSequence> lines = font.split(Component.literal(msg), (int) (cardW - 36));
 		float ly = cardY + 62;
-		for (OrderedText line : lines) {
-			int lw = textRenderer.getWidth(line);
-			ctx.drawText(textRenderer, line, Math.round(cx - lw / 2f), Math.round(ly), Colors.argb(0xB8B8C2, k), false);
+		for (FormattedCharSequence line : lines) {
+			int lw = font.width(line);
+			ctx.drawString(font, line, Math.round(cx - lw / 2f), Math.round(ly), Colors.argb(0xB8B8C2, k), false);
 			ly += 10;
 		}
 
 		super.render(ctx, mouseX, mouseY, delta);
 
 		String small = "You can also keep playing, it updates whenever you close the game.";
-		float sw = UiFont.width(textRenderer, small) * 0.75f;
-		UiFont.drawScaled(ctx, textRenderer, small, cx - sw / 2f, cardY + 134, 0.75f, Colors.argb(0x9A9AA6, k));
+		float sw = UiFont.width(font, small) * 0.75f;
+		UiFont.drawScaled(ctx, font, small, cx - sw / 2f, cardY + 134, 0.75f, Colors.argb(0x9A9AA6, k));
 	}
 
 	@Override
-	public void close() {
-		client.setScreen(parent);
+	public void onClose() {
+		minecraft.setScreen(parent);
 	}
 }

@@ -13,12 +13,12 @@ import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
 public class Pets extends Module {
 	public static final String[] TYPES = {"Jellyfish", "Manta Ray", "Star Whale"};
@@ -40,9 +40,9 @@ public class Pets extends Module {
 	private int still;
 	private boolean init;
 	private float fade;
-	private ClientWorld lastWorld;
+	private ClientLevel lastWorld;
 	private String lastType = "";
-	private Vec3d lastPlayer;
+	private Vec3 lastPlayer;
 
 	public Pets() {
 		super("Pets", "A glowing jellyfish, manta ray or star whale that floats with you", Category.COSMETICS, true);
@@ -83,10 +83,10 @@ public class Pets extends Module {
 		};
 	}
 
-	private static double[] overHead(PlayerEntity p, float td, double lift) {
-		Vec3d pos = p.getLerpedPos(td);
+	private static double[] overHead(Player p, float td, double lift) {
+		Vec3 pos = p.getPosition(td);
 		float sc = p.getScale() * 0.9375f;
-		boolean sneak = p.isInSneakingPose();
+		boolean sneak = p.isCrouching();
 		return new double[]{pos.x, pos.y + (sneak ? 1.55 : 1.9) * sc + lift, pos.z};
 	}
 
@@ -99,9 +99,9 @@ public class Pets extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
-		ClientWorld world = mc.world;
-		PlayerEntity player = mc.player;
+	public void onTick(Minecraft mc) {
+		ClientLevel world = mc.level;
+		Player player = mc.player;
 		if (world == null || player == null) {
 			init = false;
 			lastPlayer = null;
@@ -119,12 +119,12 @@ public class Pets extends Module {
 		pphase = phase;
 		pperch = perchAmt;
 
-		Vec3d pl = player.getEntityPos();
-		boolean playerMoving = lastPlayer != null && pl.squaredDistanceTo(lastPlayer) > 0.0004;
+		Vec3 pl = player.position();
+		boolean playerMoving = lastPlayer != null && pl.distanceToSqr(lastPlayer) > 0.0004;
 		lastPlayer = pl;
 		still = playerMoving ? 0 : still + 1;
 
-		float body = player.getBodyYaw();
+		float body = player.getVisualRotationYInDegrees();
 		V3 f = V3.forward(body), r = V3.right(body);
 		float sideSign = side.is("Left") ? -1f : 1f;
 		double h = height.get() * player.getScale();
@@ -193,7 +193,7 @@ public class Pets extends Module {
 		if (perchAmt > 0.5f) {
 			want = body;
 		}
-		yaw += MathHelper.wrapDegrees(want - yaw) * 0.12f;
+		yaw += Mth.wrapDegrees(want - yaw) * 0.12f;
 		phase += flapRate * (1f + (float) hs * 6f);
 		fade = Math.min(1f, fade + 0.06f);
 	}
@@ -212,17 +212,17 @@ public class Pets extends Module {
 			return;
 		}
 		float td = ctx.tickDelta;
-		PlayerEntity player = ctx.client.player;
-		double lx = MathHelper.lerp(td, px, x), ly = MathHelper.lerp(td, py, y), lz = MathHelper.lerp(td, pz, z);
-		float lyaw = pyaw + MathHelper.wrapDegrees(yaw - pyaw) * td;
-		float pr = MathHelper.lerp(td, pperch, perchAmt);
+		Player player = ctx.client.player;
+		double lx = Mth.lerp(td, px, x), ly = Mth.lerp(td, py, y), lz = Mth.lerp(td, pz, z);
+		float lyaw = pyaw + Mth.wrapDegrees(yaw - pyaw) * td;
+		float pr = Mth.lerp(td, pperch, perchAmt);
 		if (pr > 0.001f) {
 			double[] spot = overHead(player, td, lift());
-			lx = MathHelper.lerp(pr, lx, spot[0]);
-			ly = MathHelper.lerp(pr, ly, spot[1]);
-			lz = MathHelper.lerp(pr, lz, spot[2]);
+			lx = Mth.lerp(pr, lx, spot[0]);
+			ly = Mth.lerp(pr, ly, spot[1]);
+			lz = Mth.lerp(pr, lz, spot[2]);
 		}
-		float ph = MathHelper.lerp(td, pphase, phase);
+		float ph = Mth.lerp(td, pphase, phase);
 		V3 base = new V3(ctx.rx(lx), ctx.ry(ly), ctx.rz(lz));
 		float camDist = base.length();
 		float a = glow.getFloat() * fade;
@@ -234,7 +234,7 @@ public class Pets extends Module {
 		}
 		int c1 = c1(), c2 = c2();
 		String type = pet.get();
-		float s = size.getFloat() * MathHelper.lerp(pr, 1f, restScale(type));
+		float s = size.getFloat() * Mth.lerp(pr, 1f, restScale(type));
 		float t = ctx.time;
 		GlowBatch g = ctx.glow;
 		float tagHeight;

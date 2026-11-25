@@ -1,19 +1,18 @@
 package com.whiteclient.modules;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.TextSetting;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.entity.player.PlayerSkinType;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.util.AssetInfo;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.core.ClientAsset;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.PlayerModelType;
+import net.minecraft.world.entity.player.PlayerSkin;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,11 +68,11 @@ public class Wardrobe extends Module {
 	}
 
 	public static void reload() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		for (Identifier id : LOADED.values()) {
 			try {
-				mc.getTextureManager().destroyTexture(id);
-				mc.getTextureManager().destroyTexture(texturePath(id));
+				mc.getTextureManager().release(id);
+				mc.getTextureManager().release(texturePath(id));
 			} catch (Throwable ignored) {
 			}
 		}
@@ -87,7 +86,7 @@ public class Wardrobe extends Module {
 	}
 
 	private static Identifier texturePath(Identifier id) {
-		return Identifier.of(id.getNamespace(), "textures/" + id.getPath() + ".png");
+		return Identifier.fromNamespaceAndPath(id.getNamespace(), "textures/" + id.getPath() + ".png");
 	}
 
 	private static String sanitize(String name) {
@@ -117,10 +116,10 @@ public class Wardrobe extends Module {
 			if (img.getHeight() == 32) {
 				img = upgradeLegacy(img);
 			}
-			Identifier id = Identifier.of(WhiteClient.MOD_ID, "skins/" + sanitize(name));
-			NativeImageBackedTexture tex = new NativeImageBackedTexture(() -> "whiteclient_skin_" + name, img);
-			MinecraftClient mc = MinecraftClient.getInstance();
-			mc.getTextureManager().registerTexture(texturePath(id), tex);
+			Identifier id = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "skins/" + sanitize(name));
+			DynamicTexture tex = new DynamicTexture(() -> "whiteclient_skin_" + name, img);
+			Minecraft mc = Minecraft.getInstance();
+			mc.getTextureManager().register(texturePath(id), tex);
 			LOADED.put(name, id);
 			return id;
 		} catch (Throwable t) {
@@ -134,22 +133,22 @@ public class Wardrobe extends Module {
 		NativeImage img = new NativeImage(64, 64, true);
 		for (int y = 0; y < 32; y++) {
 			for (int x = 0; x < 64; x++) {
-				img.setColorArgb(x, y, old.getColorArgb(x, y));
+				img.setPixel(x, y, old.getPixel(x, y));
 			}
 		}
 		for (int y = 16; y < 32; y++) {
 			for (int x = 0; x < 16; x++) {
-				img.setColorArgb(x + 16, y + 32, old.getColorArgb(x, y));
+				img.setPixel(x + 16, y + 32, old.getPixel(x, y));
 			}
 			for (int x = 40; x < 56; x++) {
-				img.setColorArgb(x - 8, y + 32, old.getColorArgb(x, y));
+				img.setPixel(x - 8, y + 32, old.getPixel(x, y));
 			}
 		}
 		old.close();
 		return img;
 	}
 
-	public static SkinTextures apply(SkinTextures original) {
+	public static PlayerSkin apply(PlayerSkin original) {
 		if (original == null) {
 			return null;
 		}
@@ -171,11 +170,11 @@ public class Wardrobe extends Module {
 		}
 		try {
 			boolean slim = w != null && w.slim.isOn();
-			return original.withOverride(SkinTextures.SkinOverride.create(
-					body != null ? Optional.of(new AssetInfo.TextureAssetInfo(body)) : Optional.empty(),
-					cape != null ? Optional.of(new AssetInfo.TextureAssetInfo(cape)) : Optional.empty(),
+			return original.with(PlayerSkin.Patch.create(
+					body != null ? Optional.of(new ClientAsset.ResourceTexture(body)) : Optional.empty(),
+					cape != null ? Optional.of(new ClientAsset.ResourceTexture(cape)) : Optional.empty(),
 					Optional.empty(),
-					body != null ? Optional.of(PlayerSkinType.byModelMetadata(slim ? "slim" : "default")) : Optional.empty()));
+					body != null ? Optional.of(PlayerModelType.byLegacyServicesName(slim ? "slim" : "default")) : Optional.empty()));
 		} catch (Throwable t) {
 			return original;
 		}

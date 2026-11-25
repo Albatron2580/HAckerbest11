@@ -1,14 +1,14 @@
 package com.whiteclient.modules;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Arm;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.RotationAxis;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
 
 public class HandView extends Module {
 	public final NumberSetting x = add(new NumberSetting("X", 0, -0.6, 0.6, 0.01));
@@ -25,28 +25,28 @@ public class HandView extends Module {
 		super("Hand View", "Move and resize your held item", Category.WORLD, true);
 	}
 
-	public static void begin(PlayerEntity player, Hand hand, MatrixStack matrices) {
+	public static void begin(Player player, InteractionHand hand, PoseStack matrices) {
 		WhiteClient wc = WhiteClient.get();
 		HandView hv = wc == null ? null : wc.modules().get(HandView.class);
 		if (hv == null || !hv.isEnabled()) {
 			return;
 		}
-		Arm arm = hand == Hand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
-		float side = arm == Arm.RIGHT ? 1f : -1f;
-		matrices.push();
+		HumanoidArm arm = hand == InteractionHand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
+		float side = arm == HumanoidArm.RIGHT ? 1f : -1f;
+		matrices.pushPose();
 		depth++;
 		matrices.translate(hv.x.getFloat() * side, hv.y.getFloat(), hv.z.getFloat());
-		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(hv.rotX.getFloat()));
-		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(hv.rotY.getFloat() * side));
-		matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(hv.rotZ.getFloat() * side));
+		matrices.mulPose(Axis.XP.rotationDegrees(hv.rotX.getFloat()));
+		matrices.mulPose(Axis.YP.rotationDegrees(hv.rotY.getFloat() * side));
+		matrices.mulPose(Axis.ZP.rotationDegrees(hv.rotZ.getFloat() * side));
 		float s = hv.scale.getFloat();
 		matrices.scale(s, s, s);
 	}
 
-	public static void end(MatrixStack matrices) {
+	public static void end(PoseStack matrices) {
 		if (depth > 0) {
 			depth--;
-			matrices.pop();
+			matrices.popPose();
 		}
 	}
 }

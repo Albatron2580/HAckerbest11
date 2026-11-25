@@ -8,11 +8,11 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import org.joml.Matrix3x2fStack;
 
 public class Watermark extends Module {
@@ -33,10 +33,10 @@ public class Watermark extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		TextRenderer tr = mc.textRenderer;
-		int currentFps = mc.getCurrentFps();
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
+		Minecraft mc = Minecraft.getInstance();
+		Font tr = mc.font;
+		int currentFps = mc.getFps();
 		shownFps = shownFps < 0 ? currentFps : shownFps + (currentFps - shownFps) * 0.08f;
 
 		String title = name.get().isBlank() ? "whiteclient" : name.get();
@@ -51,10 +51,10 @@ public class Watermark extends Module {
 		String tail = rest.toString();
 
 		float s = scale.getFloat();
-		float textW = tr.getWidth(title) + tr.getWidth(tail);
+		float textW = tr.width(title) + tr.width(tail);
 		float w = 22 + textW + 10;
 		float h = 18;
-		int sw = ctx.getScaledWindowWidth();
+		int sw = ctx.guiWidth();
 		float x;
 		if (position.is("Top Left")) {
 			x = 6;
@@ -73,7 +73,7 @@ public class Watermark extends Module {
 			com.whiteclient.hud.HudLayout.reserve(position.get(), boundsX1 > 0 ? 0 : 0, boundsY2);
 		}
 
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.scale(s, s);
 		int bgAlpha = (int) (opacity.getFloat() * 255);
@@ -82,16 +82,16 @@ public class Watermark extends Module {
 		Render2D.logo(ctx, x + 11, y + h / 2f, 6.5f, WhiteClient.get().time());
 		float tx = x + 22;
 		Render2D.text(ctx, tr, title, tx, y + 5, 0xFFFFFFFF);
-		Render2D.text(ctx, tr, tail, tx + tr.getWidth(title), y + 5, 0xFFA8A8B4);
+		Render2D.text(ctx, tr, tail, tx + tr.width(title), y + 5, 0xFFA8A8B4);
 		m.popMatrix();
 	}
 
-	private static int latency(MinecraftClient mc) {
-		ClientPlayNetworkHandler handler = mc.getNetworkHandler();
+	private static int latency(Minecraft mc) {
+		ClientPacketListener handler = mc.getConnection();
 		if (handler == null || mc.player == null) {
 			return 0;
 		}
-		PlayerListEntry entry = handler.getPlayerListEntry(mc.player.getUuid());
+		PlayerInfo entry = handler.getPlayerInfo(mc.player.getUUID());
 		return entry == null ? 0 : entry.getLatency();
 	}
 }

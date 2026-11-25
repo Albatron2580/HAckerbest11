@@ -9,10 +9,10 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import com.whiteclient.render.CosmeticTargets;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 
 public class Wings extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -44,19 +44,19 @@ public class Wings extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		for (PlayerEntity player : CosmeticTargets.collect(ctx, true, false, others.isOn(), range.get())) {
+		for (Player player : CosmeticTargets.collect(ctx, true, false, others.isOn(), range.get())) {
 			render(ctx, player);
 		}
 	}
 
-	private void render(WorldContext ctx, PlayerEntity player) {
+	private void render(WorldContext ctx, Player player) {
 		float td = ctx.tickDelta;
-		Vec3d p = player.getLerpedPos(td);
-		float bodyYaw = MathHelper.lerpAngleDegrees(td, player.lastBodyYaw, player.bodyYaw);
+		Vec3 p = player.getPosition(td);
+		float bodyYaw = Mth.rotLerp(td, player.yBodyRotO, player.yBodyRot);
 		V3 fwd = V3.forward(bodyYaw);
 		V3 back = fwd.mul(-1);
 		V3 right = V3.right(bodyYaw);
-		boolean sneaking = player.isInSneakingPose();
+		boolean sneaking = player.isCrouching();
 
 		float s = size.getFloat();
 		float phase = (player.getId() % 97) * 0.37f;
@@ -65,7 +65,7 @@ public class Wings extends Module {
 		float lean = (float) Math.toRadians(sneaking ? 28 : 10);
 		V3 vDir = V3.UP.mul((float) Math.cos(lean)).add(back, (float) Math.sin(lean));
 
-		float shoulder = player.getHeight() - (sneaking ? 0.42f : 0.5f);
+		float shoulder = player.getBbHeight() - (sneaking ? 0.42f : 0.5f);
 		V3 spine = new V3(ctx.rx(p.x), ctx.ry(p.y + shoulder), ctx.rz(p.z)).add(back, sneaking ? 0.3f : 0.17f);
 
 		int rgb = color.rgb();

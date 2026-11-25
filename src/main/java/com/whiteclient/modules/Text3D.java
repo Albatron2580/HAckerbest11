@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
@@ -12,10 +13,6 @@ import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -25,6 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.world.phys.Vec3;
 
 public class Text3D extends Module {
 	public final ModeSetting source = add(new ModeSetting("Source", "Spotify Lyrics", "Spotify Lyrics", "Custom Text"));
@@ -61,7 +61,7 @@ public class Text3D extends Module {
 		float created;
 		float exitAt = -1;
 		float autoExitAfter = -1;
-		Vec3d anchor;
+		Vec3 anchor;
 		boolean follow;
 		int highlight = -1;
 		boolean lyrics;
@@ -157,9 +157,9 @@ public class Text3D extends Module {
 				continue;
 			}
 			if (g.follow) {
-				Vec3d target = targetAnchor(ctx, false);
+				Vec3 target = targetAnchor(ctx, false);
 				double k = 1 - Math.exp(-dt * 5.0);
-				g.anchor = g.anchor.add(target.subtract(g.anchor).multiply(k));
+				g.anchor = g.anchor.add(target.subtract(g.anchor).scale(k));
 			}
 			drawGroup(ctx, g, now);
 		}
@@ -277,23 +277,23 @@ public class Text3D extends Module {
 		if (!ctx.thirdPerson() || ctx.client.player == null) {
 			return 0;
 		}
-		Vec3d p = ctx.client.player.getLerpedPos(ctx.tickDelta);
+		Vec3 p = ctx.client.player.getPosition(ctx.tickDelta);
 		double dx = p.x - ctx.cam.x;
-		double dy = p.y + ctx.client.player.getStandingEyeHeight() - ctx.cam.y;
+		double dy = p.y + ctx.client.player.getEyeHeight() - ctx.cam.y;
 		double dz = p.z - ctx.cam.z;
 		return Math.min(12, Math.sqrt(dx * dx + dy * dy + dz * dz));
 	}
 
-	private Vec3d targetAnchor(WorldContext ctx, boolean randomSide) {
-		Vec3d cam = ctx.cam;
-		double yaw = Math.toRadians(ctx.client.gameRenderer.getCamera().getYaw());
-		double pitch = Math.toRadians(ctx.client.gameRenderer.getCamera().getPitch()) * 0.6;
+	private Vec3 targetAnchor(WorldContext ctx, boolean randomSide) {
+		Vec3 cam = ctx.cam;
+		double yaw = Math.toRadians(ctx.client.gameRenderer.getMainCamera().yRot());
+		double pitch = Math.toRadians(ctx.client.gameRenderer.getMainCamera().xRot()) * 0.6;
 		double d = distance.get() + cameraToPlayer(ctx);
 		double fx = -Math.sin(yaw) * Math.cos(pitch), fy = -Math.sin(pitch), fz = Math.cos(yaw) * Math.cos(pitch);
 		double rx = -Math.cos(yaw), rz = -Math.sin(yaw);
 		double sideOff = randomSide ? (random.nextDouble() * 2 - 1) * 1.2 : 0;
 		double up = height.get() * (d / 6.0) + (randomSide ? random.nextDouble() * 0.6 : 0);
-		return new Vec3d(cam.x + fx * d + rx * sideOff, cam.y + fy * d + up, cam.z + fz * d + rz * sideOff);
+		return new Vec3(cam.x + fx * d + rx * sideOff, cam.y + fy * d + up, cam.z + fz * d + rz * sideOff);
 	}
 
 	private static float pop(float t) {
@@ -309,9 +309,9 @@ public class Text3D extends Module {
 	}
 
 	private void drawGroup(WorldContext ctx, Group g, float now) {
-		TextRenderer tr = ctx.client.textRenderer;
-		MatrixStack ms = ctx.matrices;
-		Vec3d cam = ctx.cam;
+		Font tr = ctx.client.font;
+		PoseStack ms = ctx.matrices;
+		Vec3 cam = ctx.cam;
 		float t = now - g.created;
 		int n = g.words.size();
 
@@ -337,12 +337,12 @@ public class Text3D extends Module {
 		}
 		rows.add(new int[]{start, n});
 
-		float space = tr.getWidth(" ") + 2;
-		float lineH = tr.fontHeight + 4;
+		float space = tr.width(" ") + 2;
+		float lineH = tr.lineHeight + 4;
 		float subScale = 0.55f;
 		float totalH = rows.size() * lineH + (g.subtitle != null ? lineH * subScale : 0);
 
-		ms.push();
+		ms.pushPose();
 		double ax = g.anchor.x - cam.x, ay = g.anchor.y - cam.y, az = g.anchor.z - cam.z;
 		ms.translate(ax, ay, az);
 		double horiz = Math.sqrt(ax * ax + az * az);
@@ -355,11 +355,11 @@ public class Text3D extends Module {
 			rot.rotateY((float) Math.sin(now * 0.9 + g.created) * 0.14f)
 					.rotateX((float) Math.sin(now * 0.7 + 1.3 + g.created) * 0.06f);
 		}
-		ms.multiply(rot);
+		ms.mulPose(rot);
 		float s = 0.025f * scale.getFloat();
 		ms.scale(s, -s, s);
 
-		int light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
+		int light = LightTexture.FULL_BRIGHT;
 		int layers = depth.getInt();
 		int frontRgb = front.rgb();
 		int sideRgb = side.rgb();
@@ -370,13 +370,13 @@ public class Text3D extends Module {
 			int[] row = rows.get(r);
 			float rowW = 0;
 			for (int i = row[0]; i < row[1]; i++) {
-				rowW += tr.getWidth(g.words.get(i)) + (i > row[0] ? space : 0);
+				rowW += tr.width(g.words.get(i)) + (i > row[0] ? space : 0);
 			}
 			float x = -rowW / 2f;
 			float y = -totalH / 2f + r * lineH;
 			for (int i = row[0]; i < row[1]; i++) {
 				String word = g.words.get(i);
-				float ww = tr.getWidth(word);
+				float ww = tr.width(word);
 				float p = pop((t - g.appear.get(i)) / POP_TIME);
 				float exitK = 1f;
 				float lift = 0f;
@@ -391,17 +391,17 @@ public class Text3D extends Module {
 					boolean hi = highlightWord.isOn() && i == g.highlight && g.exitAt < 0;
 					int rgb = hi ? hiRgb : frontRgb;
 					float extra = hi ? 1.07f : 1f;
-					ms.push();
-					ms.translate(x + ww / 2f, y + tr.fontHeight / 2f - lift + (1f - p) * 6f, 0);
-					ms.multiply(new Quaternionf().rotationZ(g.tilt.get(i) * (1f - p)));
+					ms.pushPose();
+					ms.translate(x + ww / 2f, y + tr.lineHeight / 2f - lift + (1f - p) * 6f, 0);
+					ms.mulPose(new Quaternionf().rotationZ(g.tilt.get(i) * (1f - p)));
 					ms.scale(k * extra, k * extra, k * extra);
 					if (glowA > 0.01f) {
-						Vector3f c = ms.peek().getPositionMatrix().transformPosition(new Vector3f(0, 0, -2f));
+						Vector3f c = ms.last().pose().transformPosition(new Vector3f(0, 0, -2f));
 						float radius = Math.max(0.3f, ww * s * k * 0.75f);
 						ctx.glow.disc(c.x, c.y, c.z, radius, hi ? hiRgb : 0xFFFFFF, glowA * 0.45f * k, 16);
 					}
-					drawExtruded(tr, ms, ctx, word, -ww / 2f, -tr.fontHeight / 2f, rgb, sideRgb, layers, light, outline.isOn());
-					ms.pop();
+					drawExtruded(tr, ms, ctx, word, -ww / 2f, -tr.lineHeight / 2f, rgb, sideRgb, layers, light, outline.isOn());
+					ms.popPose();
 				}
 				x += ww + space;
 			}
@@ -411,42 +411,42 @@ public class Text3D extends Module {
 			float exitK = g.exitAt >= 0 ? 1f - Math.min(1f, (now - g.exitAt) / EXIT_TIME) : 1f;
 			float k = p * exitK * subScale;
 			if (k > 0.01f) {
-				float sw = tr.getWidth(g.subtitle);
-				ms.push();
+				float sw = tr.width(g.subtitle);
+				ms.pushPose();
 				ms.translate(0, -totalH / 2f + rows.size() * lineH + lineH * subScale * 0.5f, 0);
 				ms.scale(k, k, k);
-				drawExtruded(tr, ms, ctx, g.subtitle, -sw / 2f, -tr.fontHeight / 2f, hiRgb, sideRgb, Math.max(2, layers / 2), light, outline.isOn());
-				ms.pop();
+				drawExtruded(tr, ms, ctx, g.subtitle, -sw / 2f, -tr.lineHeight / 2f, hiRgb, sideRgb, Math.max(2, layers / 2), light, outline.isOn());
+				ms.popPose();
 			}
 		}
-		ms.pop();
+		ms.popPose();
 	}
 
-	private static void drawExtruded(TextRenderer tr, MatrixStack ms, WorldContext ctx, String word, float x, float y,
+	private static void drawExtruded(Font tr, PoseStack ms, WorldContext ctx, String word, float x, float y,
 									 int rgb, int sideRgb, int layers, int light, boolean outline) {
 		float step = 0.32f;
 		for (int l = layers; l >= 1; l--) {
 			float k = l / (float) layers;
 			int c = Colors.shade(sideRgb, 1.0f - 0.55f * k);
-			ms.push();
+			ms.pushPose();
 			ms.translate(0, 0, -l * step);
-			Matrix4f m = ms.peek().getPositionMatrix();
-			tr.draw(word, x, y, 0xFF000000 | c, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-			ms.pop();
+			Matrix4f m = ms.last().pose();
+			tr.drawInBatch(word, x, y, 0xFF000000 | c, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			ms.popPose();
 		}
 		if (outline) {
 			int dark = 0xFF000000 | Colors.shade(sideRgb, 0.25f);
-			ms.push();
+			ms.pushPose();
 			ms.translate(0, 0, -0.12f);
-			Matrix4f m = ms.peek().getPositionMatrix();
+			Matrix4f m = ms.last().pose();
 			float o = 0.75f;
-			tr.draw(word, x - o, y, dark, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-			tr.draw(word, x + o, y, dark, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-			tr.draw(word, x, y - o, dark, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-			tr.draw(word, x, y + o, dark, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-			ms.pop();
+			tr.drawInBatch(word, x - o, y, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			tr.drawInBatch(word, x + o, y, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			tr.drawInBatch(word, x, y - o, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			tr.drawInBatch(word, x, y + o, dark, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
+			ms.popPose();
 		}
-		Matrix4f m = ms.peek().getPositionMatrix();
-		tr.draw(word, x, y, 0xFF000000 | rgb, false, m, ctx.consumers, TextRenderer.TextLayerType.NORMAL, 0, light);
+		Matrix4f m = ms.last().pose();
+		tr.drawInBatch(word, x, y, 0xFF000000 | rgb, false, m, ctx.consumers, Font.DisplayMode.NORMAL, 0, light);
 	}
 }

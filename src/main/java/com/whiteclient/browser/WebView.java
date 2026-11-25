@@ -3,11 +3,10 @@ package com.whiteclient.browser;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.whiteclient.WhiteClient;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.input.MouseInput;
-
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 
@@ -190,20 +189,20 @@ public final class WebView {
 		return v instanceof GpuTextureView view ? view : null;
 	}
 
-	private static MouseInput buttonOf(Click click) {
+	private static MouseButtonInfo buttonOf(MouseButtonEvent click) {
 		try {
-			return (MouseInput) Click.class.getRecordComponents()[2].getAccessor().invoke(click);
+			return (MouseButtonInfo) MouseButtonEvent.class.getRecordComponents()[2].getAccessor().invoke(click);
 		} catch (Throwable t) {
-			return new MouseInput(click.button(), 0);
+			return new MouseButtonInfo(click.button(), 0);
 		}
 	}
 
-	public void mouseDown(Click click, double x, double y, boolean doubled) {
-		call("onMouseClicked", new Click(x, y, buttonOf(click)), doubled);
+	public void mouseDown(MouseButtonEvent click, double x, double y, boolean doubled) {
+		call("onMouseClicked", new MouseButtonEvent(x, y, buttonOf(click)), doubled);
 	}
 
-	public void mouseUp(Click click, double x, double y) {
-		call("onMouseReleased", new Click(x, y, buttonOf(click)));
+	public void mouseUp(MouseButtonEvent click, double x, double y) {
+		call("onMouseReleased", new MouseButtonEvent(x, y, buttonOf(click)));
 	}
 
 	public void mouseMove(double x, double y) {
@@ -214,15 +213,15 @@ public final class WebView {
 		call("onMouseScrolled", (int) x, (int) y, amount);
 	}
 
-	public void keyDown(KeyInput input) {
+	public void keyDown(KeyEvent input) {
 		call("onKeyPressed", input);
 	}
 
-	public void keyUp(KeyInput input) {
+	public void keyUp(KeyEvent input) {
 		call("onKeyReleased", input);
 	}
 
-	public void type(CharInput input) {
+	public void type(CharacterEvent input) {
 		call("onCharTyped", input);
 	}
 

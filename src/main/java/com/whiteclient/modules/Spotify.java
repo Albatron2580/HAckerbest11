@@ -15,12 +15,12 @@ import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 
 import java.net.URI;
@@ -32,7 +32,7 @@ public class Spotify extends Module {
 	public final TextSetting clientId = add(new TextSetting("Client ID", "", 64));
 	public final ActionSetting account = add(new ActionSetting("Spotify Account", this::accountButton, this::accountAction));
 	public final ActionSetting copyRedirect = add(new ActionSetting("Redirect URI", () -> "Copy", () -> {
-		MinecraftClient.getInstance().keyboard.setClipboard(SpotifyAuth.REDIRECT_URI);
+		Minecraft.getInstance().keyboardHandler.setClipboard(SpotifyAuth.REDIRECT_URI);
 		chat("§7Copied §f" + SpotifyAuth.REDIRECT_URI);
 	}));
 	public final ActionSetting guide = add(new ActionSetting("Create Spotify App", () -> "Open", () -> openUrl(DASHBOARD)));
@@ -93,7 +93,7 @@ public class Spotify extends Module {
 		clientId.set(id.trim());
 		String url = music().auth().startLogin(id.trim(), this::chat);
 		if (url != null) {
-			MinecraftClient.getInstance().keyboard.setClipboard(url);
+			Minecraft.getInstance().keyboardHandler.setClipboard(url);
 			openUrl(url);
 			chat("§7Opened Spotify login in your browser (link also copied to clipboard).");
 		}
@@ -101,17 +101,17 @@ public class Spotify extends Module {
 
 	private static void openUrl(String url) {
 		try {
-			Util.getOperatingSystem().open(URI.create(url));
+			Util.getPlatform().openUri(URI.create(url));
 		} catch (Throwable t) {
-			MinecraftClient.getInstance().keyboard.setClipboard(url);
+			Minecraft.getInstance().keyboardHandler.setClipboard(url);
 		}
 	}
 
 	private void chat(String msg) {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		mc.execute(() -> {
-			if (mc.inGameHud != null) {
-				mc.inGameHud.getChatHud().addMessage(Text.literal("§f[WHITECLIENT] " + msg));
+			if (mc.gui != null) {
+				mc.gui.getChat().addMessage(Component.literal("§f[WHITECLIENT] " + msg));
 			}
 		});
 	}
@@ -121,21 +121,21 @@ public class Spotify extends Module {
 		return (s / 60) + ":" + String.format(java.util.Locale.ROOT, "%02d", s % 60);
 	}
 
-	private static String fit(TextRenderer tr, String s, float maxW) {
+	private static String fit(Font tr, String s, float maxW) {
 		if (s == null) {
 			return "";
 		}
-		if (tr.getWidth(s) <= maxW) {
+		if (tr.width(s) <= maxW) {
 			return s;
 		}
-		while (s.length() > 1 && tr.getWidth(s + "…") > maxW) {
+		while (s.length() > 1 && tr.width(s + "…") > maxW) {
 			s = s.substring(0, s.length() - 1);
 		}
 		return s + "…";
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
@@ -144,8 +144,8 @@ public class Spotify extends Module {
 		if (np == null || shown < 0.02f) {
 			return;
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
-		TextRenderer tr = mc.textRenderer;
+		Minecraft mc = Minecraft.getInstance();
+		Font tr = mc.font;
 
 		String line = null;
 		if (cardLyrics.isOn() && np.positionKnown()) {
@@ -161,8 +161,8 @@ public class Spotify extends Module {
 		float sc = cardScale.getFloat();
 		float w = 190;
 		float h = line != null ? 58 : 46;
-		int sw = ctx.getScaledWindowWidth();
-		int sh = ctx.getScaledWindowHeight();
+		int sw = ctx.guiWidth();
+		int sh = ctx.guiHeight();
 		boolean right = cardPosition.get().endsWith("Right");
 		boolean bottom = cardPosition.get().startsWith("Bottom");
 		float x = right ? sw / sc - w - 6 : 6;
@@ -176,7 +176,7 @@ public class Spotify extends Module {
 		com.whiteclient.hud.HudLayout.reserve(cardPosition.get(), y * sc, (y + h) * sc);
 		float slide = (1 - shown) * 20 * (right ? 1 : -1);
 
-		var m = ctx.getMatrices();
+		var m = ctx.pose();
 		m.pushMatrix();
 		m.scale(sc, sc);
 		m.translate(slide, 0);
@@ -187,7 +187,7 @@ public class Spotify extends Module {
 		Identifier cover = music().cover().texture();
 		float cs = 34;
 		if (cover != null) {
-			ctx.drawTexture(RenderPipelines.GUI_TEXTURED, cover, (int) (x + 6), (int) (y + 6), 0f, 0f, (int) cs, (int) cs, 64, 64, 64, 64,
+			ctx.blit(RenderPipelines.GUI_TEXTURED, cover, (int) (x + 6), (int) (y + 6), 0f, 0f, (int) cs, (int) cs, 64, 64, 64, 64,
 					Colors.withAlpha(0xFFFFFF, a));
 		} else {
 			Render2D.roundRect(ctx, x + 6, y + 6, cs, cs, 6, Colors.withAlpha(0x26262E, a));

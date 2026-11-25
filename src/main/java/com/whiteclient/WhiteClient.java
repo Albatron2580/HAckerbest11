@@ -9,27 +9,11 @@ import com.whiteclient.modules.*;
 import com.whiteclient.combat.CombatTracker;
 import com.whiteclient.hud.HudLayout;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import com.whiteclient.modules.BlockTrail;
-import com.whiteclient.modules.GalaxySky;
-import com.whiteclient.modules.Halo;
-import com.whiteclient.modules.Wardrobe;
-import com.whiteclient.modules.Theme;
-import com.whiteclient.modules.RainFX;
-import com.whiteclient.modules.TargetESP;
-import com.whiteclient.modules.Pets;
-import com.whiteclient.modules.MenuBackground;
-import com.whiteclient.modules.ModsButton;
-import com.whiteclient.modules.Snow;
-import com.whiteclient.modules.Text3D;
-import com.whiteclient.modules.Watermark;
-import com.whiteclient.modules.Wings;
-import com.whiteclient.modules.MenuButtons;
-import com.whiteclient.modules.MainMenu;
-import com.whiteclient.modules.Spotify;
 import com.whiteclient.music.MusicService;
 import com.whiteclient.render.GlowBatch;
 import com.whiteclient.render.Perf;
 import com.whiteclient.render.WorldContext;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
@@ -40,15 +24,14 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -69,11 +52,11 @@ public final class WhiteClient implements ClientModInitializer {
 	private final GlowBatch glow = new GlowBatch();
 	private final Set<Module> crashed = new HashSet<>();
 	private ConfigManager config;
-	private KeyBinding menuKey;
-	private KeyBinding zoomKey;
-	private KeyBinding carKey;
-	private KeyBinding browserKey;
-	public static final KeyBinding.Category KEY_CATEGORY = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
+	private KeyMapping menuKey;
+	private KeyMapping zoomKey;
+	private KeyMapping carKey;
+	private KeyMapping browserKey;
+	public static final KeyMapping.Category KEY_CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
 	private boolean openMenuNextTick;
 	private final long startNanos = System.nanoTime();
 	private long lastFrameNanos = System.nanoTime();
@@ -185,19 +168,19 @@ public final class WhiteClient implements ClientModInitializer {
 				() -> modules.get(Spotify.class).noLogin.isOn());
 		music.start();
 
-		menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.menu",
 				GLFW.GLFW_KEY_RIGHT_SHIFT,
 				KEY_CATEGORY));
-		zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+		zoomKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.zoom",
 				GLFW.GLFW_KEY_C,
 				KEY_CATEGORY));
-		carKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+		carKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.car",
 				GLFW.GLFW_KEY_N,
 				KEY_CATEGORY));
-		browserKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+		browserKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.browser",
 				GLFW.GLFW_KEY_B,
 				KEY_CATEGORY));
@@ -227,7 +210,7 @@ public final class WhiteClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
-		HudElementRegistry.addLast(Identifier.of(MOD_ID, "hud"), this::renderHud);
+		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "hud"), this::renderHud);
 		WorldRenderEvents.END_MAIN.register(this::renderWorld);
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> config.save());
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
@@ -243,15 +226,15 @@ public final class WhiteClient implements ClientModInitializer {
 		LOGGER.info("[WHITECLIENT] {} loaded with {} modules. Press Right Shift to open the menu.", VERSION, modules.all().size());
 	}
 
-	public KeyBinding zoomKey() {
+	public KeyMapping zoomKey() {
 		return zoomKey;
 	}
 
-	private void onTick(MinecraftClient client) {
+	private void onTick(Minecraft client) {
 		try {
 			CarEmote car = modules.get(CarEmote.class);
-			while (carKey != null && carKey.wasPressed()) {
-				if (car != null && car.isEnabled() && client.player != null && client.currentScreen == null) {
+			while (carKey != null && carKey.consumeClick()) {
+				if (car != null && car.isEnabled() && client.player != null && client.screen == null) {
 					car.toggleCar();
 				}
 			}
@@ -263,22 +246,22 @@ public final class WhiteClient implements ClientModInitializer {
 		} catch (Throwable t) {
 			LOGGER.debug("[WHITECLIENT] combat tick", t);
 		}
-		while (browserKey != null && browserKey.wasPressed()) {
+		while (browserKey != null && browserKey.consumeClick()) {
 			Browser br = modules.get(Browser.class);
-			if (br != null && br.isEnabled() && client.currentScreen == null) {
+			if (br != null && br.isEnabled() && client.screen == null) {
 				br.open();
 			}
 		}
-		while (menuKey.wasPressed()) {
-			if (client.currentScreen == null) {
+		while (menuKey.consumeClick()) {
+			if (client.screen == null) {
 				client.setScreen(new ClickGuiScreen(null));
 			}
 		}
-		if (openMenuNextTick && client.currentScreen == null) {
+		if (openMenuNextTick && client.screen == null) {
 			openMenuNextTick = false;
 			client.setScreen(new ClickGuiScreen(null));
 		}
-		if (client.world == null || client.player == null) {
+		if (client.level == null || client.player == null) {
 			return;
 		}
 		for (Module module : modules.all()) {
@@ -294,13 +277,13 @@ public final class WhiteClient implements ClientModInitializer {
 		}
 	}
 
-	private void renderHud(DrawContext context, RenderTickCounter tickCounter) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.options.hudHidden) {
+	private void renderHud(GuiGraphics context, DeltaTracker tickCounter) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.options.hideGui) {
 			return;
 		}
-		float tickDelta = tickCounter.getTickProgress(false);
-		HudLayout.begin(context.getScaledWindowWidth(), context.getScaledWindowHeight());
+		float tickDelta = tickCounter.getGameTimeDeltaPartialTick(false);
+		HudLayout.begin(context.guiWidth(), context.guiHeight());
 		for (Module module : modules.all()) {
 			if (module.isEnabled() && !crashed.contains(module)) {
 				long t0 = System.nanoTime();
@@ -315,33 +298,33 @@ public final class WhiteClient implements ClientModInitializer {
 	}
 
 	private void renderWorld(WorldRenderContext context) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.world == null || client.player == null) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.level == null || client.player == null) {
 			return;
 		}
 		long now = System.nanoTime();
 		float frameDelta = Math.min(0.1f, Math.max(0f, (now - lastFrameNanos) / 1.0e9f));
 		lastFrameNanos = now;
 
-		VertexConsumerProvider consumers = context.consumers();
+		MultiBufferSource consumers = context.consumers();
 		if (consumers == null) {
 			return;
 		}
-		Vec3d cam = context.worldState().cameraRenderState.pos;
+		Vec3 cam = context.worldState().cameraRenderState.pos;
 		Quaternionf rotation = context.worldState().cameraRenderState.orientation;
 		if (cam == null) {
 			return;
 		}
-		MatrixStack matrices = context.matrices() != null ? context.matrices() : new MatrixStack();
-		float tickDelta = client.getRenderTickCounter().getTickProgress(true);
+		PoseStack matrices = context.matrices() != null ? context.matrices() : new PoseStack();
+		float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 
 		WorldContext ctx = new WorldContext(client, matrices, consumers, cam,
 				rotation != null ? rotation : new Quaternionf(), tickDelta, time(), frameDelta, glow);
 		glow.clear();
-		float camYaw = (float) Math.toRadians(client.gameRenderer.getCamera().getYaw());
-		float camPitch = (float) Math.toRadians(client.gameRenderer.getCamera().getPitch());
+		float camYaw = (float) Math.toRadians(client.gameRenderer.getMainCamera().yRot());
+		float camPitch = (float) Math.toRadians(client.gameRenderer.getMainCamera().xRot());
 		glow.setView((float) (-Math.sin(camYaw) * Math.cos(camPitch)), (float) -Math.sin(camPitch), (float) (Math.cos(camYaw) * Math.cos(camPitch)));
-		matrices.push();
+		matrices.pushPose();
 		for (Module module : modules.all()) {
 			if (module.isEnabled() && !crashed.contains(module)) {
 				long t0 = System.nanoTime();
@@ -355,21 +338,21 @@ public final class WhiteClient implements ClientModInitializer {
 		}
 		try {
 			long d0 = System.nanoTime();
-			if (consumers instanceof VertexConsumerProvider.Immediate immediate) {
-				immediate.draw();
+			if (consumers instanceof MultiBufferSource.BufferSource immediate) {
+				immediate.endBatch();
 			}
 			long d1 = System.nanoTime();
 			Perf.add("draw:solid+text", d1 - d0);
-			glow.draw(consumers, matrices.peek().getPositionMatrix());
+			glow.draw(consumers, matrices.last().pose());
 			Perf.add("draw:glow", System.nanoTime() - d1);
-			if (consumers instanceof VertexConsumerProvider.Immediate immediate) {
-				immediate.draw();
+			if (consumers instanceof MultiBufferSource.BufferSource immediate) {
+				immediate.endBatch();
 			}
 		} catch (Throwable t) {
 			LOGGER.error("[WHITECLIENT] world draw failed", t);
 			glow.clear();
 		}
-		matrices.pop();
+		matrices.popPose();
 	}
 
 	private void fail(Module module, Throwable t) {
@@ -392,7 +375,7 @@ public final class WhiteClient implements ClientModInitializer {
 											text3D.setMessage(message);
 											text3D.setEnabled(true);
 											config.save();
-											ctx.getSource().sendFeedback(Text.literal("§f[WHITECLIENT] §73D text set to: §f" + message));
+											ctx.getSource().sendFeedback(Component.literal("§f[WHITECLIENT] §73D text set to: §f" + message));
 											return 1;
 										})))
 						.then(ClientCommandManager.literal("spotify")
@@ -411,13 +394,13 @@ public final class WhiteClient implements ClientModInitializer {
 								.then(ClientCommandManager.literal("logout")
 										.executes(ctx -> {
 											music.auth().logout();
-											ctx.getSource().sendFeedback(Text.literal("\u00a7f[WHITECLIENT] \u00a77Logged out of Spotify."));
+											ctx.getSource().sendFeedback(Component.literal("\u00a7f[WHITECLIENT] \u00a77Logged out of Spotify."));
 											return 1;
 										}))
 								.then(ClientCommandManager.literal("status")
 										.executes(ctx -> {
 											var np = music.current();
-											ctx.getSource().sendFeedback(Text.literal("\u00a7f[WHITECLIENT] \u00a77" + music.status()
+											ctx.getSource().sendFeedback(Component.literal("\u00a7f[WHITECLIENT] \u00a77" + music.status()
 													+ (np == null ? "" : " \u00a7f" + np.artist() + " - " + np.title())));
 											return 1;
 										})))
@@ -425,7 +408,7 @@ public final class WhiteClient implements ClientModInitializer {
 								.executes(ctx -> {
 									config.load();
 									crashed.clear();
-									ctx.getSource().sendFeedback(Text.literal("§f[WHITECLIENT] §7config reloaded"));
+									ctx.getSource().sendFeedback(Component.literal("§f[WHITECLIENT] §7config reloaded"));
 									return 1;
 								}))));
 	}

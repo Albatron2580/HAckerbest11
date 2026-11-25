@@ -7,7 +7,7 @@ import com.whiteclient.render.CapeTextures;
 import com.whiteclient.setting.ActionSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 
 public class Capes extends Module {
@@ -15,7 +15,7 @@ public class Capes extends Module {
 	public final TextSetting customFile = add(new TextSetting("Custom File", "", 64).visibleWhen(() -> design.is("Custom")));
 	public final ActionSetting openFolder = add(new ActionSetting("Cape Folder", () -> "Open", () -> {
 		try {
-			Util.getOperatingSystem().open(CapeTextures.folder().toFile());
+			Util.getPlatform().openFile(CapeTextures.folder().toFile());
 		} catch (Throwable ignored) {
 		}
 	}));

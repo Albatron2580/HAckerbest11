@@ -11,16 +11,16 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.Perspective;
-import net.minecraft.client.render.entity.state.BipedEntityRenderState;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.LightType;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.phys.Vec3;
 
 public class CarEmote extends Module {
 	public static final String[] CARS = {"Sports", "Pickup", "Kart"};
@@ -40,7 +40,7 @@ public class CarEmote extends Module {
 	private float appear, pappear;
 	private boolean leaving;
 	private boolean showOff;
-	private Perspective savedPerspective;
+	private CameraType savedPerspective;
 	private double cx, cy, cz;
 	private float yaw, pyaw, steer, psteer, wheel, pwheel;
 	private boolean init;
@@ -82,20 +82,20 @@ public class CarEmote extends Module {
 	}
 
 	public void start() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		active = true;
 		leaving = false;
 		init = false;
 		showOff = mode.is("Show Off");
 		appear = pappear = 0;
 		if (thirdPerson.isOn() && mc.options != null) {
-			Perspective cur = mc.options.getPerspective();
-			Perspective want = showOff ? Perspective.THIRD_PERSON_FRONT : Perspective.THIRD_PERSON_BACK;
+			CameraType cur = mc.options.getCameraType();
+			CameraType want = showOff ? CameraType.THIRD_PERSON_FRONT : CameraType.THIRD_PERSON_BACK;
 			if (cur.isFirstPerson() || (showOff && cur != want)) {
 				if (savedPerspective == null) {
 					savedPerspective = cur;
 				}
-				mc.options.setPerspective(want);
+				mc.options.setCameraType(want);
 			}
 		}
 	}
@@ -107,9 +107,9 @@ public class CarEmote extends Module {
 	private void finish() {
 		active = false;
 		leaving = false;
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		if (savedPerspective != null && mc.options != null) {
-			mc.options.setPerspective(savedPerspective);
+			mc.options.setCameraType(savedPerspective);
 		}
 		savedPerspective = null;
 	}
@@ -142,36 +142,36 @@ public class CarEmote extends Module {
 		if (c == null || !active || !c.isEnabled() || state == null || c.showOff) {
 			return;
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		if (entity != mc.player) {
 			return;
 		}
 		float k = c.appear;
-		if (state instanceof BipedEntityRenderState b && k > 0.3f) {
-			b.hasVehicle = true;
+		if (state instanceof HumanoidRenderState b && k > 0.3f) {
+			b.isPassenger = true;
 		}
 		state.y += c.seatOffset() * Math.min(1f, k * 1.5f);
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
-		ClientPlayerEntity p = mc.player;
+	public void onTick(Minecraft mc) {
+		LocalPlayer p = mc.player;
 		if (!active) {
 			return;
 		}
-		if (p == null || mc.world == null) {
+		if (p == null || mc.level == null) {
 			finish();
 			return;
 		}
 		if (!leaving && mode.is("Show Off") != showOff) {
 			start();
 		}
-		Vec3d pos = p.getEntityPos();
-		if (!showOff && ((sneakExit.isOn() && p.isSneaking()) || p.hasVehicle() || p.isGliding() || p.isTouchingWater()
+		Vec3 pos = p.position();
+		if (!showOff && ((sneakExit.isOn() && p.isShiftKeyDown()) || p.isPassenger() || p.isFallFlying() || p.isInWater()
 				|| p.getAbilities().flying || p.isSpectator())) {
 			stop();
 		}
-		if (showOff && init && pos.squaredDistanceTo(cx, cy, cz) > 40 * 40) {
+		if (showOff && init && pos.distanceToSqr(cx, cy, cz) > 40 * 40) {
 			stop();
 		}
 		pappear = appear;
@@ -183,7 +183,7 @@ public class CarEmote extends Module {
 		pyaw = yaw;
 		psteer = steer;
 		pwheel = wheel;
-		float body = p.getBodyYaw();
+		float body = p.getVisualRotationYInDegrees();
 		if (!init) {
 			if (showOff) {
 				float side = switch (car.get()) {
@@ -210,9 +210,9 @@ public class CarEmote extends Module {
 		if (showOff) {
 			return;
 		}
-		float turn = MathHelper.wrapDegrees(body - yaw) * 0.35f;
+		float turn = Mth.wrapDegrees(body - yaw) * 0.35f;
 		yaw += turn;
-		steer += (MathHelper.clamp(turn * 2.5f, -30f, 30f) - steer) * 0.3f;
+		steer += (Mth.clamp(turn * 2.5f, -30f, 30f) - steer) * 0.3f;
 		double fx = -Math.sin(Math.toRadians(yaw)), fz = Math.cos(Math.toRadians(yaw));
 		double along = (pos.x - cx) * fx + (pos.z - cz) * fz;
 		if (Math.abs(along) < 6) {
@@ -223,7 +223,7 @@ public class CarEmote extends Module {
 		cz = pos.z;
 	}
 
-	private double settle(MinecraftClient mc, double x, double z, float carYaw, double nearY) {
+	private double settle(Minecraft mc, double x, double z, float carYaw, double nearY) {
 		float[] wheels = switch (car.get()) {
 			case "Pickup" -> new float[]{0.9f, 1.85f};
 			case "Kart" -> new float[]{0.66f, 0.7f};
@@ -245,15 +245,15 @@ public class CarEmote extends Module {
 		return Math.max(nearY - 3, Math.min(nearY + 2, best));
 	}
 
-	private static double groundAt(MinecraftClient mc, double x, double z, double nearY) {
-		net.minecraft.util.math.BlockPos.Mutable m = new net.minecraft.util.math.BlockPos.Mutable();
-		int bx = MathHelper.floor(x), bz = MathHelper.floor(z);
-		int top = MathHelper.floor(nearY + 2.2);
+	private static double groundAt(Minecraft mc, double x, double z, double nearY) {
+		net.minecraft.core.BlockPos.MutableBlockPos m = new net.minecraft.core.BlockPos.MutableBlockPos();
+		int bx = Mth.floor(x), bz = Mth.floor(z);
+		int top = Mth.floor(nearY + 2.2);
 		for (int yy = top; yy >= top - 7; yy--) {
 			m.set(bx, yy, bz);
-			net.minecraft.util.shape.VoxelShape shape = mc.world.getBlockState(m).getCollisionShape(mc.world, m);
+			net.minecraft.world.phys.shapes.VoxelShape shape = mc.level.getBlockState(m).getCollisionShape(mc.level, m);
 			if (!shape.isEmpty()) {
-				return yy + shape.getMax(net.minecraft.util.math.Direction.Axis.Y);
+				return yy + shape.max(net.minecraft.core.Direction.Axis.Y);
 			}
 		}
 		return nearY;
@@ -724,17 +724,17 @@ public class CarEmote extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		if (!active || !init || ctx.client.player == null || ctx.client.world == null) {
+		if (!active || !init || ctx.client.player == null || ctx.client.level == null) {
 			return;
 		}
 		float td = ctx.tickDelta;
-		float ap = MathHelper.lerp(td, pappear, appear);
+		float ap = Mth.lerp(td, pappear, appear);
 		if (ap <= 0.01f) {
 			return;
 		}
-		float y = pyaw + MathHelper.wrapDegrees(yaw - pyaw) * td;
-		wSteer = MathHelper.lerp(td, psteer, steer);
-		wSpin = MathHelper.lerp(td, pwheel, wheel);
+		float y = pyaw + Mth.wrapDegrees(yaw - pyaw) * td;
+		wSteer = Mth.lerp(td, psteer, steer);
+		wSpin = Mth.lerp(td, pwheel, wheel);
 		double r = Math.toRadians(y);
 		cosY = (float) Math.cos(r);
 		sinY = (float) Math.sin(r);
@@ -752,7 +752,7 @@ public class CarEmote extends Module {
 			oy = ctx.ry(cy);
 			oz = ctx.rz(cz);
 		} else {
-			Vec3d pl = ctx.client.player.getLerpedPos(td);
+			Vec3 pl = ctx.client.player.getPosition(td);
 			float[] seat = seat();
 			float sx = -cosY * seat[0] + -sinY * seat[1];
 			float sz = -sinY * seat[0] + cosY * seat[1];
@@ -764,11 +764,11 @@ public class CarEmote extends Module {
 			oz = ctx.rz(pl.z) - sz * scale;
 		}
 
-		BlockPos bp = BlockPos.ofFloored(baseX, baseY + 0.5, baseZ);
-		long time = ctx.client.world.getTimeOfDay() % 24000L;
+		BlockPos bp = BlockPos.containing(baseX, baseY + 0.5, baseZ);
+		long time = ctx.client.level.getDayTime() % 24000L;
 		float day = 0.5f + 0.5f * (float) Math.cos((time - 6000L) / 24000.0 * Math.PI * 2);
-		float sky = ctx.client.world.getLightLevel(LightType.SKY, bp) / 15f * (0.16f + 0.84f * day);
-		float block = ctx.client.world.getLightLevel(LightType.BLOCK, bp) / 15f;
+		float sky = ctx.client.level.getBrightness(LightLayer.SKY, bp) / 15f * (0.16f + 0.84f * day);
+		float block = ctx.client.level.getBrightness(LightLayer.BLOCK, bp) / 15f;
 		light = 0.2f + 0.8f * Math.max(sky, block);
 		paintRgb = color.rgb();
 
@@ -777,7 +777,7 @@ public class CarEmote extends Module {
 			case "Kart" -> kart();
 			default -> sports();
 		}
-		solid.draw(ctx.consumers, ctx.matrices.peek().getPositionMatrix());
+		solid.draw(ctx.consumers, ctx.matrices.last().pose());
 		glowParts(ctx.glow, ap);
 	}
 

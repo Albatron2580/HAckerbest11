@@ -1,15 +1,15 @@
 package com.whiteclient.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import net.minecraft.client.gl.GpuSampler;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(DrawContext.class)
+@Mixin(GuiGraphics.class)
 public interface DrawContextInvoker {
-	@Invoker("drawTexturedQuad")
+	@Invoker("submitBlit")
 	void whiteclient$texturedQuad(RenderPipeline pipeline, GpuTextureView texture, GpuSampler sampler, int x0, int y0, int x1, int y1,
 								  float u0, float u1, float v0, float v1, int color);
 }

@@ -3,8 +3,8 @@ package com.whiteclient.modules;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.ModeSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 
 public class TimeChanger extends Module {
 	public final ModeSetting time = add(new ModeSetting("Time", "Sunset", "Normal", "Sunrise", "Day", "Sunset", "Night", "Midnight"));
@@ -26,28 +26,28 @@ public class TimeChanger extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
-		ClientWorld w = mc.world;
+	public void onTick(Minecraft mc) {
+		ClientLevel w = mc.level;
 		if (w == null) {
 			return;
 		}
 		long t = target();
 		if (t >= 0) {
-			long days = Math.floorDiv(w.getTimeOfDay(), 24000L);
-			w.setTime(w.getTime(), days * 24000L + t, false);
+			long days = Math.floorDiv(w.getDayTime(), 24000L);
+			w.setTimeFromServer(w.getGameTime(), days * 24000L + t, false);
 		}
 		switch (weather.get()) {
 			case "Clear" -> {
-				w.setRainGradient(0f);
-				w.setThunderGradient(0f);
+				w.setRainLevel(0f);
+				w.setThunderLevel(0f);
 			}
 			case "Rain" -> {
-				w.setRainGradient(1f);
-				w.setThunderGradient(0f);
+				w.setRainLevel(1f);
+				w.setThunderLevel(0f);
 			}
 			case "Thunder" -> {
-				w.setRainGradient(1f);
-				w.setThunderGradient(1f);
+				w.setRainLevel(1f);
+				w.setThunderLevel(1f);
 			}
 			default -> {
 			}

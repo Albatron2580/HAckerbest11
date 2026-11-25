@@ -1,21 +1,20 @@
 package com.whiteclient.modules;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.resource.Resource;
-import net.minecraft.util.Identifier;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.Resource;
 
 public class InventoryTheme extends Module {
 	public final ColorSetting panel = add(new ColorSetting("Panel Color", 0x16161D));
@@ -50,7 +49,7 @@ public class InventoryTheme extends Module {
 		return t != null && t.isEnabled() && t.tooltips.isOn();
 	}
 
-	public static void drawTooltip(net.minecraft.client.gui.DrawContext ctx, int x, int y, int w, int h) {
+	public static void drawTooltip(net.minecraft.client.gui.GuiGraphics ctx, int x, int y, int w, int h) {
 		InventoryTheme t = get();
 		int panel = t != null ? com.whiteclient.render.Colors.mix(t.panel.rgb(), 0x000000, 0.35f) : 0x0E0E13;
 		int edge = t != null ? t.edge.rgb() : 0xFFFFFF;
@@ -98,10 +97,10 @@ public class InventoryTheme extends Module {
 	}
 
 	private void restore() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		for (Identifier id : applied) {
 			try {
-				mc.getTextureManager().destroyTexture(id);
+				mc.getTextureManager().release(id);
 			} catch (Throwable ignored) {
 			}
 		}
@@ -110,21 +109,21 @@ public class InventoryTheme extends Module {
 	}
 
 	private void apply() throws Exception {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		restore();
 		for (String name : TEXTURES) {
-			Identifier id = Identifier.ofVanilla("textures/gui/container/" + name + ".png");
+			Identifier id = Identifier.withDefaultNamespace("textures/gui/container/" + name + ".png");
 			Optional<Resource> res = mc.getResourceManager().getResource(id);
 			if (res.isEmpty()) {
 				continue;
 			}
 			NativeImage img;
-			try (InputStream in = res.get().getInputStream()) {
+			try (InputStream in = res.get().open()) {
 				img = NativeImage.read(in);
 			}
 			recolor(img);
-			NativeImageBackedTexture tex = new NativeImageBackedTexture(() -> "whiteclient_theme_" + name, img);
-			mc.getTextureManager().registerTexture(id, tex);
+			DynamicTexture tex = new DynamicTexture(() -> "whiteclient_theme_" + name, img);
+			mc.getTextureManager().register(id, tex);
 			applied.add(id);
 		}
 		appliedKey = key();
@@ -152,7 +151,7 @@ public class InventoryTheme extends Module {
 		int[] orig = new int[w * h];
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				orig[y * w + x] = img.getColorArgb(x, y);
+				orig[y * w + x] = img.getPixel(x, y);
 			}
 		}
 		for (int y = 0; y < h; y++) {
@@ -179,7 +178,7 @@ public class InventoryTheme extends Module {
 				}
 				float al = alpha[k] + (alpha[k + 1] - alpha[k]) * t;
 				int na = Math.round(a * al);
-				img.setColorArgb(x, y, (na << 24) | out);
+				img.setPixel(x, y, (na << 24) | out);
 			}
 		}
 	}

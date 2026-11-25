@@ -1,22 +1,22 @@
 package com.whiteclient.gui;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.whiteclient.WhiteClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.GpuSampler;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
 import org.joml.Matrix3x2fStack;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 
 public final class Shapes {
 	private Shapes() {
@@ -41,7 +41,7 @@ public final class Shapes {
 		}
 	}
 
-	private static final class ShapeTexture extends NativeImageBackedTexture {
+	private static final class ShapeTexture extends DynamicTexture {
 		private final boolean linear;
 		private GpuSampler sampler;
 		private boolean samplerFailed;
@@ -70,15 +70,15 @@ public final class Shapes {
 
 	private static Identifier upload(String name, int w, int h, int[] argb, boolean linear) {
 		ShapeTexture tex = new ShapeTexture("whiteclient_" + name, w, h, linear);
-		NativeImage img = tex.getImage();
+		NativeImage img = tex.getPixels();
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				img.setColorArgb(x, y, argb[y * w + x]);
+				img.setPixel(x, y, argb[y * w + x]);
 			}
 		}
 		tex.upload();
-		Identifier id = Identifier.of(WhiteClient.MOD_ID, "dynamic/shape_" + name);
-		MinecraftClient.getInstance().getTextureManager().registerTexture(id, tex);
+		Identifier id = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "dynamic/shape_" + name);
+		Minecraft.getInstance().getTextureManager().register(id, tex);
 		return id;
 	}
 
@@ -125,7 +125,7 @@ public final class Shapes {
 			Map.Entry<Long, Identifier> eldest = CORNERS.entrySet().iterator().next();
 			CORNERS.remove(eldest.getKey());
 			try {
-				MinecraftClient.getInstance().getTextureManager().destroyTexture(eldest.getValue());
+				Minecraft.getInstance().getTextureManager().release(eldest.getValue());
 			} catch (Throwable ignored) {
 			}
 		}
@@ -136,10 +136,10 @@ public final class Shapes {
 	}
 
 	private static int scale() {
-		return Math.max(1, MinecraftClient.getInstance().getWindow().getScaleFactor());
+		return Math.max(1, Minecraft.getInstance().getWindow().getGuiScale());
 	}
 
-	public static boolean circle(DrawContext ctx, float cx, float cy, float r, int argb) {
+	public static boolean circle(GuiGraphics ctx, float cx, float cy, float r, int argb) {
 		if (failed) {
 			return false;
 		}
@@ -165,16 +165,16 @@ public final class Shapes {
 		}
 	}
 
-	static void sprite(DrawContext ctx, Identifier id, int n, float cx, float cy, float half, int argb) {
-		Matrix3x2fStack m = ctx.getMatrices();
+	static void sprite(GuiGraphics ctx, Identifier id, int n, float cx, float cy, float half, int argb) {
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(cx - half, cy - half);
 		m.scale(half * 2 / n, half * 2 / n);
-		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, id, 0, 0, 0f, 0f, n, n, n, n, n, n, argb);
+		ctx.blit(RenderPipelines.GUI_TEXTURED, id, 0, 0, 0f, 0f, n, n, n, n, n, n, argb);
 		m.popMatrix();
 	}
 
-	public static boolean roundRect(DrawContext ctx, float x, float y, float w, float h, float radius, int argb) {
+	public static boolean roundRect(GuiGraphics ctx, float x, float y, float w, float h, float radius, int argb) {
 		if (failed) {
 			return false;
 		}
@@ -185,7 +185,7 @@ public final class Shapes {
 				return true;
 			}
 			int r = Math.min(Math.round(radius * s), Math.min(x1 - x0, y1 - y0) / 2);
-			Matrix3x2fStack m = ctx.getMatrices();
+			Matrix3x2fStack m = ctx.pose();
 			m.pushMatrix();
 			m.scale(1f / s, 1f / s);
 			if (r <= 0) {
@@ -209,15 +209,15 @@ public final class Shapes {
 		}
 	}
 
-	private static void corners(DrawContext ctx, Identifier c, int r, int x0, int y0, int x1, int y1, int argb) {
+	private static void corners(GuiGraphics ctx, Identifier c, int r, int x0, int y0, int x1, int y1, int argb) {
 		int n = r * 2;
-		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, c, x0, y0, 0f, 0f, r, r, r, r, n, n, argb);
-		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, c, x1 - r, y0, r, 0f, r, r, r, r, n, n, argb);
-		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, c, x0, y1 - r, 0f, r, r, r, r, r, n, n, argb);
-		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, c, x1 - r, y1 - r, r, r, r, r, r, r, n, n, argb);
+		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x0, y0, 0f, 0f, r, r, r, r, n, n, argb);
+		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x1 - r, y0, r, 0f, r, r, r, r, n, n, argb);
+		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x0, y1 - r, 0f, r, r, r, r, r, n, n, argb);
+		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x1 - r, y1 - r, r, r, r, r, r, r, n, n, argb);
 	}
 
-	public static boolean roundRectOutline(DrawContext ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
+	public static boolean roundRectOutline(GuiGraphics ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {
 		if (failed) {
 			return false;
 		}
@@ -232,7 +232,7 @@ public final class Shapes {
 			if (r < t || x1 - x0 < 2 * t || y1 - y0 < 2 * t) {
 				return false;
 			}
-			Matrix3x2fStack m = ctx.getMatrices();
+			Matrix3x2fStack m = ctx.pose();
 			m.pushMatrix();
 			m.scale(1f / s, 1f / s);
 			if (x1 - r > x0 + r) {

@@ -10,9 +10,8 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.Random;
+import net.minecraft.world.phys.Vec3;
 
 public class Ambience extends Module {
 	public final ModeSetting mode = add(new ModeSetting("Particles", "Fireflies", "Fireflies", "Petals", "Embers", "Hearts", "Bubbles"));
@@ -43,7 +42,7 @@ public class Ambience extends Module {
 		}
 	}
 
-	private void respawn(int i, Vec3d c, float r, boolean anywhere) {
+	private void respawn(int i, Vec3 c, float r, boolean anywhere) {
 		double ang = random.nextDouble() * Math.PI * 2;
 		double d = Math.sqrt(random.nextDouble()) * r;
 		px[i] = c.x + Math.cos(ang) * d;
@@ -69,7 +68,7 @@ public class Ambience extends Module {
 			resize(n);
 			lastMode = mode.get();
 		}
-		Vec3d c = ctx.client.player.getLerpedPos(ctx.tickDelta);
+		Vec3 c = ctx.client.player.getPosition(ctx.tickDelta);
 		float r = radius.getFloat();
 		float dt = Math.min(0.05f, ctx.frameDelta);
 		float t = ctx.time;

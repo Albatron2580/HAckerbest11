@@ -10,12 +10,11 @@ import com.whiteclient.render.WorldText;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 
 public class KillEffects extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Soul", "Soul", "Lightning", "Shockwave", "Hearts", "Confetti"));
@@ -30,14 +29,14 @@ public class KillEffects extends Module {
 		CombatTracker.onKill(this::kill);
 	}
 
-	private void kill(LivingEntity target, Vec3d pos) {
+	private void kill(LivingEntity target, Vec3 pos) {
 		if (!isEnabled()) {
 			return;
 		}
-		spawn(pos, target.getHeight());
+		spawn(pos, target.getBbHeight());
 	}
 
-	public void spawn(Vec3d pos, float height) {
+	public void spawn(Vec3 pos, float height) {
 		int idx = 0;
 		for (int i = 0; i < style.getModes().size(); i++) {
 			if (style.is(style.getModes().get(i))) {

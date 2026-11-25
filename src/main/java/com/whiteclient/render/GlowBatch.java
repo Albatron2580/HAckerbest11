@@ -1,15 +1,15 @@
 package com.whiteclient.render;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.whiteclient.WhiteClient;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
 
 import java.util.Arrays;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 
 public final class GlowBatch {
 	private static final int FLOATS_PER_QUAD = 12;
@@ -19,7 +19,7 @@ public final class GlowBatch {
 	private long[] order = new long[1024];
 	private int count;
 
-	private static RenderLayer cachedLayer;
+	private static RenderType cachedLayer;
 	private static boolean cachedTriangles;
 	private static boolean cachedNeedsSort;
 	private static boolean layerResolved;
@@ -187,16 +187,16 @@ public final class GlowBatch {
 			return;
 		}
 		layerResolved = true;
-		RenderLayer[] candidates = {RenderLayers.dragonRays(), RenderLayers.lightning()};
-		for (RenderLayer layer : candidates) {
+		RenderType[] candidates = {RenderTypes.dragonRays(), RenderTypes.lightning()};
+		for (RenderType layer : candidates) {
 			try {
-				if (layer.getVertexFormat() != VertexFormats.POSITION_COLOR) {
+				if (layer.format() != DefaultVertexFormat.POSITION_COLOR) {
 					continue;
 				}
-				VertexFormat.DrawMode mode = layer.getDrawMode();
-				if (mode == VertexFormat.DrawMode.TRIANGLES || mode == VertexFormat.DrawMode.QUADS) {
+				VertexFormat.Mode mode = layer.mode();
+				if (mode == VertexFormat.Mode.TRIANGLES || mode == VertexFormat.Mode.QUADS) {
 					cachedLayer = layer;
-					cachedTriangles = mode == VertexFormat.DrawMode.TRIANGLES;
+					cachedTriangles = mode == VertexFormat.Mode.TRIANGLES;
 					cachedNeedsSort = layer != candidates[0];
 					WhiteClient.LOGGER.info("[WHITECLIENT] glow layer: {} ({})", layer, mode);
 					return;
@@ -208,7 +208,7 @@ public final class GlowBatch {
 		WhiteClient.LOGGER.warn("[WHITECLIENT] no usable glow render layer found; glow effects disabled");
 	}
 
-	public void draw(VertexConsumerProvider consumers, Matrix4f matrix) {
+	public void draw(MultiBufferSource consumers, Matrix4f matrix) {
 		if (count == 0) {
 			return;
 		}
@@ -263,17 +263,17 @@ public final class GlowBatch {
 							 float x3, float y3, float z3, int c3,
 							 float x4, float y4, float z4, int c4) {
 		if (cachedTriangles) {
-			vc.vertex(m, x1, y1, z1).color(c1);
-			vc.vertex(m, x2, y2, z2).color(c2);
-			vc.vertex(m, x3, y3, z3).color(c3);
-			vc.vertex(m, x1, y1, z1).color(c1);
-			vc.vertex(m, x3, y3, z3).color(c3);
-			vc.vertex(m, x4, y4, z4).color(c4);
+			vc.addVertex(m, x1, y1, z1).setColor(c1);
+			vc.addVertex(m, x2, y2, z2).setColor(c2);
+			vc.addVertex(m, x3, y3, z3).setColor(c3);
+			vc.addVertex(m, x1, y1, z1).setColor(c1);
+			vc.addVertex(m, x3, y3, z3).setColor(c3);
+			vc.addVertex(m, x4, y4, z4).setColor(c4);
 		} else {
-			vc.vertex(m, x1, y1, z1).color(c1);
-			vc.vertex(m, x2, y2, z2).color(c2);
-			vc.vertex(m, x3, y3, z3).color(c3);
-			vc.vertex(m, x4, y4, z4).color(c4);
+			vc.addVertex(m, x1, y1, z1).setColor(c1);
+			vc.addVertex(m, x2, y2, z2).setColor(c2);
+			vc.addVertex(m, x3, y3, z3).setColor(c3);
+			vc.addVertex(m, x4, y4, z4).setColor(c4);
 		}
 	}
 }

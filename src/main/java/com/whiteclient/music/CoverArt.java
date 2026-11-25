@@ -1,12 +1,11 @@
 package com.whiteclient.music;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
 import javax.imageio.ImageIO;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -17,14 +16,14 @@ import java.time.Duration;
 
 public final class CoverArt {
 	public static final int SIZE = 64;
-	public static final Identifier ID = Identifier.of(WhiteClient.MOD_ID, "dynamic/cover");
+	public static final Identifier ID = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "dynamic/cover");
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6))
 			.followRedirects(HttpClient.Redirect.NORMAL).build();
 
 	private volatile String requestedUrl;
 	private volatile int[] pending;
 	private volatile boolean hasCover;
-	private NativeImageBackedTexture texture;
+	private DynamicTexture texture;
 
 	void request(String url) {
 		if (url == null || url.equals(requestedUrl)) {
@@ -88,14 +87,14 @@ public final class CoverArt {
 			pending = null;
 			try {
 				if (texture == null) {
-					texture = new NativeImageBackedTexture(() -> "whiteclient_cover", SIZE, SIZE, false);
-					MinecraftClient.getInstance().getTextureManager().registerTexture(ID, texture);
+					texture = new DynamicTexture(() -> "whiteclient_cover", SIZE, SIZE, false);
+					Minecraft.getInstance().getTextureManager().register(ID, texture);
 				}
-				NativeImage image = texture.getImage();
+				NativeImage image = texture.getPixels();
 				if (image != null) {
 					for (int y = 0; y < SIZE; y++) {
 						for (int x = 0; x < SIZE; x++) {
-							image.setColorArgb(x, y, px[y * SIZE + x]);
+							image.setPixel(x, y, px[y * SIZE + x]);
 						}
 					}
 					texture.upload();

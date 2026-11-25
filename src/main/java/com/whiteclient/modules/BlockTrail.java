@@ -8,12 +8,11 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayDeque;
 import java.util.Iterator;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 
 public class BlockTrail extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -38,15 +37,15 @@ public class BlockTrail extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient client) {
-		ClientPlayerEntity player = client.player;
+	public void onTick(Minecraft client) {
+		LocalPlayer player = client.player;
 		if (player == null) {
 			return;
 		}
-		if (onlyGround.isOn() && !player.isOnGround()) {
+		if (onlyGround.isOn() && !player.onGround()) {
 			return;
 		}
-		BlockPos pos = player.getSteppingPos();
+		BlockPos pos = player.getOnPos();
 		Step last = steps.peekLast();
 		double y = player.getY();
 		if (last != null && last.x() == pos.getX() && last.z() == pos.getZ() && Math.abs(last.y() - y) < 0.5) {

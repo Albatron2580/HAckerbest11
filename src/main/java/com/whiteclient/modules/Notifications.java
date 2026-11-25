@@ -7,12 +7,11 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
 import com.whiteclient.setting.ModeSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class Notifications extends Module {
 	public final ModeSetting position = add(new ModeSetting("Position", "Bottom Right", "Bottom Right", "Top Right", "Bottom Left", "Top Left"));
@@ -36,9 +35,9 @@ public class Notifications extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		TextRenderer tr = mc.textRenderer;
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
+		Minecraft mc = Minecraft.getInstance();
+		Font tr = mc.font;
 		long now = System.currentTimeMillis();
 		List<Object[]> list;
 		synchronized (TOASTS) {
@@ -55,10 +54,10 @@ public class Notifications extends Module {
 			float a = Math.min(in, out);
 			float ease = 1f - (1f - in) * (1f - in);
 			String sub = on ? "Enabled" : "Disabled";
-			float w = Math.max(tr.getWidth(name), tr.getWidth(sub) * 0.8f) + 44, h = 26;
+			float w = Math.max(tr.width(name), tr.width(sub) * 0.8f) + 44, h = 26;
 			float[] p = HudLayout.place(position.get(), w, h);
 			float slide = (1f - ease) * 30 * (right ? 1 : -1);
-			var m = ctx.getMatrices();
+			var m = ctx.pose();
 			m.pushMatrix();
 			m.translate(slide, 0);
 			Hud.panel(ctx, p[0], p[1], w, h, a);

@@ -2,12 +2,11 @@ package com.whiteclient.module;
 
 import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.Setting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
 public abstract class Module {
 	private final String name;
@@ -78,12 +77,12 @@ public abstract class Module {
 	protected void onDisable() {
 	}
 
-	public void onTick(MinecraftClient client) {
+	public void onTick(Minecraft client) {
 	}
 
 	public void renderWorld(WorldContext ctx) {
 	}
 
-	public void renderHud(DrawContext context, float tickDelta) {
+	public void renderHud(GuiGraphics context, float tickDelta) {
 	}
 }

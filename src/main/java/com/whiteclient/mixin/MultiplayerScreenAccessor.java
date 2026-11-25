@@ -1,21 +1,21 @@
 package com.whiteclient.mixin;
 
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerServerListWidget;
-import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.screens.multiplayer.ServerSelectionList;
+import net.minecraft.client.multiplayer.ServerData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(MultiplayerScreen.class)
+@Mixin(JoinMultiplayerScreen.class)
 public interface MultiplayerScreenAccessor {
 	@Accessor("layout")
-	ThreePartsLayoutWidget whiteclient$layout();
+	HeaderAndFooterLayout whiteclient$layout();
 
-	@Accessor("serverListWidget")
-	MultiplayerServerListWidget whiteclient$serverListWidget();
+	@Accessor("serverSelectionList")
+	ServerSelectionList whiteclient$serverListWidget();
 
-	@Invoker("connect")
-	void whiteclient$connect(ServerInfo info);
+	@Invoker("join")
+	void whiteclient$connect(ServerData info);
 }

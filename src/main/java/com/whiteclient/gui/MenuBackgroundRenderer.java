@@ -1,24 +1,23 @@
 package com.whiteclient.gui;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.render.BackgroundShader;
 import com.whiteclient.render.Colors;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.GpuSampler;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
 import java.util.OptionalDouble;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 
 public final class MenuBackgroundRenderer {
-	private static final Identifier TEXTURE_ID = Identifier.of(WhiteClient.MOD_ID, "dynamic/menu_background");
+	private static final Identifier TEXTURE_ID = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "dynamic/menu_background");
 	private static final int TEX_W = 384;
 	private static final int TEX_H = 216;
 
@@ -35,7 +34,7 @@ public final class MenuBackgroundRenderer {
 	private MenuBackgroundRenderer() {
 	}
 
-	private static final class SmoothTexture extends NativeImageBackedTexture {
+	private static final class SmoothTexture extends DynamicTexture {
 		private GpuSampler linear;
 		private boolean samplerFailed;
 
@@ -110,13 +109,13 @@ public final class MenuBackgroundRenderer {
 	private static void upload() {
 		if (texture == null) {
 			texture = new SmoothTexture();
-			MinecraftClient.getInstance().getTextureManager().registerTexture(TEXTURE_ID, texture);
+			Minecraft.getInstance().getTextureManager().register(TEXTURE_ID, texture);
 		}
 		synchronized (LOCK) {
 			if (!fresh) {
 				return;
 			}
-			NativeImage image = texture.getImage();
+			NativeImage image = texture.getPixels();
 			if (image == null) {
 				return;
 			}
@@ -124,7 +123,7 @@ public final class MenuBackgroundRenderer {
 			for (int y = 0; y < TEX_H; y++) {
 				int row = y * TEX_W;
 				for (int x = 0; x < TEX_W; x++) {
-					image.setColorArgb(x, y, src[row + x]);
+					image.setPixel(x, y, src[row + x]);
 				}
 			}
 			fresh = false;
@@ -133,11 +132,11 @@ public final class MenuBackgroundRenderer {
 		hasFrame = true;
 	}
 
-	public static void draw(DrawContext ctx, int width, int height, float alpha) {
+	public static void draw(GuiGraphics ctx, int width, int height, float alpha) {
 		draw(ctx, width, height, alpha, -1);
 	}
 
-	public static void draw(DrawContext ctx, int width, int height, float alpha, int mode) {
+	public static void draw(GuiGraphics ctx, int width, int height, float alpha, int mode) {
 		requestedMode = mode;
 		try {
 			drawUnsafe(ctx, width, height, alpha);
@@ -152,7 +151,7 @@ public final class MenuBackgroundRenderer {
 
 	private static boolean loggedFailure;
 
-	private static void drawUnsafe(DrawContext ctx, int width, int height, float alpha) {
+	private static void drawUnsafe(GuiGraphics ctx, int width, int height, float alpha) {
 		lastRequestMs = System.currentTimeMillis();
 		ensureWorker();
 		try {
@@ -177,7 +176,7 @@ public final class MenuBackgroundRenderer {
 			regionW = Math.max(1, Math.round(TEX_H * screenAspect));
 			u = (TEX_W - regionW) / 2f;
 		}
-		ctx.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE_ID, 0, 0, u, v, width, height, regionW, regionH,
+		ctx.blit(RenderPipelines.GUI_TEXTURED, TEXTURE_ID, 0, 0, u, v, width, height, regionW, regionH,
 				TEX_W, TEX_H, Colors.argb(0xFFFFFF, alpha));
 	}
 }

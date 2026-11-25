@@ -7,7 +7,7 @@ import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class Hitmarker extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -21,7 +21,7 @@ public class Hitmarker extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
 		long now = System.currentTimeMillis();
 		long hitAt = Math.max(CombatTracker.lastHitAt(), debugHitAt);
 		float u = (now - hitAt) / 320f;
@@ -31,7 +31,7 @@ public class Hitmarker extends Module {
 		boolean kill = now - CombatTracker.lastKillAt() < 600;
 		float a = 1f - u * u;
 		float pop = 1f + 0.4f * (1f - u) * (1f - u);
-		float cx = ctx.getScaledWindowWidth() / 2f, cy = ctx.getScaledWindowHeight() / 2f;
+		float cx = ctx.guiWidth() / 2f, cy = ctx.guiHeight() / 2f;
 		float s = size.getFloat() * pop;
 		float r1 = 3.5f * s, r2 = 8f * s;
 		int col = Colors.argb(kill ? killColor.rgb() : color.rgb(), a);

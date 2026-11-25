@@ -2,11 +2,10 @@ package com.whiteclient.gui;
 
 import com.whiteclient.WhiteClient;
 import com.whiteclient.render.BackgroundShader;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 
 public final class MenuScene {
 	private static final Map<Screen, Long> OPENED = new WeakHashMap<>();
@@ -22,11 +21,11 @@ public final class MenuScene {
 		return 1f - (1f - k) * (1f - k) * (1f - k);
 	}
 
-	public static void draw(DrawContext ctx, Screen s, float contentHalf) {
+	public static void draw(GuiGraphics ctx, Screen s, float contentHalf) {
 		draw(ctx, s, contentHalf, true);
 	}
 
-	public static void draw(DrawContext ctx, Screen s, float contentHalf, boolean fadeIn) {
+	public static void draw(GuiGraphics ctx, Screen s, float contentHalf, boolean fadeIn) {
 		int width = s.width, height = s.height;
 		float time = WhiteClient.get().time();
 		MenuBackgroundRenderer.draw(ctx, width, height, 1f, BackgroundShader.SILK);

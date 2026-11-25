@@ -11,14 +11,13 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 
 public class HitEffects extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Sparks", "Sparks", "Ring", "Stars", "Hearts", "Slash", "Crimson"));
@@ -31,13 +30,13 @@ public class HitEffects extends Module {
 	private final Random random = new Random();
 
 	private static final class Burst {
-		final Vec3d pos;
+		final Vec3 pos;
 		final float start;
 		final boolean crit;
 		final float[] dirs = new float[3 * 12];
 		final float seed;
 
-		Burst(Vec3d pos, float start, boolean crit, Random r) {
+		Burst(Vec3 pos, float start, boolean crit, Random r) {
 			this.pos = pos;
 			this.start = start;
 			this.crit = crit;
@@ -56,7 +55,7 @@ public class HitEffects extends Module {
 		CombatTracker.onHit(this::hit);
 	}
 
-	private void hit(LivingEntity target, Vec3d pos, boolean crit) {
+	private void hit(LivingEntity target, Vec3 pos, boolean crit) {
 		if (!isEnabled()) {
 			return;
 		}
@@ -65,9 +64,9 @@ public class HitEffects extends Module {
 			bursts.remove(0);
 		}
 		int extra = extraCrits.getInt();
-		MinecraftClient mc = MinecraftClient.getInstance();
-		for (int i = 0; i < extra && mc.particleManager != null; i++) {
-			mc.particleManager.addEmitter(target, ParticleTypes.CRIT);
+		Minecraft mc = Minecraft.getInstance();
+		for (int i = 0; i < extra && mc.particleEngine != null; i++) {
+			mc.particleEngine.createTrackingEmitter(target, ParticleTypes.CRIT);
 		}
 	}
 

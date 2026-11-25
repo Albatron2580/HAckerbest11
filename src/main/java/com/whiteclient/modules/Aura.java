@@ -8,9 +8,9 @@ import com.whiteclient.render.WorldContext;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import com.whiteclient.render.CosmeticTargets;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
 
 public class Aura extends Module {
 	public final ColorSetting color = add(new ColorSetting("Color", 0xFFFFFF));
@@ -27,14 +27,14 @@ public class Aura extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		for (PlayerEntity player : CosmeticTargets.collect(ctx, true, false, others.isOn(), 48)) {
+		for (Player player : CosmeticTargets.collect(ctx, true, false, others.isOn(), 48)) {
 			render(ctx, player);
 		}
 	}
 
-	private void render(WorldContext ctx, PlayerEntity player) {
-		Vec3d p = player.getLerpedPos(ctx.tickDelta);
-		float h = player.getHeight();
+	private void render(WorldContext ctx, Player player) {
+		Vec3 p = player.getPosition(ctx.tickDelta);
+		float h = player.getBbHeight();
 		V3 center = new V3(ctx.rx(p.x), ctx.ry(p.y + h * 0.55f), ctx.rz(p.z));
 		GlowBatch g = ctx.glow;
 		int rgb = color.rgb();

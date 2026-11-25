@@ -1,6 +1,6 @@
 package com.whiteclient.render;
 
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 
 public final class OrganicMesh {
@@ -204,7 +204,7 @@ public final class OrganicMesh {
 		}
 	}
 
-	public void draw(VertexConsumerProvider consumers, Matrix4f matrix) {
+	public void draw(MultiBufferSource consumers, Matrix4f matrix) {
 		batch.draw(consumers, matrix);
 	}
 }

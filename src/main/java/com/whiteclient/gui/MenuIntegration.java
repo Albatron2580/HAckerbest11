@@ -6,18 +6,17 @@ import com.whiteclient.modules.ModsButton;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.fabric.api.event.Event;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.text.TextContent;
-import net.minecraft.text.TranslatableTextContent;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.resources.Identifier;
 import java.util.List;
 
 public final class MenuIntegration {
@@ -26,22 +25,22 @@ public final class MenuIntegration {
 
 	public static void register() {
 		ScreenEvents.BEFORE_INIT.register((client, screen, w, h) -> {
-			if (screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>) {
+			if (screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) {
 				com.whiteclient.modules.InventoryTheme.ensure();
 			}
 		});
 		ScreenEvents.AFTER_INIT.register(MenuIntegration::afterInit);
-		Identifier late = Identifier.of(WhiteClient.MOD_ID, "pause_layout");
+		Identifier late = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "pause_layout");
 		ScreenEvents.AFTER_INIT.addPhaseOrdering(Event.DEFAULT_PHASE, late);
 		ScreenEvents.AFTER_INIT.register(late, (client, screen, w, h) -> {
-			if (screen instanceof MultiplayerScreen mp && FeaturedServer.enabled()) {
+			if (screen instanceof JoinMultiplayerScreen mp && FeaturedServer.enabled()) {
 				try {
 					FeaturedServer.setup(client, mp);
 				} catch (Throwable t) {
 					WhiteClient.LOGGER.error("[WHITECLIENT] could not set up the featured server", t);
 				}
 			}
-			if (screen instanceof GameMenuScreen && PauseStyle.enabled()) {
+			if (screen instanceof PauseScreen && PauseStyle.enabled()) {
 				try {
 					PauseStyle.layout(client, screen);
 				} catch (Throwable t) {
@@ -51,12 +50,12 @@ public final class MenuIntegration {
 		});
 	}
 
-	private static void afterInit(MinecraftClient client, Screen screen, int width, int height) {
+	private static void afterInit(Minecraft client, Screen screen, int width, int height) {
 		WhiteClient wc = WhiteClient.get();
 		if (wc == null) {
 			return;
 		}
-		if (screen instanceof GameMenuScreen) {
+		if (screen instanceof PauseScreen) {
 			ModsButton mods = wc.modules().get(ModsButton.class);
 			if (mods != null && mods.isEnabled()) {
 				try {
@@ -66,13 +65,13 @@ public final class MenuIntegration {
 				}
 			}
 		}
-		if (screen instanceof GameMenuScreen || screen instanceof TitleScreen) {
+		if (screen instanceof PauseScreen || screen instanceof TitleScreen) {
 			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
 				MenuBackground bg = wc.modules().get(MenuBackground.class);
 				if (bg == null || !bg.isEnabled()) {
 					return;
 				}
-				if (s instanceof GameMenuScreen && PauseStyle.isCurrent(s) && PauseStyle.enabled()) {
+				if (s instanceof PauseScreen && PauseStyle.isCurrent(s) && PauseStyle.enabled()) {
 					if (bg.pauseMenu.isOn()) {
 						MenuBackgroundRenderer.draw(context, s.width, s.height, bg.opacity.getFloat());
 					}
@@ -81,10 +80,10 @@ public final class MenuIntegration {
 				}
 				if (s instanceof TitleScreen && bg.titleScreen.isOn()) {
 					MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
-				} else if (s instanceof GameMenuScreen && bg.pauseMenu.isOn() && hasButtons(s)) {
+				} else if (s instanceof PauseScreen && bg.pauseMenu.isOn() && hasButtons(s)) {
 					MenuBackgroundRenderer.draw(context, s.width, s.height, bg.opacity.getFloat());
 				}
-				if (s instanceof GameMenuScreen && bg.pauseCard.isOn() && hasButtons(s)) {
+				if (s instanceof PauseScreen && bg.pauseCard.isOn() && hasButtons(s)) {
 					drawButtonCard(context, s);
 				}
 			});
@@ -105,13 +104,13 @@ public final class MenuIntegration {
 				float ly = Math.max(r * 2.2f, s.height * 0.16f);
 				Render2D.planetLogo(context, s.width / 2f, ly, r, time, 255);
 				String word = "WHITECLIENT";
-				int tw = client.textRenderer.getWidth(UiFont.title(word));
-				context.drawText(client.textRenderer, UiFont.title(word), Math.round(s.width / 2f - tw / 2f), Math.round(ly + r * 1.6f + 4), 0xFFFFFFFF, false);
+				int tw = client.font.width(UiFont.title(word));
+				context.drawString(client.font, UiFont.title(word), Math.round(s.width / 2f - tw / 2f), Math.round(ly + r * 1.6f + 4), 0xFFFFFFFF, false);
 			});
-		} else if (client.world == null && isPlainMenu(screen)) {
+		} else if (client.level == null && isPlainMenu(screen)) {
 			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
 				MenuBackground bg = wc.modules().get(MenuBackground.class);
-				if (bg == null || !bg.isEnabled() || !bg.otherMenus.isOn() || MinecraftClient.getInstance().world != null) {
+				if (bg == null || !bg.isEnabled() || !bg.otherMenus.isOn() || Minecraft.getInstance().level != null) {
 					return;
 				}
 				if (bg.otherMenusLook.is("Planet")) {
@@ -120,7 +119,7 @@ public final class MenuIntegration {
 					MenuBackgroundRenderer.draw(context, s.width, s.height, 1f);
 					context.fill(0, 0, s.width, s.height, 0x66000000);
 				}
-				if (s instanceof MultiplayerScreen mp && FeaturedServer.isCurrent(mp)) {
+				if (s instanceof JoinMultiplayerScreen mp && FeaturedServer.isCurrent(mp)) {
 					FeaturedServer.draw(context, mp, mouseX, mouseY);
 				}
 			});
@@ -128,11 +127,11 @@ public final class MenuIntegration {
 	}
 
 	private static boolean isLoading(Screen s) {
-		return s instanceof net.minecraft.client.gui.screen.world.LevelLoadingScreen
-				|| s instanceof net.minecraft.client.gui.screen.multiplayer.ConnectScreen
-				|| s instanceof net.minecraft.client.gui.screen.MessageScreen
-				|| s instanceof net.minecraft.client.gui.screen.ProgressScreen
-				|| s instanceof net.minecraft.client.gui.screen.DisconnectedScreen;
+		return s instanceof net.minecraft.client.gui.screens.LevelLoadingScreen
+				|| s instanceof net.minecraft.client.gui.screens.ConnectScreen
+				|| s instanceof net.minecraft.client.gui.screens.GenericMessageScreen
+				|| s instanceof net.minecraft.client.gui.screens.ProgressScreen
+				|| s instanceof net.minecraft.client.gui.screens.DisconnectedScreen;
 	}
 
 	private static boolean isPlainMenu(Screen s) {
@@ -140,10 +139,10 @@ public final class MenuIntegration {
 		return !(s instanceof TitleScreen) && !pkg.startsWith("com.whiteclient") && pkg.startsWith("net.minecraft");
 	}
 
-	private static void drawButtonCard(net.minecraft.client.gui.DrawContext ctx, Screen s) {
-		List<ClickableWidget> buttons = Screens.getButtons(s);
+	private static void drawButtonCard(net.minecraft.client.gui.GuiGraphics ctx, Screen s) {
+		List<AbstractWidget> buttons = Screens.getButtons(s);
 		float x0 = Float.MAX_VALUE, y0 = Float.MAX_VALUE, x1 = -Float.MAX_VALUE, y1 = -Float.MAX_VALUE;
-		for (ClickableWidget b : buttons) {
+		for (AbstractWidget b : buttons) {
 			if (!b.visible) {
 				continue;
 			}
@@ -162,37 +161,37 @@ public final class MenuIntegration {
 	}
 
 	private static boolean hasButtons(Screen screen) {
-		for (ClickableWidget w : Screens.getButtons(screen)) {
-			if (w instanceof net.minecraft.client.gui.widget.PressableWidget) {
+		for (AbstractWidget w : Screens.getButtons(screen)) {
+			if (w instanceof net.minecraft.client.gui.components.AbstractButton) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private static String keyOf(ClickableWidget widget) {
-		Text message = widget.getMessage();
+	private static String keyOf(AbstractWidget widget) {
+		Component message = widget.getMessage();
 		if (message == null) {
 			return "";
 		}
-		TextContent content = message.getContent();
-		if (content instanceof TranslatableTextContent translatable) {
+		ComponentContents content = message.getContents();
+		if (content instanceof TranslatableContents translatable) {
 			return translatable.getKey();
 		}
 		return message.getString();
 	}
 
 	private static void addModsButton(Screen screen) {
-		List<ClickableWidget> buttons = Screens.getButtons(screen);
+		List<AbstractWidget> buttons = Screens.getButtons(screen);
 		if (buttons.isEmpty()) {
 			return;
 		}
-		ClickableWidget feedback = null;
-		ClickableWidget bugs = null;
-		ClickableWidget options = null;
-		ClickableWidget back = null;
+		AbstractWidget feedback = null;
+		AbstractWidget bugs = null;
+		AbstractWidget options = null;
+		AbstractWidget back = null;
 		boolean otherModsButton = false;
-		for (ClickableWidget w : buttons) {
+		for (AbstractWidget w : buttons) {
 			String key = keyOf(w);
 			String text = w.getMessage() == null ? "" : w.getMessage().getString();
 			if (key.equals("menu.sendFeedback") || key.equals("menu.feedback")) {
@@ -221,21 +220,21 @@ public final class MenuIntegration {
 				buttons.remove(bugs);
 			}
 			buttons.remove(feedback);
-			ButtonWidget ours = ButtonWidget.builder(Text.literal(label),
-					b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
-					.dimensions(x, y, right - x, h).build();
+			Button ours = Button.builder(Component.literal(label),
+					b -> Minecraft.getInstance().setScreen(new ClickGuiScreen(parent)))
+					.bounds(x, y, right - x, h).build();
 			ButtonStyle.markAccent(ours);
 			buttons.add(ours);
 			return;
 		}
 
-		ClickableWidget widthRef = back != null ? back : options;
+		AbstractWidget widthRef = back != null ? back : options;
 		if (options != null && widthRef != null) {
 			int insertY = options.getY();
 			int h = options.getHeight();
 			int step = h + 4;
 			int half = step / 2;
-			for (ClickableWidget w : buttons) {
+			for (AbstractWidget w : buttons) {
 				if (w.getY() >= insertY) {
 					w.setY(w.getY() + (step - half));
 				} else {
@@ -244,19 +243,19 @@ public final class MenuIntegration {
 			}
 			int x = widthRef.getX();
 			int width = widthRef.getWidth();
-			ButtonWidget ours = ButtonWidget.builder(Text.literal(otherModsButton ? "WHITECLIENT" : label),
-					b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
-					.dimensions(x, insertY - half, width, h).build();
+			Button ours = Button.builder(Component.literal(otherModsButton ? "WHITECLIENT" : label),
+					b -> Minecraft.getInstance().setScreen(new ClickGuiScreen(parent)))
+					.bounds(x, insertY - half, width, h).build();
 			ButtonStyle.markAccent(ours);
 			buttons.add(ours);
 			return;
 		}
 
 		String text = otherModsButton ? "WHITECLIENT" : label;
-		int w = MinecraftClient.getInstance().textRenderer.getWidth(text) + 16;
-		ButtonWidget ours = ButtonWidget.builder(Text.literal(text),
-				b -> MinecraftClient.getInstance().setScreen(new ClickGuiScreen(parent)))
-				.dimensions(6, 6, w, 20).build();
+		int w = Minecraft.getInstance().font.width(text) + 16;
+		Button ours = Button.builder(Component.literal(text),
+				b -> Minecraft.getInstance().setScreen(new ClickGuiScreen(parent)))
+				.bounds(6, 6, w, 20).build();
 		ButtonStyle.markAccent(ours);
 		buttons.add(ours);
 	}

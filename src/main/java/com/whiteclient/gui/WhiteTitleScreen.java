@@ -1,5 +1,6 @@
 package com.whiteclient.gui;
 
+import com.mojang.realmsclient.RealmsMainScreen;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.MainMenu;
 import com.whiteclient.modules.Wardrobe;
@@ -7,19 +8,18 @@ import com.whiteclient.music.NowPlaying;
 import com.whiteclient.render.BackgroundShader;
 import com.whiteclient.render.Colors;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerWarningScreen;
-import net.minecraft.client.gui.screen.option.LanguageOptionsScreen;
-import net.minecraft.client.gui.screen.option.OptionsScreen;
-import net.minecraft.client.gui.screen.world.SelectWorldScreen;
-import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.screens.multiplayer.SafetyScreen;
+import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class WhiteTitleScreen extends Screen {
 	private final List<Hit> hits = new ArrayList<>();
 	private long opened = System.nanoTime();
 	private long lastFrame = System.nanoTime();
-	private Supplier<SkinTextures> skin;
+	private Supplier<PlayerSkin> skin;
 	private SkinPreview walker;
 	private boolean showcase = true;
 	private int walkerW, walkerH;
@@ -50,17 +50,17 @@ public class WhiteTitleScreen extends Screen {
 
 	@FunctionalInterface
 	private interface IconPainter {
-		void paint(DrawContext ctx, float cx, float cy, float size, int color);
+		void paint(GuiGraphics ctx, float cx, float cy, float size, int color);
 	}
 
 	public WhiteTitleScreen() {
-		super(Text.translatable("narrator.screen.title"));
+		super(Component.translatable("narrator.screen.title"));
 	}
 
 	@Override
 	protected void init() {
 		try {
-			skin = client.getSkinProvider().supplySkinTextures(client.getGameProfile(), false);
+			skin = minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false);
 		} catch (Throwable t) {
 			skin = null;
 		}
@@ -70,13 +70,13 @@ public class WhiteTitleScreen extends Screen {
 		walkerW = (int) (walkerH * 0.6f);
 		try {
 			walker = new SkinPreview(walkerW, walkerH, () -> {
-				SkinTextures base = null;
+				PlayerSkin base = null;
 				try {
 					base = skin != null ? skin.get() : null;
 				} catch (Throwable ignored) {
 				}
 				if (base == null) {
-					base = DefaultSkinHelper.getSteve();
+					base = DefaultPlayerSkin.getDefaultSkin();
 				}
 				return Wardrobe.apply(base);
 			});
@@ -85,7 +85,7 @@ public class WhiteTitleScreen extends Screen {
 		}
 	}
 
-	private void drawWalker(DrawContext ctx, int mouseX, int mouseY, float delta, float time, MainMenu settings) {
+	private void drawWalker(GuiGraphics ctx, int mouseX, int mouseY, float delta, float time, MainMenu settings) {
 		if (walker == null || (settings != null && !settings.player.isOn())) {
 			return;
 		}
@@ -121,22 +121,22 @@ public class WhiteTitleScreen extends Screen {
 		}
 		walker.render(ctx, x, y, mouseX, mouseY, delta);
 		if (turn > 0.01f && showcase) {
-			String name = client.getSession().getUsername();
+			String name = minecraft.getUser().getName();
 			float ny = y - 8 - 6 * (1 - turn);
-			float nw = UiFont.width(textRenderer, name) * 1.1f;
+			float nw = UiFont.width(font, name) * 1.1f;
 			float logoW = 17;
 			float gx = cxp - (logoW + nw) / 2f;
 			Render2D.planetLogo(ctx, gx + 6.5f, ny + 5.5f, 3.4f, time, (int) (255 * turn));
-			UiFont.drawScaled(ctx, textRenderer, name, gx + logoW, ny, 1.1f, Colors.withAlpha(TEXT, (int) (255 * turn)));
+			UiFont.drawScaled(ctx, font, name, gx + logoW, ny, 1.1f, Colors.withAlpha(TEXT, (int) (255 * turn)));
 			float ul = (logoW + nw + 6) * turn;
 			Render2D.roundRect(ctx, cxp - ul / 2f, ny + 12, ul, 1.2f, 0.6f, Colors.withAlpha(0xFFFFFF, (int) (170 * turn)));
 		} else if (turn > 0.01f) {
-			String name = client.getSession().getUsername();
-			float nw = UiFont.width(textRenderer, name) + 14;
+			String name = minecraft.getUser().getName();
+			float nw = UiFont.width(font, name) + 14;
 			float ny = y - 4 - 6 * (1 - turn);
 			Render2D.roundRect(ctx, cxp - nw / 2f, ny, nw, 14, 7, Colors.mulAlpha(BTN, turn));
 			Render2D.roundRectOutline(ctx, cxp - nw / 2f, ny, nw, 14, 7, 1, Colors.withAlpha(0xFFFFFF, (int) (50 * turn)));
-			UiFont.drawCentered(ctx, textRenderer, name, cxp, ny + 3, Colors.withAlpha(TEXT, (int) (255 * turn)));
+			UiFont.drawCentered(ctx, font, name, cxp, ny + 3, Colors.withAlpha(TEXT, (int) (255 * turn)));
 		}
 	}
 
@@ -146,7 +146,7 @@ public class WhiteTitleScreen extends Screen {
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
@@ -168,12 +168,12 @@ public class WhiteTitleScreen extends Screen {
 	}
 
 	@Override
-	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 		boolean silk = settings == null || settings.background.is("Silk");
 		if (settings != null && settings.background.is("Panorama")) {
-			renderPanoramaBackground(ctx, delta);
-			applyBlur(ctx);
+			renderPanorama(ctx, delta);
+			renderBlurredBackground(ctx);
 		} else if (silk) {
 			MenuBackgroundRenderer.draw(ctx, width, height, 1f, BackgroundShader.SILK);
 		} else {
@@ -190,7 +190,7 @@ public class WhiteTitleScreen extends Screen {
 	public static double renderMs;
 
 	@Override
-	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		long t0 = System.nanoTime();
 		try {
 			renderMenu(ctx, mouseX, mouseY, delta);
@@ -200,7 +200,7 @@ public class WhiteTitleScreen extends Screen {
 		}
 	}
 
-	private void renderMenu(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	private void renderMenu(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
@@ -222,48 +222,48 @@ public class WhiteTitleScreen extends Screen {
 		float logoY = Math.max(40, height * 0.27f);
 
 		float li = intro(0.1f);
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.3) * 1.2f);
 		String word = "WHITECLIENT";
-		float tw = textRenderer.getWidth(UiFont.title(word));
+		float tw = font.width(UiFont.title(word));
 		float logoW = 38;
 		float total = logoW + 6 + tw;
 		float lx = cx - total / 2f;
 		int la = (int) (255 * li);
 		Render2D.planetLogo(ctx, lx + logoW / 2f, logoY, 8.5f, time, la);
-		ctx.drawText(textRenderer, UiFont.title(word), Math.round(lx + logoW + 6), Math.round(logoY + 3), Colors.withAlpha(0xFFFFFF, la), false);
+		ctx.drawString(font, UiFont.title(word), Math.round(lx + logoW + 6), Math.round(logoY + 3), Colors.withAlpha(0xFFFFFF, la), false);
 		String tag = "visuals client  ·  1.21.11";
-		UiFont.drawCentered(ctx, textRenderer, tag, cx, logoY + 16, Colors.withAlpha(SUB, la));
+		UiFont.drawCentered(ctx, font, tag, cx, logoY + 16, Colors.withAlpha(SUB, la));
 		m.popMatrix();
 
 		float bw = Math.min(214, width - 40);
 		float bh = 22;
 		float by = logoY + 38;
-		boolean mp = client.isMultiplayerEnabled();
+		boolean mp = minecraft.allowsMultiplayer();
 		mainButton(ctx, "single", "Singleplayer", Icons::person, cx - bw / 2f, by, bw, bh, mouseX, mouseY, dt, false, 0.18f,
-				() -> client.setScreen(new SelectWorldScreen(this)));
+				() -> minecraft.setScreen(new SelectWorldScreen(this)));
 		mainButton(ctx, "multi", "Multiplayer", (c, x, y, s, col) -> Icons.people(c, x, y, s, col, Colors.mixArgb(col, 0xFF000000, 0.45f)),
 				cx - bw / 2f, by + (bh + 6), bw, bh, mouseX, mouseY, dt, false, 0.24f,
 				() -> {
 					if (mp) {
-						client.setScreen(client.options.skipMultiplayerWarning ? new MultiplayerScreen(this) : new MultiplayerWarningScreen(this));
+						minecraft.setScreen(minecraft.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this));
 					}
 				});
 		mainButton(ctx, "wc", "WHITECLIENT", (c, x, y, s, col) -> Render2D.logo(c, x, y, s * 0.42f, time),
 				cx - bw / 2f, by + (bh + 6) * 2, bw, bh, mouseX, mouseY, dt, true, 0.30f,
-				() -> client.setScreen(new ClickGuiScreen(this)));
+				() -> minecraft.setScreen(new ClickGuiScreen(this)));
 
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> dock = new ArrayList<>();
-		dock.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> client.setScreen(new SupportScreen(this))});
-		dock.add(new Object[]{"Options", (IconPainter) Icons::gear, (Runnable) () -> client.setScreen(new OptionsScreen(this, client.options))});
-		dock.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager()))});
-		dock.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> client.setScreen(new RealmsMainScreen(this))});
+		dock.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> minecraft.setScreen(new SupportScreen(this))});
+		dock.add(new Object[]{"Options", (IconPainter) Icons::gear, (Runnable) () -> minecraft.setScreen(new OptionsScreen(this, minecraft.options))});
+		dock.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()))});
+		dock.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> minecraft.setScreen(new RealmsMainScreen(this))});
 		if (modMenu) {
 			dock.add(new Object[]{"Mods", (IconPainter) Icons::list, (Runnable) this::openModMenu});
 		}
-		dock.add(new Object[]{"Quit", (IconPainter) Icons::power, (Runnable) () -> client.scheduleStop()});
+		dock.add(new Object[]{"Quit", (IconPainter) Icons::power, (Runnable) () -> minecraft.stop()});
 		float ds = 22;
 		float gap = 7;
 		float dockW = dock.size() * ds + (dock.size() - 1) * gap;
@@ -289,26 +289,26 @@ public class WhiteTitleScreen extends Screen {
 			}
 		}
 		if (tooltip != null) {
-			float tw2 = UiFont.width(textRenderer, tooltip) + 10;
+			float tw2 = UiFont.width(font, tooltip) + 10;
 			Render2D.roundRect(ctx, tipX - tw2 / 2f, dy - 18, tw2, 13, 4, 0xE6101016);
-			UiFont.drawCentered(ctx, textRenderer, tooltip, tipX, dy - 16, TEXT);
+			UiFont.drawCentered(ctx, font, tooltip, tipX, dy - 16, TEXT);
 		}
 
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 		float ci = intro(0.45f);
 		if (settings == null || settings.account.isOn()) {
-			String name = client.getSession().getUsername();
-			float cw = UiFont.width(textRenderer, name) + 28;
+			String name = minecraft.getUser().getName();
+			float cw = UiFont.width(font, name) + 28;
 			float cxp = 10 - (1 - ci) * 12;
 			Render2D.roundRect(ctx, cxp, 10, cw, 18, 6, Colors.mulAlpha(BTN, ci));
 			Render2D.roundRectOutline(ctx, cxp, 10, cw, 18, 6, 1, Colors.withAlpha(0xFFFFFF, (int) (30 * ci)));
 			if (skin != null) {
 				try {
-					PlayerSkinDrawer.draw(ctx, skin.get(), (int) cxp + 4, 13, 12);
+					PlayerFaceRenderer.draw(ctx, skin.get(), (int) cxp + 4, 13, 12);
 				} catch (Throwable ignored) {
 				}
 			}
-			UiFont.draw(ctx, textRenderer, name, cxp + 21, 14, Colors.withAlpha(TEXT, (int) (255 * ci)));
+			UiFont.draw(ctx, font, name, cxp + 21, 14, Colors.withAlpha(TEXT, (int) (255 * ci)));
 		}
 
 		NowPlaying np = WhiteClient.get().music().current();
@@ -316,10 +316,10 @@ public class WhiteTitleScreen extends Screen {
 		if (np != null && pi > 0.02f) {
 			String s = np.title() + "  —  " + np.artist();
 			int maxW = (int) Math.min(220, width * 0.4f);
-			while (UiFont.width(textRenderer, s) > maxW && s.length() > 3) {
+			while (UiFont.width(font, s) > maxW && s.length() > 3) {
 				s = s.substring(0, s.length() - 2);
 			}
-			float pw = UiFont.width(textRenderer, s) + 30;
+			float pw = UiFont.width(font, s) + 30;
 			float px = width - 10 - pw + (1 - pi) * 14;
 			Render2D.roundRect(ctx, px, 10, pw, 18, 9, Colors.mulAlpha(BTN, pi));
 			Render2D.roundRectOutline(ctx, px, 10, pw, 18, 9, 1, Colors.withAlpha(0xFFFFFF, (int) (40 * pi)));
@@ -327,7 +327,7 @@ public class WhiteTitleScreen extends Screen {
 				float hgt = np.playing() ? 3 + 5 * (0.5f + 0.5f * (float) Math.sin(time * (6 + b * 1.7) + b)) : 3;
 				Render2D.roundRect(ctx, px + 8 + b * 3.2f, 19 - hgt / 2f, 2, hgt, 1, Colors.withAlpha(0xFFFFFF, (int) (255 * pi)));
 			}
-			UiFont.draw(ctx, textRenderer, s, px + 22, 14, Colors.withAlpha(TEXT, (int) (255 * pi)));
+			UiFont.draw(ctx, font, s, px + 22, 14, Colors.withAlpha(TEXT, (int) (255 * pi)));
 		}
 
 		try {
@@ -337,21 +337,21 @@ public class WhiteTitleScreen extends Screen {
 		}
 
 		float fi = intro(0.5f);
-		UiFont.draw(ctx, textRenderer, "WHITECLIENT " + WhiteClient.VERSION, 10, height - 24, Colors.withAlpha(TEXT, (int) (200 * fi)));
-		UiFont.draw(ctx, textRenderer, "Minecraft 1.21.11  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
+		UiFont.draw(ctx, font, "WHITECLIENT " + WhiteClient.VERSION, 10, height - 24, Colors.withAlpha(TEXT, (int) (200 * fi)));
+		UiFont.draw(ctx, font, "Minecraft 1.21.11  ·  Fabric", 10, height - 14, Colors.withAlpha(SUB, (int) (200 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
-		UiFont.draw(ctx, textRenderer, copy, width - 10 - UiFont.width(textRenderer, copy), height - 14, Colors.withAlpha(SUB, (int) (160 * fi)));
+		UiFont.draw(ctx, font, copy, width - 10 - UiFont.width(font, copy), height - 14, Colors.withAlpha(SUB, (int) (160 * fi)));
 		drawUpdateBadge(ctx, mouseX, mouseY, time);
 
 		super.render(ctx, mouseX, mouseY, delta);
 	}
 
 	private float menuHalfWidth() {
-		return textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
+		return font.width(UiFont.title("WHITECLIENT")) / 2f + 10;
 	}
 
 	private float menuRight() {
-		return width / 2f + textRenderer.getWidth(UiFont.title("WHITECLIENT")) / 2f + 10;
+		return width / 2f + font.width(UiFont.title("WHITECLIENT")) / 2f + 10;
 	}
 
 	private float showcaseModelX() {
@@ -359,7 +359,7 @@ public class WhiteTitleScreen extends Screen {
 		return Math.max(right + walkerW * 0.5f, (right + width) / 2f);
 	}
 
-	private void renderShowcase(DrawContext ctx, int mouseX, int mouseY, float delta, float dt, float time) {
+	private void renderShowcase(GuiGraphics ctx, int mouseX, int mouseY, float delta, float dt, float time) {
 		MainMenu settings = WhiteClient.get().modules().get(MainMenu.class);
 
 		boolean big = settings == null || settings.bigPlanet.isOn();
@@ -411,7 +411,7 @@ public class WhiteTitleScreen extends Screen {
 		float r = Math.max(11, Math.min(22, height * 0.062f));
 		float logoY = height * 0.3f;
 		float li = intro(0.1f);
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.2) * 1.2f);
 		for (int g = 14; g >= 1; g--) {
@@ -419,23 +419,23 @@ public class WhiteTitleScreen extends Screen {
 		}
 		Render2D.planetLogo(ctx, colX, logoY, r, time, (int) (255 * li));
 		String word = "WHITECLIENT";
-		float tw = textRenderer.getWidth(UiFont.title(word));
+		float tw = font.width(UiFont.title(word));
 		float titleY = logoY + r * 1.55f + 6;
-		ctx.drawText(textRenderer, UiFont.title(word), Math.round(colX - tw / 2f), Math.round(titleY), Colors.withAlpha(0xFFFFFF, (int) (255 * li)), false);
+		ctx.drawString(font, UiFont.title(word), Math.round(colX - tw / 2f), Math.round(titleY), Colors.withAlpha(0xFFFFFF, (int) (255 * li)), false);
 		m.popMatrix();
 
-		boolean mp = client.isMultiplayerEnabled();
+		boolean mp = minecraft.allowsMultiplayer();
 		String[] labels = {"Singleplayer", "Multiplayer", "Minecraft Settings", "Client", "Quit Game"};
 		Runnable[] actions = {
-				() -> client.setScreen(new SelectWorldScreen(this)),
+				() -> minecraft.setScreen(new SelectWorldScreen(this)),
 				() -> {
 					if (mp) {
-						client.setScreen(client.options.skipMultiplayerWarning ? new MultiplayerScreen(this) : new MultiplayerWarningScreen(this));
+						minecraft.setScreen(minecraft.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this));
 					}
 				},
-				() -> client.setScreen(new OptionsScreen(this, client.options)),
-				() -> client.setScreen(new ClickGuiScreen(this)),
-				() -> client.scheduleStop()
+				() -> minecraft.setScreen(new OptionsScreen(this, minecraft.options)),
+				() -> minecraft.setScreen(new ClickGuiScreen(this)),
+				() -> minecraft.stop()
 		};
 		float itemY = titleY + 34;
 		float step = Math.max(17, Math.min(22, height * 0.06f));
@@ -443,18 +443,18 @@ public class WhiteTitleScreen extends Screen {
 		for (int i = 0; i < labels.length; i++) {
 			float k = intro(0.22f + i * 0.06f);
 			float y = itemY + i * step + (i == 2 ? 4 : 0) + (i >= 3 ? 4 : 0);
-			float w = UiFont.width(textRenderer, labels[i]) * scale;
+			float w = UiFont.width(font, labels[i]) * scale;
 			boolean disabled = i == 1 && !mp;
 			boolean hover = !disabled && in(mouseX, mouseY, colX - w / 2f - 12, y - 4, w + 24, 10 * scale + 8);
 			float h = anim("item" + i, hover ? 1f : 0f, dt);
 			float s2 = scale + 0.08f * h;
-			float w2 = UiFont.width(textRenderer, labels[i]) * s2;
+			float w2 = UiFont.width(font, labels[i]) * s2;
 			float x = colX - w2 / 2f - (1 - k) * 16;
 			if (h > 0.01f) {
 				Render2D.roundRect(ctx, colX - w2 / 2f - 12, y - 4, w2 + 24, 10 * s2 + 8, 7, Colors.withAlpha(0xFFFFFF, (int) (16 * h * k)));
 			}
 			int base = disabled ? 0x6A6A74 : Colors.mix(0xC9C9D1, 0xFFFFFF, h);
-			UiFont.drawScaled(ctx, textRenderer, labels[i], x, y - (s2 - scale) * 4, s2, Colors.withAlpha(base, (int) (255 * k)));
+			UiFont.drawScaled(ctx, font, labels[i], x, y - (s2 - scale) * 4, s2, Colors.withAlpha(base, (int) (255 * k)));
 			float ul = w2 * h;
 			if (ul > 0.5f) {
 				Render2D.roundRect(ctx, colX - ul / 2f, y + 10 * s2 + 1, ul, 1f, 0.5f, Colors.withAlpha(0xFFFFFF, (int) (200 * h)));
@@ -466,10 +466,10 @@ public class WhiteTitleScreen extends Screen {
 
 		boolean modMenu = FabricLoader.getInstance().isModLoaded("modmenu");
 		List<Object[]> icons = new ArrayList<>();
-		icons.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> client.setScreen(new SupportScreen(this))});
-		icons.add(new Object[]{"Wardrobe", (IconPainter) Icons::shirt, (Runnable) () -> client.setScreen(new WardrobeScreen(this))});
-		icons.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager()))});
-		icons.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> client.setScreen(new RealmsMainScreen(this))});
+		icons.add(new Object[]{"Support", (IconPainter) Icons::heart, (Runnable) () -> minecraft.setScreen(new SupportScreen(this))});
+		icons.add(new Object[]{"Wardrobe", (IconPainter) Icons::shirt, (Runnable) () -> minecraft.setScreen(new WardrobeScreen(this))});
+		icons.add(new Object[]{"Language", (IconPainter) Icons::globe, (Runnable) () -> minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()))});
+		icons.add(new Object[]{"Realms", (IconPainter) Icons::cloud, (Runnable) () -> minecraft.setScreen(new RealmsMainScreen(this))});
 		if (modMenu) {
 			icons.add(new Object[]{"Mods", (IconPainter) Icons::list, (Runnable) this::openModMenu});
 		}
@@ -494,26 +494,26 @@ public class WhiteTitleScreen extends Screen {
 			}
 		}
 		if (tip != null) {
-			float tw2 = UiFont.width(textRenderer, tip) + 10;
+			float tw2 = UiFont.width(font, tip) + 10;
 			float tx = Math.min(width - 4 - tw2, tipX - tw2 / 2f);
 			Render2D.roundRect(ctx, tx, 34, tw2, 13, 4, 0xE6101016);
-			UiFont.draw(ctx, textRenderer, tip, tx + 5, 36, TEXT);
+			UiFont.draw(ctx, font, tip, tx + 5, 36, TEXT);
 		}
 
 		float ci = intro(0.45f);
 		if (settings == null || settings.account.isOn()) {
-			String name = client.getSession().getUsername();
-			float cw = UiFont.width(textRenderer, name) + 28;
+			String name = minecraft.getUser().getName();
+			float cw = UiFont.width(font, name) + 28;
 			float cxp = 10 - (1 - ci) * 12;
 			Render2D.roundRect(ctx, cxp, 10, cw, 20, 6, Colors.mulAlpha(BTN, ci));
 			Render2D.roundRectOutline(ctx, cxp, 10, cw, 20, 6, 1, Colors.withAlpha(0xFFFFFF, (int) (30 * ci)));
 			if (skin != null) {
 				try {
-					PlayerSkinDrawer.draw(ctx, Wardrobe.apply(skin.get()), (int) cxp + 4, 14, 12);
+					PlayerFaceRenderer.draw(ctx, Wardrobe.apply(skin.get()), (int) cxp + 4, 14, 12);
 				} catch (Throwable ignored) {
 				}
 			}
-			UiFont.draw(ctx, textRenderer, name, cxp + 21, 15, Colors.withAlpha(TEXT, (int) (255 * ci)));
+			UiFont.draw(ctx, font, name, cxp + 21, 15, Colors.withAlpha(TEXT, (int) (255 * ci)));
 		}
 
 		NowPlaying np = WhiteClient.get().music().current();
@@ -521,10 +521,10 @@ public class WhiteTitleScreen extends Screen {
 		if (np != null && pi > 0.02f) {
 			String s = np.title() + "  —  " + np.artist();
 			int maxW = (int) Math.min(200, width * 0.3f);
-			while (UiFont.width(textRenderer, s) > maxW && s.length() > 3) {
+			while (UiFont.width(font, s) > maxW && s.length() > 3) {
 				s = s.substring(0, s.length() - 2);
 			}
-			float pw = UiFont.width(textRenderer, s) + 30;
+			float pw = UiFont.width(font, s) + 30;
 			float px = width / 2f - pw / 2f;
 			float py = 10 - (1 - pi) * 10;
 			Render2D.roundRect(ctx, px, py, pw, 20, 10, Colors.mulAlpha(BTN, pi));
@@ -533,20 +533,20 @@ public class WhiteTitleScreen extends Screen {
 				float hgt = np.playing() ? 3 + 5 * (0.5f + 0.5f * (float) Math.sin(time * (6 + b * 1.7) + b)) : 3;
 				Render2D.roundRect(ctx, px + 9 + b * 3.2f, py + 10 - hgt / 2f, 2, hgt, 1, Colors.withAlpha(0xFFFFFF, (int) (255 * pi)));
 			}
-			UiFont.draw(ctx, textRenderer, s, px + 22, py + 5, Colors.withAlpha(TEXT, (int) (255 * pi)));
+			UiFont.draw(ctx, font, s, px + 22, py + 5, Colors.withAlpha(TEXT, (int) (255 * pi)));
 		}
 
 		float fi = intro(0.5f);
-		UiFont.draw(ctx, textRenderer, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(SUB, (int) (220 * fi)));
+		UiFont.draw(ctx, font, "whiteclient " + WhiteClient.VERSION + "  ·  1.21.11", 10, height - 14, Colors.withAlpha(SUB, (int) (220 * fi)));
 		String copy = "Copyright Mojang AB. Do not distribute!";
-		UiFont.drawScaled(ctx, textRenderer, copy, width - 10 - UiFont.width(textRenderer, copy) * 0.8f, height - 12, 0.8f, Colors.withAlpha(SUB, (int) (150 * fi)));
+		UiFont.drawScaled(ctx, font, copy, width - 10 - UiFont.width(font, copy) * 0.8f, height - 12, 0.8f, Colors.withAlpha(SUB, (int) (150 * fi)));
 	}
 
 	private static float frac(float v) {
 		return v - (float) Math.floor(v);
 	}
 
-	private void mainButton(DrawContext ctx, String key, String label, IconPainter icon, float x, float y, float w, float h,
+	private void mainButton(GuiGraphics ctx, String key, String label, IconPainter icon, float x, float y, float w, float h,
 							int mx, int my, float dt, boolean accent, float delay, Runnable action) {
 		float k = intro(delay);
 		y += (1 - k) * 12;
@@ -571,37 +571,37 @@ public class WhiteTitleScreen extends Screen {
 		} else if (hv > 0.01f) {
 			Render2D.roundRectOutline(ctx, x - 2, y - lift - 2, w + 4, h + 4, 8, 1, Colors.withAlpha(0xFFFFFF, (int) (120 * hv * k)));
 		}
-		float lw = UiFont.width(textRenderer, label);
+		float lw = UiFont.width(font, label);
 		float groupW = 10 + 6 + lw;
 		float gx = x + (w - groupW) / 2f;
 		if (accent) {
 			Render2D.circle(ctx, gx + 5, y - lift + h / 2f, 6.5f, Colors.withAlpha(0x0B0B0F, (int) (255 * k)));
 		}
 		icon.paint(ctx, gx + 5, y - lift + h / 2f, 10, Colors.mulAlpha(iconColor, k));
-		UiFont.draw(ctx, textRenderer, label, gx + 16, y - lift + (h - 9) / 2f, Colors.mulAlpha(textColor, k));
+		UiFont.draw(ctx, font, label, gx + 16, y - lift + (h - 9) / 2f, Colors.mulAlpha(textColor, k));
 		hits.add(new Hit(x, y, x + w, y + h, action));
 	}
 
 	private void openModMenu() {
 		try {
 			Class<?> c = Class.forName("com.terraformersmc.modmenu.gui.ModsScreen");
-			client.setScreen((Screen) c.getConstructor(Screen.class).newInstance(this));
+			minecraft.setScreen((Screen) c.getConstructor(Screen.class).newInstance(this));
 		} catch (Throwable t) {
-			client.setScreen(new ClickGuiScreen(this));
+			minecraft.setScreen(new ClickGuiScreen(this));
 		}
 	}
 
-	private void drawUpdateBadge(DrawContext ctx, int mouseX, int mouseY, float time) {
-		float[] b = UpdateBadge.bounds(textRenderer, width, height, false);
+	private void drawUpdateBadge(GuiGraphics ctx, int mouseX, int mouseY, float time) {
+		float[] b = UpdateBadge.bounds(font, width, height, false);
 		boolean hover = b != null && mouseX >= b[0] && mouseX < b[0] + b[2] && mouseY >= b[1] && mouseY < b[1] + b[3];
-		UpdateBadge.draw(ctx, textRenderer, width, height, time, hover, false);
+		UpdateBadge.draw(ctx, font, width, height, time, hover, false);
 		if (b != null && com.whiteclient.update.AutoUpdater.readyVersion() != null) {
-			hits.add(new Hit(b[0], b[1], b[0] + b[2], b[1] + b[3], () -> client.setScreen(new UpdateReadyScreen(this))));
+			hits.add(new Hit(b[0], b[1], b[0] + b[2], b[1] + b[3], () -> minecraft.setScreen(new UpdateReadyScreen(this))));
 		}
 	}
 
 	@Override
-	public boolean mouseClicked(Click click, boolean doubled) {
+	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		if (click.button() == 0) {
 			for (int i = hits.size() - 1; i >= 0; i--) {
 				Hit h = hits.get(i);

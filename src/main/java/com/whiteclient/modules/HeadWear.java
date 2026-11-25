@@ -11,10 +11,10 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.LightType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.phys.Vec3;
 
 public class HeadWear extends Module {
 	public static final String[] STYLES = {"Crown", "Cat Ears", "Bunny Ears", "Devil Horns", "Headphones", "Flower Crown"};
@@ -36,12 +36,12 @@ public class HeadWear extends Module {
 	@Override
 	public void renderWorld(WorldContext ctx) {
 		boolean any = false;
-		for (PlayerEntity p : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), 48)) {
+		for (Player p : CosmeticTargets.collect(ctx, true, firstPerson.isOn(), others.isOn(), 48)) {
 			draw(ctx, p);
 			any = true;
 		}
 		if (any) {
-			mesh.draw(ctx.consumers, ctx.matrices.peek().getPositionMatrix());
+			mesh.draw(ctx.consumers, ctx.matrices.last().pose());
 		}
 	}
 
@@ -49,23 +49,23 @@ public class HeadWear extends Module {
 		return this.natural.isOn() ? natural : color.rgb();
 	}
 
-	private void draw(WorldContext ctx, PlayerEntity player) {
+	private void draw(WorldContext ctx, Player player) {
 		float td = ctx.tickDelta;
-		Vec3d p = player.getLerpedPos(td);
-		float yaw = player.getYaw(td);
-		float pitch = player.getPitch(td);
+		Vec3 p = player.getPosition(td);
+		float yaw = player.getViewYRot(td);
+		float pitch = player.getViewXRot(td);
 		V3 r0 = V3.right(yaw), f0 = V3.forward(yaw);
 		float tilt = (float) Math.toRadians(pitch);
 		V3 u = V3.UP.rotate(r0, -tilt), f = f0.rotate(r0, -tilt), r = r0;
 		float sc = player.getScale() * 0.9375f * size.getFloat();
-		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getHeight() - 0.39), ctx.rz(p.z));
+		V3 neck = new V3(ctx.rx(p.x), ctx.ry(p.y + player.getBbHeight() - 0.39), ctx.rz(p.z));
 		V3 top = neck.add(u, 0.47f * player.getScale() * 0.9375f + 0.02f);
 		float h = 0.235f * player.getScale() * 0.9375f;
-		BlockPos bp = BlockPos.ofFloored(p.x, p.y + 1.6, p.z);
-		long time = ctx.client.world.getTimeOfDay() % 24000L;
+		BlockPos bp = BlockPos.containing(p.x, p.y + 1.6, p.z);
+		long time = ctx.client.level.getDayTime() % 24000L;
 		float day = 0.5f + 0.5f * (float) Math.cos((time - 6000L) / 24000.0 * Math.PI * 2);
-		float sky = ctx.client.world.getLightLevel(LightType.SKY, bp) / 15f * (0.2f + 0.8f * day);
-		float block = ctx.client.world.getLightLevel(LightType.BLOCK, bp) / 15f;
+		float sky = ctx.client.level.getBrightness(LightLayer.SKY, bp) / 15f * (0.2f + 0.8f * day);
+		float block = ctx.client.level.getBrightness(LightLayer.BLOCK, bp) / 15f;
 		float light = 0.32f + 0.68f * Math.max(sky, block);
 		float t = ctx.time;
 		switch (style.get()) {

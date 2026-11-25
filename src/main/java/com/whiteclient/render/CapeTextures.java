@@ -1,12 +1,11 @@
 package com.whiteclient.render;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,11 +46,11 @@ public final class CapeTextures {
 	}
 
 	public static void reload() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		for (Map.Entry<String, Identifier> e : CACHE.entrySet()) {
 			if (e.getKey().startsWith("file:")) {
 				try {
-					mc.getTextureManager().destroyTexture(texturePath(e.getValue()));
+					mc.getTextureManager().release(texturePath(e.getValue()));
 				} catch (Throwable ignored) {
 				}
 			}
@@ -61,7 +60,7 @@ public final class CapeTextures {
 	}
 
 	public static Identifier texturePath(Identifier id) {
-		return Identifier.of(id.getNamespace(), "textures/" + id.getPath() + ".png");
+		return Identifier.fromNamespaceAndPath(id.getNamespace(), "textures/" + id.getPath() + ".png");
 	}
 
 	private static String sanitize(String name) {
@@ -112,9 +111,9 @@ public final class CapeTextures {
 	}
 
 	private static Identifier register(String key, String path, NativeImage img) {
-		Identifier id = Identifier.of(WhiteClient.MOD_ID, path);
-		NativeImageBackedTexture tex = new NativeImageBackedTexture(() -> "whiteclient_" + path, img);
-		MinecraftClient.getInstance().getTextureManager().registerTexture(texturePath(id), tex);
+		Identifier id = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, path);
+		DynamicTexture tex = new DynamicTexture(() -> "whiteclient_" + path, img);
+		Minecraft.getInstance().getTextureManager().register(texturePath(id), tex);
 		CACHE.put(key, id);
 		return id;
 	}
@@ -154,27 +153,27 @@ public final class CapeTextures {
 	private static void paint(NativeImage img, String name) {
 		for (int y = 0; y < 32; y++) {
 			for (int x = 0; x < 64; x++) {
-				img.setColorArgb(x, y, 0);
+				img.setPixel(x, y, 0);
 			}
 		}
 		for (int y = 0; y < 17; y++) {
 			for (int x = 0; x < 22; x++) {
 				float u = (x % 11) / 10f, v = Math.max(0, y - 1) / 15f;
-				img.setColorArgb(x, y, base(name, u, v, x, y));
+				img.setPixel(x, y, base(name, u, v, x, y));
 			}
 		}
 		for (int y = 0; y < 22; y++) {
 			for (int x = 22; x < 46; x++) {
-				img.setColorArgb(x, y, base(name, (x - 22) / 23f, y / 21f, x, y));
+				img.setPixel(x, y, base(name, (x - 22) / 23f, y / 21f, x, y));
 			}
 		}
 		Random r = new Random(name.hashCode());
 		if (name.equals("Galaxy")) {
 			for (int i = 0; i < 26; i++) {
 				int x = 1 + r.nextInt(10), y = 1 + r.nextInt(16);
-				img.setColorArgb(x, y, r.nextInt(4) == 0 ? 0xFFAEC8FF : 0xFFFFFFFF);
+				img.setPixel(x, y, r.nextInt(4) == 0 ? 0xFFAEC8FF : 0xFFFFFFFF);
 				int ex = 22 + r.nextInt(24), ey = r.nextInt(22);
-				img.setColorArgb(ex, ey, 0xFFFFFFFF);
+				img.setPixel(ex, ey, 0xFFFFFFFF);
 			}
 		}
 		int fg = switch (name) {
@@ -183,12 +182,12 @@ public final class CapeTextures {
 		};
 		if (name.equals("Black")) {
 			for (int x = 1; x <= 10; x++) {
-				img.setColorArgb(x, 1, 0xFFFFFFFF);
-				img.setColorArgb(x, 16, 0xFFFFFFFF);
+				img.setPixel(x, 1, 0xFFFFFFFF);
+				img.setPixel(x, 16, 0xFFFFFFFF);
 			}
 			for (int y = 1; y <= 16; y++) {
-				img.setColorArgb(1, y, 0xFFFFFFFF);
-				img.setColorArgb(10, y, 0xFFFFFFFF);
+				img.setPixel(1, y, 0xFFFFFFFF);
+				img.setPixel(10, y, 0xFFFFFFFF);
 			}
 		}
 		planet(img, 5.5f, 7.5f, fg);
@@ -199,13 +198,13 @@ public final class CapeTextures {
 			for (int x = 2; x <= 9; x++) {
 				float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
 				if (dx * dx + dy * dy <= 4.2f) {
-					img.setColorArgb(x, y, color);
+					img.setPixel(x, y, color);
 				}
 			}
 		}
 		int[][] ring = {{2, 9}, {3, 9}, {4, 9}, {7, 6}, {8, 6}, {9, 5}, {2, 10}, {9, 6}};
 		for (int[] p : ring) {
-			img.setColorArgb(p[0], p[1], color);
+			img.setPixel(p[0], p[1], color);
 		}
 	}
 }

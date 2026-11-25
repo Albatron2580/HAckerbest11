@@ -1,27 +1,26 @@
 package com.whiteclient.gui;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.mixin.MultiplayerScreenAccessor;
 import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.render.Colors;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.AbstractTextWidget;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.option.ServerList;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractStringWidget;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.ServerList;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.List;
@@ -30,13 +29,13 @@ import java.util.Locale;
 public final class FeaturedServer {
 	public static final String NAME = "VexVanilla";
 	public static final String ADDRESS = "vexvanilla.net";
-	private static final Identifier ICON = Identifier.of(WhiteClient.MOD_ID, "featured_server_icon");
+	private static final Identifier ICON = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "featured_server_icon");
 	private static final int CARD_H = 58;
 	private static final int MOTD_W = 236;
 	private static final int PLAY_W = 64;
 
-	private static MultiplayerScreen screen;
-	private static ServerInfo info;
+	private static JoinMultiplayerScreen screen;
+	private static ServerData info;
 	private static float x, y, w, h;
 	private static byte[] iconBytes;
 	private static boolean iconReady;
@@ -55,11 +54,11 @@ public final class FeaturedServer {
 		return s == screen && screen != null;
 	}
 
-	private static boolean isVex(ServerInfo s) {
-		if (s == null || s.address == null) {
+	private static boolean isVex(ServerData s) {
+		if (s == null || s.ip == null) {
 			return false;
 		}
-		String a = s.address.trim().toLowerCase(Locale.ROOT);
+		String a = s.ip.trim().toLowerCase(Locale.ROOT);
 		int colon = a.indexOf(':');
 		if (colon >= 0) {
 			a = a.substring(0, colon);
@@ -67,9 +66,9 @@ public final class FeaturedServer {
 		return a.equals(ADDRESS) || a.endsWith("." + ADDRESS);
 	}
 
-	private static ServerInfo.ServerType otherType() {
-		ServerInfo.ServerType[] all = ServerInfo.ServerType.values();
-		for (ServerInfo.ServerType t : all) {
+	private static ServerData.Type otherType() {
+		ServerData.Type[] all = ServerData.Type.values();
+		for (ServerData.Type t : all) {
 			if (t.name().equals("OTHER")) {
 				return t;
 			}
@@ -77,12 +76,12 @@ public final class FeaturedServer {
 		return all[all.length - 1];
 	}
 
-	public static void setup(MinecraftClient client, MultiplayerScreen s) {
+	public static void setup(Minecraft client, JoinMultiplayerScreen s) {
 		if (!(s instanceof MultiplayerScreenAccessor acc)) {
 			return;
 		}
 		MenuBackground bg = WhiteClient.get().modules().get(MenuBackground.class);
-		ServerList list = s.getServerList();
+		ServerList list = s.getServers();
 		int idx = -1;
 		for (int i = 0; i < list.size(); i++) {
 			if (isVex(list.get(i))) {
@@ -92,7 +91,7 @@ public final class FeaturedServer {
 		}
 		boolean changed = false;
 		if (idx < 0 && bg != null && !bg.featuredAdded.isOn()) {
-			list.add(new ServerInfo(NAME, ADDRESS, otherType()), false);
+			list.add(new ServerData(NAME, ADDRESS, otherType()), false);
 			idx = list.size() - 1;
 			bg.featuredAdded.set(true);
 			WhiteClient.get().config().save();
@@ -100,51 +99,51 @@ public final class FeaturedServer {
 		}
 		if (idx > 0) {
 			for (int i = idx; i > 0; i--) {
-				list.swapEntries(i, i - 1);
+				list.swap(i, i - 1);
 			}
 			idx = 0;
 			changed = true;
 		}
 		if (changed) {
-			list.saveFile();
-			acc.whiteclient$serverListWidget().setServers(list);
+			list.save();
+			acc.whiteclient$serverListWidget().updateOnlineServers(list);
 		}
-		ServerInfo listed = idx == 0 ? list.get(0) : null;
+		ServerData listed = idx == 0 ? list.get(0) : null;
 		if (listed != null) {
 			info = listed;
 		} else if (info == null || !isVex(info)) {
-			info = new ServerInfo(NAME, ADDRESS, otherType());
+			info = new ServerData(NAME, ADDRESS, otherType());
 		}
 		screen = s;
 
-		ThreePartsLayoutWidget layout = acc.whiteclient$layout();
+		HeaderAndFooterLayout layout = acc.whiteclient$layout();
 		int header = 30 + CARD_H + 10;
 		layout.setHeaderHeight(header);
-		for (ClickableWidget wdg : Screens.getButtons(s)) {
-			if (wdg instanceof AbstractTextWidget t && wdg.getY() < 40) {
+		for (AbstractWidget wdg : Screens.getButtons(s)) {
+			if (wdg instanceof AbstractStringWidget t && wdg.getY() < 40) {
 				t.visible = false;
 			}
 		}
-		layout.refreshPositions();
-		acc.whiteclient$serverListWidget().position(s.width, layout);
+		layout.arrangeElements();
+		acc.whiteclient$serverListWidget().updateSize(s.width, layout);
 
 		w = Math.min(440, s.width - 20);
 		h = CARD_H;
 		x = s.width / 2f - w / 2f;
 		y = 30;
-		final ServerInfo target = info;
-		ButtonWidget play = ButtonWidget.builder(Text.literal("Play"), b -> acc.whiteclient$connect(target))
-				.dimensions(Math.round(x + w - 10 - PLAY_W), Math.round(y + 9), PLAY_W, 20).build();
+		final ServerData target = info;
+		Button play = Button.builder(Component.literal("Play"), b -> acc.whiteclient$connect(target))
+				.bounds(Math.round(x + w - 10 - PLAY_W), Math.round(y + 9), PLAY_W, 20).build();
 		ButtonStyle.markAccent(play);
 		Screens.getButtons(s).add(play);
 	}
 
-	public static void draw(DrawContext ctx, MultiplayerScreen s, int mouseX, int mouseY) {
+	public static void draw(GuiGraphics ctx, JoinMultiplayerScreen s, int mouseX, int mouseY) {
 		if (s != screen || info == null) {
 			return;
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
-		TextRenderer tr = mc.textRenderer;
+		Minecraft mc = Minecraft.getInstance();
+		Font tr = mc.font;
 		float time = WhiteClient.get().time();
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastNs) / 1.0e9f);
@@ -169,7 +168,7 @@ public final class FeaturedServer {
 		updateIcon(mc);
 		Render2D.roundRect(ctx, ix - 1, iy - 1, 34, 34, 6, 0xFF16161D);
 		if (iconReady) {
-			ctx.drawTexture(RenderPipelines.GUI_TEXTURED, ICON, ix, iy, 0f, 0f, 32, 32, 64, 64, 64, 64, 0xFFFFFFFF);
+			ctx.blit(RenderPipelines.GUI_TEXTURED, ICON, ix, iy, 0f, 0f, 32, 32, 64, 64, 64, 64, 0xFFFFFFFF);
 		} else {
 			Render2D.planetLogo(ctx, ix + 16, iy + 16, 8, time, 255);
 		}
@@ -193,11 +192,11 @@ public final class FeaturedServer {
 		}
 
 		int motdW = (int) Math.min(MOTD_W, colLeft - 8 - tx);
-		Text motd = info.label;
-		if (motd != null && !motd.getString().isBlank() && info.getStatus() != null && info.getStatus().name().equals("SUCCESSFUL")) {
-			List<OrderedText> lines = tr.wrapLines(motd, Math.max(40, motdW));
+		Component motd = info.motd;
+		if (motd != null && !motd.getString().isBlank() && info.state() != null && info.state().name().equals("SUCCESSFUL")) {
+			List<FormattedCharSequence> lines = tr.split(motd, Math.max(40, motdW));
 			for (int i = 0; i < Math.min(2, lines.size()); i++) {
-				ctx.drawText(tr, lines.get(i), Math.round(tx), Math.round(y + 24 + i * 10), 0xFFB0B0BA, false);
+				ctx.drawString(tr, lines.get(i), Math.round(tx), Math.round(y + 24 + i * 10), 0xFFB0B0BA, false);
 			}
 		} else {
 			UiFont.draw(ctx, tr, ADDRESS, tx, y + 27, 0xFF9A9AA6);
@@ -205,11 +204,11 @@ public final class FeaturedServer {
 	}
 
 	private static String statusText() {
-		ServerInfo.Status st = info.getStatus();
+		ServerData.State st = info.state();
 		String n = st == null ? "INITIAL" : st.name();
 		switch (n) {
 			case "SUCCESSFUL" -> {
-				String players = info.playerCountLabel == null ? "" : info.playerCountLabel.getString();
+				String players = info.status == null ? "" : info.status.getString();
 				return (players.isBlank() ? "" : players + " online  ·  ") + info.ping + " ms";
 			}
 			case "UNREACHABLE" -> {
@@ -226,7 +225,7 @@ public final class FeaturedServer {
 	}
 
 	private static int statusColor() {
-		ServerInfo.Status st = info.getStatus();
+		ServerData.State st = info.state();
 		String n = st == null ? "" : st.name();
 		return switch (n) {
 			case "SUCCESSFUL" -> 0xFF8BE39A;
@@ -235,15 +234,15 @@ public final class FeaturedServer {
 		};
 	}
 
-	private static void updateIcon(MinecraftClient mc) {
-		byte[] bytes = info.getFavicon();
+	private static void updateIcon(Minecraft mc) {
+		byte[] bytes = info.getIconBytes();
 		if (bytes == null || Arrays.equals(bytes, iconBytes)) {
 			return;
 		}
 		iconBytes = bytes;
 		try {
 			NativeImage img = NativeImage.read(new ByteArrayInputStream(bytes));
-			mc.getTextureManager().registerTexture(ICON, new NativeImageBackedTexture(() -> "whiteclient_featured_server", img));
+			mc.getTextureManager().register(ICON, new DynamicTexture(() -> "whiteclient_featured_server", img));
 			iconReady = true;
 		} catch (Throwable t) {
 			iconReady = false;

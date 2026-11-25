@@ -9,8 +9,8 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class CustomCrosshair extends Module {
 	public final ModeSetting style = add(new ModeSetting("Style", "Cross + Dot", "Cross", "Cross + Dot", "Dot", "Circle", "Circle + Dot", "T-Shape", "Chevron", "Square"));
@@ -30,19 +30,19 @@ public class CustomCrosshair extends Module {
 		super("Custom Crosshair", "A clean custom crosshair", Category.HUD, true);
 	}
 
-	public void draw(DrawContext ctx) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		if (mc.player == null || mc.options == null || !mc.options.getPerspective().isFirstPerson() || mc.player.isSpectator()) {
+	public void draw(GuiGraphics ctx) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null || mc.options == null || !mc.options.getCameraType().isFirstPerson() || mc.player.isSpectator()) {
 			return;
 		}
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
-		float cx = ctx.getScaledWindowWidth() / 2f, cy = ctx.getScaledWindowHeight() / 2f;
+		float cx = ctx.guiWidth() / 2f, cy = ctx.guiHeight() / 2f;
 		float target = 0;
 		if (dynamic.isOn()) {
-			double v = mc.player.getVelocity().horizontalLength();
-			target = (float) Math.min(4, v * 14) + (mc.player.isOnGround() ? 0 : 1.5f);
+			double v = mc.player.getDeltaMovement().horizontalDistance();
+			target = (float) Math.min(4, v * 14) + (mc.player.onGround() ? 0 : 1.5f);
 		}
 		spread += (target - spread) * Math.min(1f, dt * 10f);
 		int rgb = color.rgb();
@@ -59,7 +59,7 @@ public class CustomCrosshair extends Module {
 		}
 		shape(ctx, cx, cy, s, g, t, col, false);
 		if (cooldown.isOn()) {
-			float cd = mc.player.getAttackCooldownProgress(0f);
+			float cd = mc.player.getAttackStrengthScale(0f);
 			if (cd < 0.999f) {
 				float w = 16, by = cy + s + g + 5;
 				Render2D.roundRect(ctx, cx - w / 2f, by, w, 2.5f, 1.25f, 0x88000000);
@@ -68,11 +68,11 @@ public class CustomCrosshair extends Module {
 		}
 	}
 
-	private void bar(DrawContext ctx, float x1, float y1, float x2, float y2, int col) {
+	private void bar(GuiGraphics ctx, float x1, float y1, float x2, float y2, int col) {
 		Render2D.roundRect(ctx, Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1), 0.4f, col);
 	}
 
-	private void shape(DrawContext ctx, float cx, float cy, float s, float g, float t, int col, boolean back) {
+	private void shape(GuiGraphics ctx, float cx, float cy, float s, float g, float t, int col, boolean back) {
 		float h = t / 2f;
 		boolean cross = style.is("Cross") || style.is("Cross + Dot");
 		if (cross || style.is("T-Shape")) {

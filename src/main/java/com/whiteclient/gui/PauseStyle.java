@@ -7,20 +7,20 @@ import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.modules.Wardrobe;
 import com.whiteclient.render.Colors;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.AbstractTextWidget;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.gui.widget.PressableWidget;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.components.AbstractStringWidget;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
@@ -32,16 +32,16 @@ import java.util.WeakHashMap;
 public final class PauseStyle {
 	@FunctionalInterface
 	private interface IconPainter {
-		void paint(DrawContext ctx, float cx, float cy, float size, int color);
+		void paint(GuiGraphics ctx, float cx, float cy, float size, int color);
 	}
 
 	private record Item(int index, float scale, boolean accent) {
 	}
 
-	private static final Map<ClickableWidget, Item> ITEMS = new WeakHashMap<>();
-	private static final Map<ClickableWidget, IconPainter> ICONS = new WeakHashMap<>();
-	private static final Map<ClickableWidget, Float> HOVER = new WeakHashMap<>();
-	private static final Map<ClickableWidget, Boolean> BADGES = new WeakHashMap<>();
+	private static final Map<AbstractWidget, Item> ITEMS = new WeakHashMap<>();
+	private static final Map<AbstractWidget, IconPainter> ICONS = new WeakHashMap<>();
+	private static final Map<AbstractWidget, Float> HOVER = new WeakHashMap<>();
+	private static final Map<AbstractWidget, Boolean> BADGES = new WeakHashMap<>();
 	private static final Map<Screen, Long> OPENED = new WeakHashMap<>();
 
 	private static SkinPreview player;
@@ -66,8 +66,8 @@ public final class PauseStyle {
 	}
 
 	public static boolean owns(Object widget) {
-		return widget instanceof ClickableWidget w && (ITEMS.containsKey(w) || ICONS.containsKey(w) || BADGES.containsKey(w))
-				&& MinecraftClient.getInstance().currentScreen == current;
+		return widget instanceof AbstractWidget w && (ITEMS.containsKey(w) || ICONS.containsKey(w) || BADGES.containsKey(w))
+				&& Minecraft.getInstance().screen == current;
 	}
 
 	public static boolean isCurrent(Screen s) {
@@ -84,14 +84,14 @@ public final class PauseStyle {
 		return 1f - (1f - k) * (1f - k) * (1f - k);
 	}
 
-	public static void layout(MinecraftClient client, Screen screen) {
-		List<ClickableWidget> all = Screens.getButtons(screen);
-		List<ClickableWidget> items = new ArrayList<>();
-		List<AbstractTextWidget> texts = new ArrayList<>();
-		for (ClickableWidget w : all) {
-			if (w instanceof AbstractTextWidget t) {
+	public static void layout(Minecraft client, Screen screen) {
+		List<AbstractWidget> all = Screens.getButtons(screen);
+		List<AbstractWidget> items = new ArrayList<>();
+		List<AbstractStringWidget> texts = new ArrayList<>();
+		for (AbstractWidget w : all) {
+			if (w instanceof AbstractStringWidget t) {
 				texts.add(t);
-			} else if (w.visible && w instanceof PressableWidget) {
+			} else if (w.visible && w instanceof AbstractButton) {
 				items.add(w);
 			}
 		}
@@ -100,14 +100,14 @@ public final class PauseStyle {
 		}
 		current = screen;
 		OPENED.putIfAbsent(screen, System.nanoTime());
-		for (AbstractTextWidget t : texts) {
+		for (AbstractStringWidget t : texts) {
 			t.visible = false;
 		}
-		items.sort(Comparator.comparingInt(ClickableWidget::getY).thenComparingInt(ClickableWidget::getX));
+		items.sort(Comparator.comparingInt(AbstractWidget::getY).thenComparingInt(AbstractWidget::getX));
 
 		MenuBackground bg = WhiteClient.get().modules().get(MenuBackground.class);
 		if (bg != null && bg.pauseHideExtras.isOn()) {
-			for (ClickableWidget w : List.copyOf(items)) {
+			for (AbstractWidget w : List.copyOf(items)) {
 				String key = keyOf(w);
 				if (key.equals("gui.advancements") || key.equals("gui.stats") || key.equals("menu.playerReporting")) {
 					items.remove(w);
@@ -115,8 +115,8 @@ public final class PauseStyle {
 				}
 			}
 		}
-		ClickableWidget clientButton = null;
-		for (ClickableWidget w : items) {
+		AbstractWidget clientButton = null;
+		for (AbstractWidget w : items) {
 			if (isClientButton(w)) {
 				clientButton = w;
 				break;
@@ -131,14 +131,14 @@ public final class PauseStyle {
 			}
 		}
 
-		TextRenderer tr = client.textRenderer;
+		Font tr = client.font;
 		int width = screen.width, height = screen.height;
 		int n = items.size();
 		float bottom = height - 20;
 		boolean[] gapAfter = new boolean[n];
 		if (n > 3) {
 			for (int i = 0; i < n - 1; i++) {
-				ClickableWidget a = items.get(i), b = items.get(i + 1);
+				AbstractWidget a = items.get(i), b = items.get(i + 1);
 				gapAfter[i] = isBack(a) || (i == 0 && isClientButton(a)) || isQuit(b) || isClientButton(b);
 			}
 		}
@@ -174,7 +174,7 @@ public final class PauseStyle {
 		float maxW = 0;
 		float y = top;
 		for (int i = 0; i < n; i++) {
-			ClickableWidget w = items.get(i);
+			AbstractWidget w = items.get(i);
 			String label = w.getMessage() == null ? "" : w.getMessage().getString();
 			boolean accent = label.equalsIgnoreCase("WHITECLIENT") || ButtonStyle.isAccent(w);
 			float tw = UiFont.width(tr, label) * scale + (accent ? 12 : 0);
@@ -190,7 +190,7 @@ public final class PauseStyle {
 				y += gapPx;
 			}
 		}
-		float titleW = compact ? UiFont.width(tr, "WHITECLIENT") * 1.1f + 26 : tr.getWidth(UiFont.title("WHITECLIENT"));
+		float titleW = compact ? UiFont.width(tr, "WHITECLIENT") * 1.1f + 26 : tr.width(UiFont.title("WHITECLIENT"));
 		menuHalf = Math.max(maxW, titleW) / 2f + 10;
 
 		List<Object[]> icons = new ArrayList<>();
@@ -203,16 +203,16 @@ public final class PauseStyle {
 		int ix = width - 10 - icons.size() * is - (icons.size() - 1) * ig;
 		for (Object[] d : icons) {
 			Runnable action = (Runnable) d[2];
-			ButtonWidget b = ButtonWidget.builder(Text.literal((String) d[0]), x -> action.run())
-					.dimensions(ix, 10, is, is).tooltip(Tooltip.of(Text.literal((String) d[0]))).build();
+			Button b = Button.builder(Component.literal((String) d[0]), x -> action.run())
+					.bounds(ix, 10, is, is).tooltip(Tooltip.create(Component.literal((String) d[0]))).build();
 			ICONS.put(b, (IconPainter) d[1]);
 			all.add(b);
 			ix += is + ig;
 		}
 		float[] ub = com.whiteclient.update.AutoUpdater.readyVersion() != null ? UpdateBadge.bounds(tr, width, height, true) : null;
 		if (ub != null) {
-			ButtonWidget b = ButtonWidget.builder(Text.literal(""), x -> client.setScreen(new UpdateReadyScreen(screen)))
-					.dimensions(Math.round(ub[0]), Math.round(ub[1]), Math.round(ub[2]), Math.round(ub[3])).build();
+			Button b = Button.builder(Component.literal(""), x -> client.setScreen(new UpdateReadyScreen(screen)))
+					.bounds(Math.round(ub[0]), Math.round(ub[1]), Math.round(ub[2]), Math.round(ub[3])).build();
 			BADGES.put(b, Boolean.TRUE);
 			all.add(b);
 		}
@@ -221,14 +221,14 @@ public final class PauseStyle {
 		if (player == null || ph != playerH || pw != playerW) {
 			try {
 				player = new SkinPreview(pw, ph, () -> {
-					SkinTextures base = null;
+					PlayerSkin base = null;
 					try {
-						MinecraftClient mc = MinecraftClient.getInstance();
+						Minecraft mc = Minecraft.getInstance();
 						base = mc.player != null ? mc.player.getSkin() : null;
 					} catch (Throwable ignored) {
 					}
 					if (base == null) {
-						base = DefaultSkinHelper.getSteve();
+						base = DefaultPlayerSkin.getDefaultSkin();
 					}
 					return Wardrobe.apply(base);
 				});
@@ -240,37 +240,37 @@ public final class PauseStyle {
 		}
 	}
 
-	private static String keyOf(ClickableWidget w) {
-		Text m = w.getMessage();
+	private static String keyOf(AbstractWidget w) {
+		Component m = w.getMessage();
 		if (m == null) {
 			return "";
 		}
-		if (m.getContent() instanceof TranslatableTextContent t) {
+		if (m.getContents() instanceof TranslatableContents t) {
 			return t.getKey();
 		}
 		return m.getString();
 	}
 
-	private static boolean isClientButton(ClickableWidget w) {
+	private static boolean isClientButton(AbstractWidget w) {
 		String label = w.getMessage() == null ? "" : w.getMessage().getString();
 		return ButtonStyle.isAccent(w) || label.equalsIgnoreCase("WHITECLIENT");
 	}
 
-	private static boolean isBack(ClickableWidget w) {
+	private static boolean isBack(AbstractWidget w) {
 		return keyOf(w).equals("menu.returnToGame");
 	}
 
-	private static boolean isQuit(ClickableWidget w) {
+	private static boolean isQuit(AbstractWidget w) {
 		String k = keyOf(w);
 		return k.equals("menu.returnToMenu") || k.equals("menu.disconnect") || k.equals("menu.quit");
 	}
 
-	public static void drawScene(DrawContext ctx, Screen s, int mouseX, int mouseY, float delta) {
+	public static void drawScene(GuiGraphics ctx, Screen s, int mouseX, int mouseY, float delta) {
 		if (s != current) {
 			return;
 		}
-		MinecraftClient client = MinecraftClient.getInstance();
-		TextRenderer tr = client.textRenderer;
+		Minecraft client = Minecraft.getInstance();
+		Font tr = client.font;
 		int width = s.width, height = s.height;
 		float time = WhiteClient.get().time();
 		long now = System.nanoTime();
@@ -336,7 +336,7 @@ public final class PauseStyle {
 		}
 
 		float li = intro(s, 0.05f);
-		Matrix3x2fStack m = ctx.getMatrices();
+		Matrix3x2fStack m = ctx.pose();
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 8 + (float) Math.sin(time * 1.2) * 1.0f);
 		if (compact) {
@@ -350,8 +350,8 @@ public final class PauseStyle {
 			}
 			Render2D.planetLogo(ctx, colX, logoY, logoR, time, (int) (255 * li));
 			String word = "WHITECLIENT";
-			float tw = tr.getWidth(UiFont.title(word));
-			ctx.drawText(tr, UiFont.title(word), Math.round(colX - tw / 2f), Math.round(titleY), Colors.withAlpha(0xFFFFFF, (int) (255 * li)), false);
+			float tw = tr.width(UiFont.title(word));
+			ctx.drawString(tr, UiFont.title(word), Math.round(colX - tw / 2f), Math.round(titleY), Colors.withAlpha(0xFFFFFF, (int) (255 * li)), false);
 		}
 		m.popMatrix();
 
@@ -378,7 +378,7 @@ public final class PauseStyle {
 		return Math.max(right + playerW * 0.5f, (right + width) / 2f);
 	}
 
-	private static void drawPlayer(DrawContext ctx, Screen s, MinecraftClient client, TextRenderer tr, float cxp,
+	private static void drawPlayer(GuiGraphics ctx, Screen s, Minecraft client, Font tr, float cxp,
 								   int mouseX, int mouseY, float delta, float time) {
 		float k = intro(s, 0.08f);
 		float mouseLook = ((mouseX - cxp) / (float) s.width) * 26f;
@@ -391,7 +391,7 @@ public final class PauseStyle {
 			Render2D.roundRect(ctx, cxp - playerW * 0.18f * i, y + playerH - 6 - i, playerW * 0.36f * i, 3 + 2 * i, 4 + i, Colors.argb(0x000000, 0.08f * k));
 		}
 		player.render(ctx, x, y, mouseX, mouseY, delta);
-		String name = client.getSession().getUsername();
+		String name = client.getUser().getName();
 		float ny = y - 8 - 6 * (1 - k);
 		float nw = UiFont.width(tr, name) * 1.1f;
 		float logoW = 17;
@@ -402,14 +402,14 @@ public final class PauseStyle {
 		Render2D.roundRect(ctx, cxp - ul / 2f, ny + 12, ul, 1.2f, 0.6f, Colors.withAlpha(0xFFFFFF, (int) (170 * k)));
 	}
 
-	private static String whereText(MinecraftClient client) {
+	private static String whereText(Minecraft client) {
 		try {
-			if (client.isInSingleplayer() && client.getServer() != null) {
-				return "Singleplayer  ·  " + client.getServer().getSaveProperties().getLevelName();
+			if (client.isLocalServer() && client.getSingleplayerServer() != null) {
+				return "Singleplayer  ·  " + client.getSingleplayerServer().getWorldData().getLevelName();
 			}
-			ServerInfo info = client.getCurrentServerEntry();
+			ServerData info = client.getCurrentServer();
 			if (info != null) {
-				String a = info.address == null ? "" : info.address;
+				String a = info.ip == null ? "" : info.ip;
 				return a.isEmpty() ? info.name : a;
 			}
 		} catch (Throwable ignored) {
@@ -417,9 +417,9 @@ public final class PauseStyle {
 		return null;
 	}
 
-	public static void drawWidget(DrawContext ctx, ClickableWidget w) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		TextRenderer tr = client.textRenderer;
+	public static void drawWidget(GuiGraphics ctx, AbstractWidget w) {
+		Minecraft client = Minecraft.getInstance();
+		Font tr = client.font;
 		boolean hot = w.active && (w.isHovered() || w.isFocused());
 		float h = HOVER.getOrDefault(w, 0f);
 		h += ((hot ? 1f : 0f) - h) * Math.min(1f, frameDt * 14f);

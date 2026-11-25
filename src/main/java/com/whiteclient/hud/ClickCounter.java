@@ -1,6 +1,6 @@
 package com.whiteclient.hud;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public final class ClickCounter {
 	private static final long[] LEFT = new long[64];
@@ -11,8 +11,8 @@ public final class ClickCounter {
 	}
 
 	public static void click(int button) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		if (mc == null || mc.currentScreen != null || mc.player == null) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc == null || mc.screen != null || mc.player == null) {
 			return;
 		}
 		long now = System.currentTimeMillis();

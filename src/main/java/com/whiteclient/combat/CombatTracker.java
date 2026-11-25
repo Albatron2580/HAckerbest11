@@ -3,15 +3,14 @@ package com.whiteclient.combat;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.Pets;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,11 +18,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class CombatTracker {
 	public interface HitListener {
-		void onHit(LivingEntity target, Vec3d hitPos, boolean crit);
+		void onHit(LivingEntity target, Vec3 hitPos, boolean crit);
 	}
 
 	public interface KillListener {
-		void onKill(LivingEntity target, Vec3d pos);
+		void onKill(LivingEntity target, Vec3 pos);
 	}
 
 	private static final List<HitListener> HIT = new CopyOnWriteArrayList<>();
@@ -63,31 +62,31 @@ public final class CombatTracker {
 		registered = true;
 		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 			try {
-				MinecraftClient mc = MinecraftClient.getInstance();
-				if (world.isClient() && player == mc.player && entity instanceof LivingEntity living && !Pets.isPet(entity)) {
+				Minecraft mc = Minecraft.getInstance();
+				if (world.isClientSide() && player == mc.player && entity instanceof LivingEntity living && !Pets.isPet(entity)) {
 					hit(player, living);
 				}
 			} catch (Throwable t) {
 				WhiteClient.LOGGER.debug("[WHITECLIENT] combat tracker", t);
 			}
-			return ActionResult.PASS;
+			return InteractionResult.PASS;
 		});
 	}
 
-	public static void hit(PlayerEntity player, LivingEntity target) {
+	public static void hit(Player player, LivingEntity target) {
 		long now = System.currentTimeMillis();
 		lastHit = target;
 		lastHitAt = now;
-		Vec3d eye = player.getEyePos();
-		Box box = target.getBoundingBox();
-		Vec3d closest = new Vec3d(MathHelper.clamp(eye.x, box.minX, box.maxX), MathHelper.clamp(eye.y, box.minY, box.maxY),
-				MathHelper.clamp(eye.z, box.minZ, box.maxZ));
+		Vec3 eye = player.getEyePosition();
+		AABB box = target.getBoundingBox();
+		Vec3 closest = new Vec3(Mth.clamp(eye.x, box.minX, box.maxX), Mth.clamp(eye.y, box.minY, box.maxY),
+				Mth.clamp(eye.z, box.minZ, box.maxZ));
 		lastReach = eye.distanceTo(closest);
 		lastReachAt = now;
 		combo = now - comboAt < 2500 ? combo + 1 : 1;
 		comboAt = now;
-		boolean crit = player.fallDistance > 0 && !player.isOnGround() && !player.isClimbing() && !player.isTouchingWater()
-				&& player.getVelocity().y < 0;
+		boolean crit = player.fallDistance > 0 && !player.onGround() && !player.onClimbable() && !player.isInWater()
+				&& player.getDeltaMovement().y < 0;
 		if (crit) {
 			lastCritAt = now;
 			lastCritId = target.getId();
@@ -96,7 +95,7 @@ public final class CombatTracker {
 			RECENT.removeIf(r -> r.entity() == target);
 			RECENT.add(new Recent(target, now));
 		}
-		Vec3d pos = new Vec3d(closest.x, MathHelper.clamp(eye.y, box.minY + 0.3, box.maxY - 0.1), closest.z);
+		Vec3 pos = new Vec3(closest.x, Mth.clamp(eye.y, box.minY + 0.3, box.maxY - 0.1), closest.z);
 		for (HitListener l : HIT) {
 			try {
 				l.onHit(target, pos, crit);
@@ -105,8 +104,8 @@ public final class CombatTracker {
 		}
 	}
 
-	public static void tick(MinecraftClient mc) {
-		if (mc.player == null || mc.world == null) {
+	public static void tick(Minecraft mc) {
+		if (mc.player == null || mc.level == null) {
 			synchronized (RECENT) {
 				RECENT.clear();
 			}
@@ -131,7 +130,7 @@ public final class CombatTracker {
 				LivingEntity e = r.entity();
 				if (now - r.at() > 3000) {
 					it.remove();
-				} else if (e.isDead() || e.getHealth() <= 0) {
+				} else if (e.isDeadOrDying() || e.getHealth() <= 0) {
 					killed.add(e);
 					it.remove();
 				}
@@ -139,7 +138,7 @@ public final class CombatTracker {
 		}
 		for (LivingEntity e : killed) {
 			lastKillAt = now;
-			Vec3d pos = e.getEntityPos();
+			Vec3 pos = e.position();
 			for (KillListener l : KILL) {
 				try {
 					l.onKill(e, pos);

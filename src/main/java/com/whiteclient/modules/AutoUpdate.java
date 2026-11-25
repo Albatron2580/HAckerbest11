@@ -6,7 +6,7 @@ import com.whiteclient.setting.ActionSetting;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.InfoSetting;
 import com.whiteclient.update.AutoUpdater;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public class AutoUpdate extends Module {
 	public final InfoSetting statusInfo = add(new InfoSetting("Status", AutoUpdater::status));
@@ -23,16 +23,16 @@ public class AutoUpdate extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
+	public void onTick(Minecraft mc) {
 		long now = System.currentTimeMillis();
-		boolean onMainMenu = mc.currentScreen instanceof net.minecraft.client.gui.screen.TitleScreen
-				|| mc.currentScreen instanceof com.whiteclient.gui.WhiteTitleScreen;
+		boolean onMainMenu = mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen
+				|| mc.screen instanceof com.whiteclient.gui.WhiteTitleScreen;
 		if (now >= nextCheck || (onMainMenu && now - lastCheck > 3 * 60 * 1000)) {
 			nextCheck = now + 20L * 60 * 1000;
 			lastCheck = now;
 			AutoUpdater.checkAsync(installAuto.isOn(), false);
 		}
-		Object conn = mc.getNetworkHandler();
+		Object conn = mc.getConnection();
 		if (conn != connection) {
 			connection = conn;
 			joinedAt = conn != null ? now : 0;

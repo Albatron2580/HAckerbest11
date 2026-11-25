@@ -5,7 +5,7 @@ import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class Cinematic extends Module {
 	public final NumberSetting bars = add(new NumberSetting("Bars", 0.11, 0.0, 0.25, 0.01));
@@ -27,13 +27,13 @@ public class Cinematic extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
 		long now = System.nanoTime();
 		float dt = Math.min(0.1f, (now - last) / 1.0e9f);
 		last = now;
 		anim = Math.min(1f, anim + dt * 2.2f);
 		float k = 1f - (1f - anim) * (1f - anim) * (1f - anim);
-		int w = ctx.getScaledWindowWidth(), h = ctx.getScaledWindowHeight();
+		int w = ctx.guiWidth(), h = ctx.guiHeight();
 		float st = strength.getFloat() * k;
 		int tint = switch (grade.get()) {
 			case "Warm" -> 0xFF9A4D;

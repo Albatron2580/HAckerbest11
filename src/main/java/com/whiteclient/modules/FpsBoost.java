@@ -7,10 +7,10 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.TextSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.CloudRenderMode;
-import net.minecraft.client.option.GameOptions;
-import net.minecraft.particle.ParticlesMode;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
+import net.minecraft.server.level.ParticleStatus;
 
 public class FpsBoost extends Module {
 	public final BoolSetting clouds = add(new BoolSetting("No Clouds", true));
@@ -52,7 +52,7 @@ public class FpsBoost extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
+	public void onTick(Minecraft mc) {
 		if (timer-- > 0) {
 			return;
 		}
@@ -60,40 +60,40 @@ public class FpsBoost extends Module {
 		apply(mc.options);
 	}
 
-	private void apply(GameOptions o) {
+	private void apply(Options o) {
 		JsonObject s = savedJson();
 		boolean changed = false;
 		try {
-			if (clouds.isOn() && o.getCloudRenderMode().getValue() != CloudRenderMode.OFF) {
-				remember(s, "clouds", o.getCloudRenderMode().getValue().name());
-				o.getCloudRenderMode().setValue(CloudRenderMode.OFF);
+			if (clouds.isOn() && o.cloudStatus().get() != CloudStatus.OFF) {
+				remember(s, "clouds", o.cloudStatus().get().name());
+				o.cloudStatus().set(CloudStatus.OFF);
 				changed = true;
 			}
-			if (shadows.isOn() && o.getEntityShadows().getValue()) {
+			if (shadows.isOn() && o.entityShadows().get()) {
 				remember(s, "shadows", "true");
-				o.getEntityShadows().setValue(false);
+				o.entityShadows().set(false);
 				changed = true;
 			}
-			if (particles.isOn() && o.getParticles().getValue() == ParticlesMode.ALL) {
-				remember(s, "particles", ParticlesMode.ALL.name());
-				o.getParticles().setValue(ParticlesMode.DECREASED);
+			if (particles.isOn() && o.particles().get() == ParticleStatus.ALL) {
+				remember(s, "particles", ParticleStatus.ALL.name());
+				o.particles().set(ParticleStatus.DECREASED);
 				changed = true;
 			}
-			if (blend.isOn() && o.getBiomeBlendRadius().getValue() > 1) {
-				remember(s, "blend", String.valueOf(o.getBiomeBlendRadius().getValue()));
-				o.getBiomeBlendRadius().setValue(1);
+			if (blend.isOn() && o.biomeBlendRadius().get() > 1) {
+				remember(s, "blend", String.valueOf(o.biomeBlendRadius().get()));
+				o.biomeBlendRadius().set(1);
 				changed = true;
 			}
-			if (unlock.isOn() && (o.getEnableVsync().getValue() || o.getMaxFps().getValue() < 260)) {
-				remember(s, "vsync", String.valueOf(o.getEnableVsync().getValue()));
-				remember(s, "maxfps", String.valueOf(o.getMaxFps().getValue()));
-				o.getEnableVsync().setValue(false);
-				o.getMaxFps().setValue(260);
+			if (unlock.isOn() && (o.enableVsync().get() || o.framerateLimit().get() < 260)) {
+				remember(s, "vsync", String.valueOf(o.enableVsync().get()));
+				remember(s, "maxfps", String.valueOf(o.framerateLimit().get()));
+				o.enableVsync().set(false);
+				o.framerateLimit().set(260);
 				changed = true;
 			}
-			if (vignette.isOn() && o.getVignette().getValue()) {
+			if (vignette.isOn() && o.vignette().get()) {
 				remember(s, "vignette", "true");
-				o.getVignette().setValue(false);
+				o.vignette().set(false);
 				changed = true;
 			}
 		} catch (Throwable t) {
@@ -101,7 +101,7 @@ public class FpsBoost extends Module {
 		}
 		if (changed) {
 			saved.set(s.toString());
-			o.write();
+			o.save();
 		}
 	}
 
@@ -113,35 +113,35 @@ public class FpsBoost extends Module {
 
 	@Override
 	protected void onDisable() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		if (mc == null || mc.options == null) {
 			return;
 		}
-		GameOptions o = mc.options;
+		Options o = mc.options;
 		JsonObject s = savedJson();
 		try {
 			if (s.has("clouds")) {
-				o.getCloudRenderMode().setValue(CloudRenderMode.valueOf(s.get("clouds").getAsString()));
+				o.cloudStatus().set(CloudStatus.valueOf(s.get("clouds").getAsString()));
 			}
 			if (s.has("shadows")) {
-				o.getEntityShadows().setValue(true);
+				o.entityShadows().set(true);
 			}
 			if (s.has("particles")) {
-				o.getParticles().setValue(ParticlesMode.valueOf(s.get("particles").getAsString()));
+				o.particles().set(ParticleStatus.valueOf(s.get("particles").getAsString()));
 			}
 			if (s.has("blend")) {
-				o.getBiomeBlendRadius().setValue(Integer.parseInt(s.get("blend").getAsString()));
+				o.biomeBlendRadius().set(Integer.parseInt(s.get("blend").getAsString()));
 			}
 			if (s.has("vsync")) {
-				o.getEnableVsync().setValue(Boolean.parseBoolean(s.get("vsync").getAsString()));
+				o.enableVsync().set(Boolean.parseBoolean(s.get("vsync").getAsString()));
 			}
 			if (s.has("maxfps")) {
-				o.getMaxFps().setValue(Integer.parseInt(s.get("maxfps").getAsString()));
+				o.framerateLimit().set(Integer.parseInt(s.get("maxfps").getAsString()));
 			}
 			if (s.has("vignette")) {
-				o.getVignette().setValue(true);
+				o.vignette().set(true);
 			}
-			o.write();
+			o.save();
 		} catch (Throwable t) {
 			WhiteClient.LOGGER.debug("[WHITECLIENT] fps boost restore", t);
 		}

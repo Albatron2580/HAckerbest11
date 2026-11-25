@@ -10,10 +10,6 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +18,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class DamageNumbers extends Module {
 	public final ModeSetting format = add(new ModeSetting("Format", "Health", "Health", "Hearts"));
@@ -49,8 +48,8 @@ public class DamageNumbers extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
-		if (mc.world == null || mc.player == null) {
+	public void onTick(Minecraft mc) {
+		if (mc.level == null || mc.player == null) {
 			health.clear();
 			popups.clear();
 			return;
@@ -58,8 +57,8 @@ public class DamageNumbers extends Module {
 		float now = com.whiteclient.WhiteClient.get().time();
 		double r2 = range.get() * range.get();
 		Set<Integer> seen = new HashSet<>();
-		for (Entity e : mc.world.getEntities()) {
-			if (!(e instanceof LivingEntity living) || Pets.isPet(e) || e.squaredDistanceTo(mc.player) > r2) {
+		for (Entity e : mc.level.entitiesForRendering()) {
+			if (!(e instanceof LivingEntity living) || Pets.isPet(e) || e.distanceToSqr(mc.player) > r2) {
 				continue;
 			}
 			if (e == mc.player && !own.isOn()) {
@@ -86,7 +85,7 @@ public class DamageNumbers extends Module {
 				String text = (diff < 0 ? "" : "+") + num + (format.is("Hearts") ? " ❤" : "") + (crit ? "!" : "");
 				int rgb = diff > 0 ? 0x7CFF9A : crit ? 0xFFD36B : color.rgb();
 				float size = (crit ? 1.35f : 1f) * (0.9f + Math.min(0.6f, amount / 20f));
-				popups.add(new Popup(e.getX(), e.getY() + e.getHeight() + 0.1, e.getZ(), now, text, rgb, size,
+				popups.add(new Popup(e.getX(), e.getY() + e.getBbHeight() + 0.1, e.getZ(), now, text, rgb, size,
 						(random.nextFloat() - 0.5f) * 0.6f, (random.nextFloat() - 0.5f) * 0.6f));
 			}
 		}

@@ -5,7 +5,7 @@ import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
 import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public class Zoom extends Module {
 	public final NumberSetting factor = add(new NumberSetting("Zoom", 4, 1.5, 12, 0.5, "x"));
@@ -33,8 +33,8 @@ public class Zoom extends Module {
 		if (z == null || !z.isEnabled()) {
 			return false;
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
-		return debugHeld || (mc.currentScreen == null && WhiteClient.get().zoomKey() != null && WhiteClient.get().zoomKey().isPressed());
+		Minecraft mc = Minecraft.getInstance();
+		return debugHeld || (mc.screen == null && WhiteClient.get().zoomKey() != null && WhiteClient.get().zoomKey().isDown());
 	}
 
 	public static float fovScale() {
@@ -55,26 +55,26 @@ public class Zoom extends Module {
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
+	public void onTick(Minecraft mc) {
 		if (mc.options == null) {
 			return;
 		}
 		boolean want = held() && cinematic.isOn();
 		if (want && !appliedCinematic) {
-			savedCinematic = mc.options.smoothCameraEnabled;
-			mc.options.smoothCameraEnabled = true;
+			savedCinematic = mc.options.smoothCamera;
+			mc.options.smoothCamera = true;
 			appliedCinematic = true;
 		} else if (!want && appliedCinematic) {
-			mc.options.smoothCameraEnabled = savedCinematic;
+			mc.options.smoothCamera = savedCinematic;
 			appliedCinematic = false;
 		}
 	}
 
 	@Override
 	protected void onDisable() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		if (appliedCinematic && mc.options != null) {
-			mc.options.smoothCameraEnabled = savedCinematic;
+			mc.options.smoothCamera = savedCinematic;
 			appliedCinematic = false;
 		}
 		current = 1f;

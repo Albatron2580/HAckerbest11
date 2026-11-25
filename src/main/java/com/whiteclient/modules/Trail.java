@@ -10,14 +10,13 @@ import com.whiteclient.setting.BoolSetting;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.ModeSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
 public class Trail extends Module {
 	public final ModeSetting mode = add(new ModeSetting("Style", "Ribbon", "Ribbon", "Sparkles", "Both"));
@@ -30,7 +29,7 @@ public class Trail extends Module {
 	public final NumberSetting glow = add(new NumberSetting("Glow", 1.0, 0.2, 2.0, 0.05, "x"));
 	public final BoolSetting others = add(new BoolSetting("Show On Others", false));
 
-	private final Map<Integer, ArrayDeque<Vec3d>> history = new HashMap<>();
+	private final Map<Integer, ArrayDeque<Vec3>> history = new HashMap<>();
 
 	public Trail() {
 		super("Trail", "A glowing light trail behind you", Category.COSMETICS, true);
@@ -41,28 +40,28 @@ public class Trail extends Module {
 		history.clear();
 	}
 
-	private double offset(PlayerEntity p) {
+	private double offset(Player p) {
 		return switch (heightMode.get()) {
 			case "Feet" -> 0.1;
-			case "Head" -> p.getHeight() - 0.15;
-			default -> p.getHeight() * 0.5;
+			case "Head" -> p.getBbHeight() - 0.15;
+			default -> p.getBbHeight() * 0.5;
 		};
 	}
 
 	@Override
-	public void onTick(MinecraftClient mc) {
-		if (mc.world == null || mc.player == null) {
+	public void onTick(Minecraft mc) {
+		if (mc.level == null || mc.player == null) {
 			history.clear();
 			return;
 		}
 		int max = length.getInt();
 		Map<Integer, Boolean> seen = new HashMap<>();
-		for (PlayerEntity p : mc.world.getPlayers()) {
-			if (p != mc.player && (!others.isOn() || !CosmeticTargets.visible(p) || p.squaredDistanceTo(mc.player) > 48 * 48)) {
+		for (Player p : mc.level.players()) {
+			if (p != mc.player && (!others.isOn() || !CosmeticTargets.visible(p) || p.distanceToSqr(mc.player) > 48 * 48)) {
 				continue;
 			}
-			ArrayDeque<Vec3d> h = history.computeIfAbsent(p.getId(), k -> new ArrayDeque<>());
-			h.addFirst(p.getEntityPos().add(0, offset(p), 0));
+			ArrayDeque<Vec3> h = history.computeIfAbsent(p.getId(), k -> new ArrayDeque<>());
+			h.addFirst(p.position().add(0, offset(p), 0));
 			while (h.size() > max) {
 				h.removeLast();
 			}
@@ -73,35 +72,35 @@ public class Trail extends Module {
 
 	@Override
 	public void renderWorld(WorldContext ctx) {
-		MinecraftClient mc = ctx.client;
-		if (mc.world == null) {
+		Minecraft mc = ctx.client;
+		if (mc.level == null) {
 			return;
 		}
 		GlowBatch g = ctx.glow;
 		float a = glow.getFloat();
-		for (Map.Entry<Integer, ArrayDeque<Vec3d>> e : history.entrySet()) {
-			ArrayDeque<Vec3d> h = e.getValue();
+		for (Map.Entry<Integer, ArrayDeque<Vec3>> e : history.entrySet()) {
+			ArrayDeque<Vec3> h = e.getValue();
 			if (h.size() < 2) {
 				continue;
 			}
-			var ent = mc.world.getEntityById(e.getKey());
-			if (!(ent instanceof PlayerEntity p)) {
+			var ent = mc.level.getEntity(e.getKey());
+			if (!(ent instanceof Player p)) {
 				continue;
 			}
 			if (p == mc.player && !ctx.thirdPerson() && mode.is("Ribbon")) {
 			}
-			Vec3d head = p.getLerpedPos(ctx.tickDelta).add(0, offset(p), 0);
+			Vec3 head = p.getPosition(ctx.tickDelta).add(0, offset(p), 0);
 			int n = h.size();
-			Vec3d prev = head;
+			Vec3 prev = head;
 			int i = 0;
-			Iterator<Vec3d> it = h.iterator();
+			Iterator<Vec3> it = h.iterator();
 			it.next();
 			float halfW = width.getFloat() / 2f;
 			while (it.hasNext()) {
-				Vec3d cur = it.next();
+				Vec3 cur = it.next();
 				i++;
 				float u0 = (i - 1) / (float) (n - 1), u1 = i / (float) (n - 1);
-				if (prev.squaredDistanceTo(cur) < 1.0e-5) {
+				if (prev.distanceToSqr(cur) < 1.0e-5) {
 					prev = cur;
 					continue;
 				}

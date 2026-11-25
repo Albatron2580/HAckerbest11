@@ -3,32 +3,31 @@ package com.whiteclient.gui;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.modules.MenuButtons;
 import com.whiteclient.render.Colors;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.widget.ClickableWidget;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 
 public final class ButtonStyle {
-	private static final Map<ClickableWidget, Float> HOVER = new WeakHashMap<>();
-	private static final Set<ClickableWidget> ACCENT = Collections.newSetFromMap(new WeakHashMap<>());
+	private static final Map<AbstractWidget, Float> HOVER = new WeakHashMap<>();
+	private static final Set<AbstractWidget> ACCENT = Collections.newSetFromMap(new WeakHashMap<>());
 	private static long lastNanos = System.nanoTime();
 	private static float frameDt;
 
 	private ButtonStyle() {
 	}
 
-	public static void markAccent(ClickableWidget widget) {
+	public static void markAccent(AbstractWidget widget) {
 		ACCENT.add(widget);
 	}
 
-	public static boolean isAccent(ClickableWidget widget) {
+	public static boolean isAccent(AbstractWidget widget) {
 		return ACCENT.contains(widget);
 	}
 
@@ -41,17 +40,17 @@ public final class ButtonStyle {
 		if (settings == null || !settings.isEnabled()) {
 			return false;
 		}
-		Screen screen = MinecraftClient.getInstance().currentScreen;
+		Screen screen = Minecraft.getInstance().screen;
 		if (screen == null) {
 			return false;
 		}
 		if (settings.where.is("All Menus")) {
 			return true;
 		}
-		return screen instanceof GameMenuScreen || screen instanceof TitleScreen;
+		return screen instanceof PauseScreen || screen instanceof TitleScreen;
 	}
 
-	public static void drawSlider(DrawContext ctx, ClickableWidget w, double value) {
+	public static void drawSlider(GuiGraphics ctx, AbstractWidget w, double value) {
 		MenuButtons settings = WhiteClient.get().modules().get(MenuButtons.class);
 		long now = System.nanoTime();
 		if (now - lastNanos > 1_000_000) {
@@ -77,12 +76,12 @@ public final class ButtonStyle {
 			Render2D.roundRectOutline(ctx, x, y, width, height, r, 1, Colors.argb(0xFFFFFF, 0.16f + 0.3f * h));
 		}
 		Render2D.roundRect(ctx, kx, y + 3, knobW, height - 6, Math.min(2, (height - 6) / 2f), Colors.argb(0xFFFFFF, w.active ? 0.45f + 0.3f * h : 0.25f));
-		net.minecraft.client.font.TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-		ctx.drawCenteredTextWithShadow(tr, w.getMessage(), Math.round(x + width / 2f), Math.round(y + (height - 8) / 2f),
+		net.minecraft.client.gui.Font tr = Minecraft.getInstance().font;
+		ctx.drawCenteredString(tr, w.getMessage(), Math.round(x + width / 2f), Math.round(y + (height - 8) / 2f),
 				w.active ? 0xFFFFFFFF : 0xFFA0A0A8);
 	}
 
-	public static void draw(DrawContext ctx, ClickableWidget w) {
+	public static void draw(GuiGraphics ctx, AbstractWidget w) {
 		MenuButtons settings = WhiteClient.get().modules().get(MenuButtons.class);
 		long now = System.nanoTime();
 		if (now - lastNanos > 1_000_000) {

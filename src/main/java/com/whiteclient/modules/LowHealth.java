@@ -6,8 +6,8 @@ import com.whiteclient.module.Module;
 import com.whiteclient.render.Colors;
 import com.whiteclient.setting.ColorSetting;
 import com.whiteclient.setting.NumberSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class LowHealth extends Module {
 	public final NumberSetting hearts = add(new NumberSetting("Below Hearts", 4, 1, 10, 0.5));
@@ -21,8 +21,8 @@ public class LowHealth extends Module {
 	}
 
 	@Override
-	public void renderHud(DrawContext ctx, float tickDelta) {
-		MinecraftClient mc = MinecraftClient.getInstance();
+	public void renderHud(GuiGraphics ctx, float tickDelta) {
+		Minecraft mc = Minecraft.getInstance();
 		if (mc.player == null || mc.player.isCreative() || mc.player.isSpectator()) {
 			return;
 		}
@@ -34,7 +34,7 @@ public class LowHealth extends Module {
 		float k = 1f - hp / limit;
 		float pulse = 0.75f + 0.25f * (float) Math.sin(System.currentTimeMillis() / (k > 0.6f ? 140.0 : 260.0));
 		float a = strength.getFloat() * (0.35f + 0.65f * k) * pulse;
-		int w = ctx.getScaledWindowWidth(), h = ctx.getScaledWindowHeight();
+		int w = ctx.guiWidth(), h = ctx.guiHeight();
 		int c = color.rgb();
 		int edge = Colors.argb(c, a), none = Colors.argb(c, 0f);
 		int band = Math.max(20, (int) (Math.min(w, h) * 0.22f));

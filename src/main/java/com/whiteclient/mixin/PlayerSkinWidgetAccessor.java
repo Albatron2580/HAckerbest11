@@ -1,7 +1,7 @@
 package com.whiteclient.mixin;
 
-import net.minecraft.client.gui.widget.PlayerSkinWidget;
-import net.minecraft.client.render.entity.model.PlayerEntityModel;
+import net.minecraft.client.gui.components.PlayerSkinWidget;
+import net.minecraft.client.model.player.PlayerModel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -9,22 +9,22 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(PlayerSkinWidget.class)
 public interface PlayerSkinWidgetAccessor {
 	@Accessor("wideModel")
-	PlayerEntityModel whiteclient$wideModel();
+	PlayerModel whiteclient$wideModel();
 
 	@Accessor("slimModel")
-	PlayerEntityModel whiteclient$slimModel();
+	PlayerModel whiteclient$slimModel();
 
-	@Accessor("xRotation")
+	@Accessor("rotationX")
 	float whiteclient$getXRotation();
 
 	@Mutable
-	@Accessor("xRotation")
+	@Accessor("rotationX")
 	void whiteclient$setXRotation(float value);
 
-	@Accessor("yRotation")
+	@Accessor("rotationY")
 	float whiteclient$getYRotation();
 
 	@Mutable
-	@Accessor("yRotation")
+	@Accessor("rotationY")
 	void whiteclient$setYRotation(float value);
 }

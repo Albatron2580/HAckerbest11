@@ -2,14 +2,14 @@ package com.whiteclient.gui;
 
 import com.whiteclient.render.Colors;
 import com.whiteclient.update.AutoUpdater;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 public final class UpdateBadge {
 	private UpdateBadge() {
 	}
 
-	public static float[] bounds(TextRenderer tr, int width, int height, boolean corner) {
+	public static float[] bounds(Font tr, int width, int height, boolean corner) {
 		String text = AutoUpdater.badge();
 		if (text == null) {
 			return null;
@@ -18,7 +18,7 @@ public final class UpdateBadge {
 		return corner ? new float[]{10, height - 36, w, 16} : new float[]{width / 2f - w / 2f, 36, w, 16};
 	}
 
-	public static void draw(DrawContext ctx, TextRenderer tr, int width, int height, float time, boolean hover, boolean corner) {
+	public static void draw(GuiGraphics ctx, Font tr, int width, int height, float time, boolean hover, boolean corner) {
 		String text = AutoUpdater.badge();
 		float[] b = bounds(tr, width, height, corner);
 		if (text == null || b == null) {

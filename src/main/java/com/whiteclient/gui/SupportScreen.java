@@ -2,11 +2,11 @@ package com.whiteclient.gui;
 
 import com.whiteclient.WhiteClient;
 import com.whiteclient.render.Colors;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Util;
 
 import java.net.URI;
@@ -24,7 +24,7 @@ public class SupportScreen extends Screen {
 	private long noteUntil;
 
 	public SupportScreen(Screen parent) {
-		super(Text.literal("Support WHITECLIENT"));
+		super(Component.literal("Support WHITECLIENT"));
 		this.parent = parent;
 	}
 
@@ -55,27 +55,27 @@ public class SupportScreen extends Screen {
 		for (int i = 0; i < n; i++) {
 			final int value = i < AMOUNTS.length ? AMOUNTS[i] : 0;
 			String label = value > 0 ? "€" + value : "Other";
-			ButtonWidget chip = ButtonWidget.builder(Text.literal(label), b -> amount = value)
-					.dimensions(cx0 + i * (chipW + gap), cy, chipW, 18).build();
-			addDrawableChild(chip);
+			Button chip = Button.builder(Component.literal(label), b -> amount = value)
+					.bounds(cx0 + i * (chipW + gap), cy, chipW, 18).build();
+			addRenderableWidget(chip);
 		}
 		int bw = Math.round(Math.min(220, cardW - 40));
-		ButtonWidget donate = ButtonWidget.builder(Text.literal(ready() ? "Donate with PayPal" : "PayPal link coming soon"), b -> openPayPal())
-				.dimensions(Math.round(width / 2f - bw / 2f), Math.round(cardY + 130), bw, 22).build();
+		Button donate = Button.builder(Component.literal(ready() ? "Donate with PayPal" : "PayPal link coming soon"), b -> openPayPal())
+				.bounds(Math.round(width / 2f - bw / 2f), Math.round(cardY + 130), bw, 22).build();
 		donate.active = ready();
 		ButtonStyle.markAccent(donate);
-		addDrawableChild(donate);
+		addRenderableWidget(donate);
 
 		int sw = 100;
-		ButtonWidget copy = ButtonWidget.builder(Text.literal("Copy Link"), b -> {
-			client.keyboard.setClipboard(link());
+		Button copy = Button.builder(Component.literal("Copy Link"), b -> {
+			minecraft.keyboardHandler.setClipboard(link());
 			note = "Link copied";
 			noteUntil = System.currentTimeMillis() + 2000;
-		}).dimensions(Math.round(width / 2f - sw - 3), Math.round(cardY + cardH - 30), sw, 18).build();
+		}).bounds(Math.round(width / 2f - sw - 3), Math.round(cardY + cardH - 30), sw, 18).build();
 		copy.active = ready();
-		addDrawableChild(copy);
-		addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> close())
-				.dimensions(Math.round(width / 2f + 3), Math.round(cardY + cardH - 30), sw, 18).build());
+		addRenderableWidget(copy);
+		addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
+				.bounds(Math.round(width / 2f + 3), Math.round(cardY + cardH - 30), sw, 18).build());
 	}
 
 	private void openPayPal() {
@@ -83,7 +83,7 @@ public class SupportScreen extends Screen {
 			return;
 		}
 		try {
-			Util.getOperatingSystem().open(URI.create(link()));
+			Util.getPlatform().openUri(URI.create(link()));
 			note = "Opened in your browser - thank you!";
 		} catch (Throwable t) {
 			note = "Couldn't open your browser: use Copy Link";
@@ -92,8 +92,8 @@ public class SupportScreen extends Screen {
 	}
 
 	@Override
-	public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
-		if (client != null && client.world == null) {
+	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+		if (minecraft != null && minecraft.level == null) {
 			MenuScene.draw(ctx, this, cardW / 2f);
 		} else {
 			super.renderBackground(ctx, mouseX, mouseY, delta);
@@ -101,7 +101,7 @@ public class SupportScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
 		float k = Math.min(1f, (System.nanoTime() - opened) / 1.0e9f / 0.35f);
 		k = 1f - (1f - k) * (1f - k) * (1f - k);
 		float time = WhiteClient.get().time();
@@ -118,22 +118,22 @@ public class SupportScreen extends Screen {
 		Render2D.circle(ctx, cx, cardY + 24, 14 * beat, Colors.argb(0xFF6B8A, 0.16f * k));
 		Icons.heart(ctx, cx, cardY + 24, 12 * beat, Colors.argb(0xFF6B8A, k));
 		String title = "Support WHITECLIENT";
-		float tw = UiFont.width(textRenderer, title) * 1.35f;
-		UiFont.drawScaled(ctx, textRenderer, title, cx - tw / 2f, cardY + 42, 1.35f, Colors.argb(0xFFFFFF, k));
+		float tw = UiFont.width(font, title) * 1.35f;
+		UiFont.drawScaled(ctx, font, title, cx - tw / 2f, cardY + 42, 1.35f, Colors.argb(0xFFFFFF, k));
 
 		String msg = "WHITECLIENT is free and stays free. If you like it, you can support the team with a donation. It helps us keep adding new stuff.";
-		List<OrderedText> lines = textRenderer.wrapLines(Text.literal(msg), (int) (cardW - 36));
+		List<FormattedCharSequence> lines = font.split(Component.literal(msg), (int) (cardW - 36));
 		float ly = cardY + 62;
-		for (OrderedText line : lines) {
-			int lw = textRenderer.getWidth(line);
-			ctx.drawText(textRenderer, line, Math.round(cx - lw / 2f), Math.round(ly), Colors.argb(0xB8B8C2, k), false);
+		for (FormattedCharSequence line : lines) {
+			int lw = font.width(line);
+			ctx.drawString(font, line, Math.round(cx - lw / 2f), Math.round(ly), Colors.argb(0xB8B8C2, k), false);
 			ly += 10;
 		}
 
 		super.render(ctx, mouseX, mouseY, delta);
 
 		for (var child : children()) {
-			if (child instanceof ButtonWidget b) {
+			if (child instanceof Button b) {
 				String l = b.getMessage().getString();
 				boolean sel = (amount == 0 && l.equals("Other")) || l.equals("€" + amount);
 				if (sel && b.getY() < cardY + 125) {
@@ -145,12 +145,12 @@ public class SupportScreen extends Screen {
 		String small = System.currentTimeMillis() < noteUntil ? note
 				: ready() ? "Optional - donating doesn't unlock anything. Opens PayPal in your browser."
 				: "The team is setting up their PayPal link. Thanks for wanting to help!";
-		float sw = UiFont.width(textRenderer, small) * 0.8f;
-		UiFont.drawScaled(ctx, textRenderer, small, cx - sw / 2f, cardY + 158, 0.8f, Colors.argb(0x9A9AA6, k));
+		float sw = UiFont.width(font, small) * 0.8f;
+		UiFont.drawScaled(ctx, font, small, cx - sw / 2f, cardY + 158, 0.8f, Colors.argb(0x9A9AA6, k));
 	}
 
 	@Override
-	public void close() {
-		client.setScreen(parent);
+	public void onClose() {
+		minecraft.setScreen(parent);
 	}
 }
