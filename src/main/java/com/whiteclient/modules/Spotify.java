@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.gui.Pose2D;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.gui.Render2D;
 import com.whiteclient.module.Category;
@@ -176,7 +177,7 @@ public class Spotify extends Module {
 		com.whiteclient.hud.HudLayout.reserve(cardPosition.get(), y * sc, (y + h) * sc);
 		float slide = (1 - shown) * 20 * (right ? 1 : -1);
 
-		var m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.scale(sc, sc);
 		m.translate(slide, 0);

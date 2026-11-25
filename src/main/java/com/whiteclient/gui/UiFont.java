@@ -9,7 +9,6 @@ import net.minecraft.network.chat.FontDescription;
 //#endif
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
-import org.joml.Matrix3x2fStack;
 
 public final class UiFont {
 	public static final Identifier UI = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "ui");
@@ -38,7 +37,7 @@ public final class UiFont {
 	}
 
 	public static void draw(GuiGraphics ctx, Font tr, String s, float x, float y, int color) {
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(x, y);
 		ctx.drawString(tr, ui(s), 0, 0, color, false);
@@ -50,7 +49,7 @@ public final class UiFont {
 	}
 
 	public static void drawScaled(GuiGraphics ctx, Font tr, String s, float x, float y, float scale, int color) {
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(x, y);
 		m.scale(scale, scale);

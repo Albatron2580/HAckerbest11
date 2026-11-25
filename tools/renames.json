@@ -328,5 +328,55 @@
 		"if": "MC >= 26.2",
 		"from": ".getMainCamera()",
 		"to": ".mainCamera()"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "com.mojang.blaze3d.textures.",
+		"to": "com.mojang.renderpearl.api.textures."
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "com.mojang.blaze3d.pipeline.RenderPipeline",
+		"to": "com.mojang.renderpearl.api.pipeline.RenderPipeline"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "com/mojang/blaze3d/pipeline/RenderPipeline",
+		"to": "com/mojang/renderpearl/api/pipeline/RenderPipeline"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "import com.mojang.blaze3d.vertex.VertexFormat;",
+		"to": "import com.mojang.renderpearl.api.vertex.VertexFormat;"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "com.mojang.blaze3d.systems.GpuDevice",
+		"to": "com.mojang.renderpearl.api.device.GpuDevice"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": ".mulPose(",
+		"to": ".rotate("
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "InputConstants.Type.KEYSYM",
+		"to": "InputConstants.Type.KEYBOARD"
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "InputConstants.isKeyDown(minecraft.getWindow(), ",
+		"to": "InputConstants.isKeyDown("
+	},
+	{
+		"if": "MC >= 26.3",
+		"from": "Util.getPlatform().openUri(",
+		"to": "com.mojang.blaze3d.Blaze3D.openUri("
+	},
+	{
+		"if": "MC >= 26.3",
+		"regex": "Util\\.getPlatform\\(\\)\\.openFile\\((.+?)\\.toFile\\(\\)\\)",
+		"to": "com.mojang.blaze3d.Blaze3D.openPath(\\1)"
 	}
 ]

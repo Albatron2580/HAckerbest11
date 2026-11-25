@@ -1,5 +1,6 @@
 package com.whiteclient.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
@@ -24,8 +25,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.PlayerSkin;
-import org.joml.Matrix3x2fStack;
-import org.lwjgl.glfw.GLFW;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -258,7 +257,7 @@ public class ClickGuiScreen extends Screen {
 		float ang = stackTilt * (1f - e) + ux * 0.035f * impact(t) * (1f - back);
 		float scX = 1f - sq * Math.abs(ux) + sq * 0.7f * Math.abs(uy);
 		float scY = 1f - sq * Math.abs(uy) + sq * 0.7f * Math.abs(ux);
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(px, py);
 		m.rotate(ang);
@@ -389,7 +388,7 @@ public class ClickGuiScreen extends Screen {
 		String title = "WHITECLIENT";
 		float titleY = Math.max(22, height * 0.17f);
 		float tw = font.width(UiFont.title(title));
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(0, (1 - k) * -8);
 		float logoW = 30;
@@ -461,7 +460,7 @@ public class ClickGuiScreen extends Screen {
 				}
 			}
 			UiFont.drawScaled(ctx, font, on + "/" + modules(c).size(), bx + bs - 18, by + 5, 0.7f, Colors.argb(th.subtext.rgb(), ci));
-			ctx.pose().popMatrix();
+			Pose2D.of(ctx).popMatrix();
 			final Category cat = c;
 			hit(x, y, cs, cs, null, null, (a, b, btn) -> {
 				category = cat;
@@ -520,7 +519,7 @@ public class ClickGuiScreen extends Screen {
 				default -> Icons.heart(ctx, icx, icy, 9, ic);
 			}
 			UiFont.drawScaled(ctx, font, labels[i], icx - UiFont.width(font, labels[i]) * 0.36f, y - h + 20, 0.72f, Colors.argb(th.text.rgb(), si));
-			ctx.pose().popMatrix();
+			Pose2D.of(ctx).popMatrix();
 			final String label = labels[i];
 			hit(x, y, sw, sh, null, null, (a, b, btn) -> {
 				switch (label) {
@@ -597,7 +596,7 @@ public class ClickGuiScreen extends Screen {
 		Theme th = Theme.get();
 		float k = 1f - (float) Math.pow(1f - viewSwitch, 3);
 		float r = th.roundness.getFloat();
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		float wcx = winX + winW / 2f, wcy = winY + winH / 2f;
 		float s = 0.95f + 0.05f * k;
@@ -1149,11 +1148,11 @@ public class ClickGuiScreen extends Screen {
 	//$ 	boolean paste = Screen.isPaste(key);
 	//#endif
 		if (editing != null) {
-			if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+			if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
 				commitEdit();
-			} else if (key == GLFW.GLFW_KEY_ESCAPE) {
+			} else if (key == InputConstants.KEY_ESCAPE) {
 				editing = null;
-			} else if (key == GLFW.GLFW_KEY_BACKSPACE) {
+			} else if (key == InputConstants.KEY_BACKSPACE) {
 				if (!editBuffer.isEmpty()) {
 					editBuffer = editBuffer.substring(0, editBuffer.length() - 1);
 				}
@@ -1167,18 +1166,18 @@ public class ClickGuiScreen extends Screen {
 			return true;
 		}
 		if (searching) {
-			if (key == GLFW.GLFW_KEY_ESCAPE) {
+			if (key == InputConstants.KEY_ESCAPE) {
 				searching = false;
-			} else if (key == GLFW.GLFW_KEY_BACKSPACE && !search.isEmpty()) {
+			} else if (key == InputConstants.KEY_BACKSPACE && !search.isEmpty()) {
 				search = search.substring(0, search.length() - 1);
 			}
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+		if (key == InputConstants.KEY_RSHIFT) {
 			onClose();
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_ESCAPE) {
+		if (key == InputConstants.KEY_ESCAPE) {
 			if (view == View.WINDOW) {
 				go(View.HOME);
 			} else {

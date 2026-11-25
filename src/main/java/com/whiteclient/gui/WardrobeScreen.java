@@ -1,5 +1,6 @@
 package com.whiteclient.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
 import com.whiteclient.module.Module;
@@ -25,7 +26,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.PlayerSkin;
-import org.lwjgl.glfw.GLFW;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -515,7 +515,7 @@ public class WardrobeScreen extends Screen {
 	//#else
 	//$ public boolean keyPressed(int key, int scanCode, int modifiers) {
 	//#endif
-		if (key == GLFW.GLFW_KEY_ESCAPE) {
+		if (key == InputConstants.KEY_ESCAPE) {
 			onClose();
 			return true;
 		}

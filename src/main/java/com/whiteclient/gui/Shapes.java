@@ -8,7 +8,6 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 //#endif
 import com.whiteclient.WhiteClient;
-import org.joml.Matrix3x2fStack;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -176,7 +175,7 @@ public final class Shapes {
 	}
 
 	static void sprite(GuiGraphics ctx, Identifier id, int n, float cx, float cy, float half, int argb) {
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(cx - half, cy - half);
 		m.scale(half * 2 / n, half * 2 / n);
@@ -195,7 +194,7 @@ public final class Shapes {
 				return true;
 			}
 			int r = Math.min(Math.round(radius * s), Math.min(x1 - x0, y1 - y0) / 2);
-			Matrix3x2fStack m = ctx.pose();
+			Pose2D m = Pose2D.of(ctx);
 			m.pushMatrix();
 			m.scale(1f / s, 1f / s);
 			if (r <= 0) {
@@ -242,7 +241,7 @@ public final class Shapes {
 			if (r < t || x1 - x0 < 2 * t || y1 - y0 < 2 * t) {
 				return false;
 			}
-			Matrix3x2fStack m = ctx.pose();
+			Pose2D m = Pose2D.of(ctx);
 			m.pushMatrix();
 			m.scale(1f / s, 1f / s);
 			if (x1 - r > x0 + r) {

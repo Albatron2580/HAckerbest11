@@ -1,3 +1,4 @@
+//#file MC < 26.3
 package com.whiteclient.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;

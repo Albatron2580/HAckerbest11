@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.gui.Pose2D;
 import com.whiteclient.gui.Render2D;
 import com.whiteclient.hud.ClickCounter;
 import com.whiteclient.hud.Hud;
@@ -50,7 +51,7 @@ public class Keystrokes extends Module {
 		float w = k * 3 + gp * 2;
 		float h = k * 2 + gp + (mouse.isOn() ? k + gp : 0) + (space.isOn() ? 12 + gp : 0);
 		float[] p = HudLayout.place(position.get(), w * sc, h * sc);
-		var m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(p[0], p[1]);
 		m.scale(sc, sc);

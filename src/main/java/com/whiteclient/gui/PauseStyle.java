@@ -23,7 +23,6 @@ import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.entity.player.PlayerSkin;
-import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -340,7 +339,7 @@ public final class PauseStyle {
 		}
 
 		float li = intro(s, 0.05f);
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 8 + (float) Math.sin(time * 1.2) * 1.0f);
 		if (compact) {

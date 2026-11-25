@@ -1,6 +1,7 @@
 //#file MC >= 1.21.9
 package com.whiteclient.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.whiteclient.browser.WebView;
 import com.whiteclient.modules.Browser;
 import com.whiteclient.modules.Theme;
@@ -13,8 +14,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import org.joml.Matrix3x2fStack;
-import org.lwjgl.glfw.GLFW;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -152,7 +151,7 @@ public class BrowserScreen extends Screen {
 		hits.clear();
 		float k = Math.min(1f, (System.currentTimeMillis() - opened) / 180f);
 		float ease = 1f - (1f - k) * (1f - k);
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(0, (1 - ease) * 8);
 
@@ -477,18 +476,18 @@ public class BrowserScreen extends Screen {
 	public boolean keyPressed(KeyEvent input) {
 		int key = input.input();
 		if (address.isFocused()) {
-			if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+			if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
 				go(address.getValue());
 				return true;
 			}
-			if (key == GLFW.GLFW_KEY_ESCAPE) {
+			if (key == InputConstants.KEY_ESCAPE) {
 				address.setFocused(false);
 				setFocused(null);
 				return true;
 			}
 			return super.keyPressed(input);
 		}
-		if (key == GLFW.GLFW_KEY_ESCAPE) {
+		if (key == InputConstants.KEY_ESCAPE) {
 			if (pageFocus) {
 				pageFocus = false;
 				return true;
@@ -501,7 +500,7 @@ public class BrowserScreen extends Screen {
 			v.keyDown(input);
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_B) {
+		if (key == InputConstants.KEY_B) {
 			onClose();
 			return true;
 		}

@@ -4,7 +4,6 @@ import com.whiteclient.render.Colors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import org.joml.Matrix3x2fStack;
 
 public final class Render2D {
 	private Render2D() {
@@ -24,7 +23,7 @@ public final class Render2D {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 
@@ -121,7 +120,7 @@ public final class Render2D {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 		float X = x * s, Y = y * s, W = w * s, H = h * s;
@@ -153,7 +152,7 @@ public final class Render2D {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 		float X = x * s, Y = y * s, W = w * s, H = h * s;
@@ -178,7 +177,7 @@ public final class Render2D {
 			return;
 		}
 		int s = scale();
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.scale(1f / s, 1f / s);
 		float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
@@ -266,7 +265,7 @@ public final class Render2D {
 	}
 
 	public static void textScaled(GuiGraphics ctx, Font tr, String s, float x, float y, float scale, int color) {
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(x, y);
 		m.scale(scale, scale);

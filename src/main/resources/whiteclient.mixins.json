@@ -20,7 +20,8 @@
 		"TooltipBackgroundMixin",
 		"CameraFovMixin",
 		"ScreenTitleAccessor",
-		"GuiSetScreenMixin"
+		"GuiSetScreenMixin",
+		"HandItemsMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

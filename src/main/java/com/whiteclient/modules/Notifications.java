@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.gui.Pose2D;
 import com.whiteclient.gui.Render2D;
 import com.whiteclient.hud.Hud;
 import com.whiteclient.hud.HudLayout;
@@ -57,7 +58,7 @@ public class Notifications extends Module {
 			float w = Math.max(tr.width(name), tr.width(sub) * 0.8f) + 44, h = 26;
 			float[] p = HudLayout.place(position.get(), w, h);
 			float slide = (1f - ease) * 30 * (right ? 1 : -1);
-			var m = ctx.pose();
+			Pose2D m = Pose2D.of(ctx);
 			m.pushMatrix();
 			m.translate(slide, 0);
 			Hud.panel(ctx, p[0], p[1], w, h, a);

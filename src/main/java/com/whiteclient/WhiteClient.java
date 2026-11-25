@@ -1,5 +1,6 @@
 package com.whiteclient;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.whiteclient.config.ConfigManager;
 import com.whiteclient.gui.ClickGuiScreen;
 import com.whiteclient.gui.MenuIntegration;
@@ -37,7 +38,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,20 +190,20 @@ public final class WhiteClient implements ClientModInitializer {
 
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.menu",
-				GLFW.GLFW_KEY_RIGHT_SHIFT,
+				InputConstants.KEY_RSHIFT,
 				KEY_CATEGORY));
 		zoomKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.zoom",
-				GLFW.GLFW_KEY_C,
+				InputConstants.KEY_C,
 				KEY_CATEGORY));
 		carKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.car",
-				GLFW.GLFW_KEY_N,
+				InputConstants.KEY_N,
 				KEY_CATEGORY));
 		//#if MC >= 1.21.9
 		browserKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.browser",
-				GLFW.GLFW_KEY_B,
+				InputConstants.KEY_B,
 				KEY_CATEGORY));
 		//#endif
 		CombatTracker.init();

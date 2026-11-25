@@ -22,7 +22,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.PlayerSkin;
-import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -224,7 +223,7 @@ public class WhiteTitleScreen extends Screen {
 		float logoY = Math.max(40, height * 0.27f);
 
 		float li = intro(0.1f);
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.3) * 1.2f);
 		String word = "WHITECLIENT";
@@ -413,7 +412,7 @@ public class WhiteTitleScreen extends Screen {
 		float r = Math.max(11, Math.min(22, height * 0.062f));
 		float logoY = height * 0.3f;
 		float li = intro(0.1f);
-		Matrix3x2fStack m = ctx.pose();
+		Pose2D m = Pose2D.of(ctx);
 		m.pushMatrix();
 		m.translate(0, (1 - li) * 10 + (float) Math.sin(time * 1.2) * 1.2f);
 		for (int g = 14; g >= 1; g--) {
