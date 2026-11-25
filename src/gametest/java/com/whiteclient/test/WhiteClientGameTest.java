@@ -230,10 +230,11 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> WhiteClient.get().modules().get(MenuBackground.class).loadingScreens.set(false));
 		context.runOnClient(client -> {
 			WhiteClient.get().modules().get(com.whiteclient.modules.FpsBoost.class).unlock.set(false);
-			client.options.framerateLimit().set(30);
+			client.options.framerateLimit().set(10);
 		});
 
 		try (TestSingleplayerContext sp = context.worldBuilder().create()) {
+			context.runOnClient(client -> client.options.framerateLimit().set(30));
 			sp.getClientWorld().waitForChunksRender();
 			sp.getServer().runCommand("tp @p ~ ~ ~ 30 12");
 			sp.getServer().runCommand("time set 6000");

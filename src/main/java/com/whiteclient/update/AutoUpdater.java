@@ -197,10 +197,18 @@ public final class AutoUpdater {
 	}
 
 	public static Path download(HttpClient http, String latest, Path dir) throws Exception {
-		String jarName = "whiteclient-" + latest + ".jar";
+		String jarName = "whiteclient-" + latest + "+mc" + WhiteClient.MC_NODE + ".jar";
 		String jarUrl = DOWNLOADS + "v" + latest + "/" + jarName;
-		String shaUrl = jarUrl + ".sha256";
-		String shaText = http.send(request(shaUrl).header("Accept", "*/*").build(), HttpResponse.BodyHandlers.ofString()).body();
+		HttpResponse<String> shaRes = http.send(request(jarUrl + ".sha256").header("Accept", "*/*").build(), HttpResponse.BodyHandlers.ofString());
+		if (shaRes.statusCode() == 404 && "1.21.11".equals(WhiteClient.MC_NODE)) {
+			jarName = "whiteclient-" + latest + ".jar";
+			jarUrl = DOWNLOADS + "v" + latest + "/" + jarName;
+			shaRes = http.send(request(jarUrl + ".sha256").header("Accept", "*/*").build(), HttpResponse.BodyHandlers.ofString());
+		}
+		if (shaRes.statusCode() == 404) {
+			throw new IOException("no WHITECLIENT " + latest + " build for Minecraft " + WhiteClient.MC_NODE + " yet");
+		}
+		String shaText = shaRes.body();
 		String expected = shaText.trim().split("\\s+")[0].toLowerCase(Locale.ROOT);
 		if (!expected.matches("[0-9a-f]{64}")) {
 			throw new IOException("bad checksum file");
@@ -294,7 +302,7 @@ public final class AutoUpdater {
 			return;
 		}
 		try {
-			Path target = own.getParent().resolve("whiteclient-" + readyVersion + ".jar");
+			Path target = own.getParent().resolve(staged.getFileName().toString());
 			ProcessBuilder pb = new ProcessBuilder(javaExecutable(), "-Xmx24m", "-XX:+UseSerialGC", "-XX:TieredStopAtLevel=1",
 					"-cp", staged.toString(), Swap.class.getName(),
 					String.valueOf(ProcessHandle.current().pid()), own.toString(), staged.toString(), target.toString());
@@ -351,7 +359,12 @@ public final class AutoUpdater {
 		}
 		n = n.substring("whiteclient-".length());
 		int jar = n.indexOf(".jar");
-		return jar > 0 ? n.substring(0, jar) : null;
+		if (jar <= 0) {
+			return null;
+		}
+		n = n.substring(0, jar);
+		int plus = n.indexOf('+');
+		return plus > 0 ? n.substring(0, plus) : n;
 	}
 
 	public static int compare(String a, String b) {

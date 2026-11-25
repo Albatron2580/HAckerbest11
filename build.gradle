@@ -1,6 +1,17 @@
+import groovy.json.JsonSlurper
+
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
 }
+
+def node = (project.findProperty('mc') ?: '1.21.11').toString()
+def cfg = new JsonSlurper().parse(file('versions.json'))[node]
+if (cfg == null) {
+	throw new GradleException("Unknown Minecraft version ${node}, see versions.json")
+}
+def unobf = cfg.unobf == true
+apply plugin: unobf ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
 version = project.mod_version
 group = project.maven_group
@@ -26,40 +37,49 @@ loom {
 	}
 }
 
-fabricApi {
-	configureTests {
-		createSourceSet = true
-		modId = "whiteclient-gametest"
-		enableGameTests = false
-		enableClientGameTests = true
-		eula = true
+if (cfg.gametest == true) {
+	fabricApi {
+		configureTests {
+			createSourceSet = true
+			modId = "whiteclient-gametest"
+			enableGameTests = false
+			enableClientGameTests = true
+			eula = true
+		}
 	}
 }
 
+def modImpl = unobf ? 'implementation' : 'modImplementation'
+def modRuntime = unobf ? 'runtimeOnly' : 'modRuntimeOnly'
+
 dependencies {
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	modRuntimeOnly "net.dimaskama:mcef-modern:0.3.3+mc1.21.11.jcef146.0.10"
-	include "net.dimaskama:mcef-modern:0.3.3+mc1.21.11.jcef146.0.10"
+	minecraft "com.mojang:minecraft:${cfg.minecraft ?: node}"
+	if (!unobf) {
+		mappings loom.officialMojangMappings()
+	}
+	add(modImpl, "net.fabricmc:fabric-loader:${project.loader_version}")
+	add(modImpl, "net.fabricmc.fabric-api:fabric-api:${cfg.fabric_api}")
+	if (cfg.mcef) {
+		add(modRuntime, "net.dimaskama:mcef-modern:${cfg.mcef}")
+		include "net.dimaskama:mcef-modern:${cfg.mcef}"
+	}
 }
 
 processResources {
-	def version = project.version
-	inputs.property "version", version
-
+	def props = [version: project.version, minecraft: cfg.range, java: cfg.java]
+	inputs.properties props
 	filesMatching("fabric.mod.json") {
-		expand "version": version
+		expand props
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = cfg.java as int
 	it.options.encoding = "UTF-8"
+	it.options.compilerArgs += ['-Xmaxerrs', '2000']
 }
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.toVersion(cfg.java)
+	targetCompatibility = JavaVersion.toVersion(cfg.java)
 }
