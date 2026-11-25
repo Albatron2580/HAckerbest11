@@ -285,7 +285,7 @@
 		"to": "widget.extractRenderState("
 	},
 	{
-		"if": "MC >= 26.1",
+		"if": "MC >= 26.1 && MC < 26.2",
 		"from": "sp.getClientWorld()",
 		"to": "sp.getClientLevel()"
 	},
@@ -378,5 +378,10 @@
 		"if": "MC >= 26.3",
 		"regex": "Util\\.getPlatform\\(\\)\\.openFile\\((.+?)\\.toFile\\(\\)\\)",
 		"to": "com.mojang.blaze3d.Blaze3D.openPath(\\1)"
+	},
+	{
+		"if": "MC >= 26.2",
+		"from": "sp.getClientWorld()",
+		"to": "sp.getConnection()"
 	}
 ]
