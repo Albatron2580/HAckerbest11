@@ -1,5 +1,6 @@
 package com.whiteclient.music;
 
+import com.whiteclient.render.Img;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import javax.imageio.ImageIO;
@@ -94,7 +95,7 @@ public final class CoverArt {
 				if (image != null) {
 					for (int y = 0; y < SIZE; y++) {
 						for (int x = 0; x < SIZE; x++) {
-							image.setPixel(x, y, px[y * SIZE + x]);
+							Img.set(image, x, y, px[y * SIZE + x]);
 						}
 					}
 					texture.upload();

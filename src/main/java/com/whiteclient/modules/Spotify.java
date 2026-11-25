@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.gui.Gfx;
 import com.whiteclient.gui.Pose2D;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.gui.Render2D;
@@ -19,7 +20,6 @@ import com.whiteclient.setting.TextSetting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
@@ -188,7 +188,7 @@ public class Spotify extends Module {
 		Identifier cover = music().cover().texture();
 		float cs = 34;
 		if (cover != null) {
-			ctx.blit(RenderPipelines.GUI_TEXTURED, cover, (int) (x + 6), (int) (y + 6), 0f, 0f, (int) cs, (int) cs, 64, 64, 64, 64,
+			Gfx.blit(ctx, cover, (int) (x + 6), (int) (y + 6), 0f, 0f, (int) cs, (int) cs, 64, 64, 64, 64,
 					Colors.withAlpha(0xFFFFFF, a));
 		} else {
 			Render2D.roundRect(ctx, x + 6, y + 6, cs, cs, 6, Colors.withAlpha(0x26262E, a));

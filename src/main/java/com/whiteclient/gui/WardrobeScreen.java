@@ -267,7 +267,11 @@ public class WardrobeScreen extends Screen {
 				} else {
 					Identifier tex = Wardrobe.texturePathFor(s);
 					if (tex != null) {
+						//#if MC >= 1.21.2
 						PlayerFaceRenderer.draw(ctx, tex, fx, fy, face, true, false, 0xFFFFFFFF);
+						//#else
+						//$ PlayerFaceRenderer.draw(ctx, tex, fx, fy, face, true, false);
+						//#endif
 					} else {
 						Render2D.roundRect(ctx, fx, fy, face, face, 4, 0x40FF4D6A);
 						UiFont.drawCentered(ctx, font, "!", fx + face / 2f, fy + 12, 0xFFFF8095);

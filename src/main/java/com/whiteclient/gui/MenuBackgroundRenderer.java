@@ -1,5 +1,6 @@
 package com.whiteclient.gui;
 
+import com.whiteclient.render.Img;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
@@ -14,7 +15,6 @@ import com.whiteclient.render.Colors;
 import java.util.OptionalDouble;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 
@@ -46,7 +46,9 @@ public final class MenuBackgroundRenderer {
 			super(() -> "whiteclient_menu_background", TEX_W, TEX_H, false);
 			//#if MC < 1.21.11
 			//$ setFilter(true, false);
+			//#if MC >= 1.21.2
 			//$ setClamp(true);
+			//#endif
 			//#endif
 		}
 
@@ -133,7 +135,7 @@ public final class MenuBackgroundRenderer {
 			for (int y = 0; y < TEX_H; y++) {
 				int row = y * TEX_W;
 				for (int x = 0; x < TEX_W; x++) {
-					image.setPixel(x, y, src[row + x]);
+					Img.set(image, x, y, src[row + x]);
 				}
 			}
 			fresh = false;
@@ -186,7 +188,7 @@ public final class MenuBackgroundRenderer {
 			regionW = Math.max(1, Math.round(TEX_H * screenAspect));
 			u = (TEX_W - regionW) / 2f;
 		}
-		ctx.blit(RenderPipelines.GUI_TEXTURED, TEXTURE_ID, 0, 0, u, v, width, height, regionW, regionH,
+		Gfx.blit(ctx, TEXTURE_ID, 0, 0, u, v, width, height, regionW, regionH,
 				TEX_W, TEX_H, Colors.argb(0xFFFFFF, alpha));
 	}
 }

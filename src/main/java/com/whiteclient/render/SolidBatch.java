@@ -79,7 +79,7 @@ public final class SolidBatch {
 			NativeImage img = white.getPixels();
 			for (int y = 0; y < 4; y++) {
 				for (int x = 0; x < 4; x++) {
-					img.setPixel(x, y, 0xFFFFFFFF);
+					Img.set(img, x, y, 0xFFFFFFFF);
 				}
 			}
 			white.upload();

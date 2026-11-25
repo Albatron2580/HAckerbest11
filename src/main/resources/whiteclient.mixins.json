@@ -22,7 +22,9 @@
 		"ScreenTitleAccessor",
 		"GuiSetScreenMixin",
 		"HandItemsMixin",
-		"RenderTypeInvoker"
+		"RenderTypeInvoker",
+		"ScreenBackgroundMixin",
+		"GuiOverlayMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

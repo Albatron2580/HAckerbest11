@@ -9,7 +9,9 @@ import com.whiteclient.module.ModuleManager;
 import com.whiteclient.modules.*;
 import com.whiteclient.combat.CombatTracker;
 import com.whiteclient.hud.HudLayout;
+//#if MC >= 1.21.6
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+//#endif
 import com.whiteclient.music.MusicService;
 import com.whiteclient.render.GlowBatch;
 import com.whiteclient.render.Perf;
@@ -22,7 +24,9 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+//#if MC >= 1.21.6
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+//#endif
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.DeltaTracker;
@@ -207,32 +211,29 @@ public final class WhiteClient implements ClientModInitializer {
 				KEY_CATEGORY));
 		//#endif
 		CombatTracker.init();
+		//#if MC >= 1.21.6
 		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (ctx, tickCounter) -> {
-			CustomCrosshair ch = modules.get(CustomCrosshair.class);
-			if (ch != null && ch.isEnabled() && !crashed.contains(ch)) {
-				try {
-					ch.draw(ctx);
-					return;
-				} catch (Throwable t) {
-					fail(ch, t);
-				}
+			if (!drawOwnCrosshair(ctx)) {
+				vanilla.render(ctx, tickCounter);
 			}
-			vanilla.render(ctx, tickCounter);
 		});
 		HudElementRegistry.replaceElement(VanillaHudElements.STATUS_EFFECTS, vanilla -> (ctx, tickCounter) -> {
-			PotionHUD ph = modules.get(PotionHUD.class);
-			if (ph != null && ph.hidesVanilla() && !crashed.contains(ph)) {
-				return;
+			if (!hidesVanillaEffects()) {
+				vanilla.render(ctx, tickCounter);
 			}
-			vanilla.render(ctx, tickCounter);
 		});
+		//#endif
 		WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outline) -> {
 			BlockOutline bo = modules.get(BlockOutline.class);
 			return bo == null || !bo.isEnabled() || crashed.contains(bo);
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
+		//#if MC >= 1.21.6
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "hud"), this::renderHud);
+		//#else
+		//$ net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register(this::renderHud);
+		//#endif
 		//#if MC >= 26.2
 		//$ WorldRenderEvents.COLLECT_SUBMITS.register(this::renderWorld);
 		//#elif MC >= 1.21.9
@@ -396,6 +397,24 @@ public final class WhiteClient implements ClientModInitializer {
 			glow.clear();
 		}
 		matrices.popPose();
+	}
+
+	public boolean drawOwnCrosshair(GuiGraphics ctx) {
+		CustomCrosshair ch = modules.get(CustomCrosshair.class);
+		if (ch != null && ch.isEnabled() && !crashed.contains(ch)) {
+			try {
+				ch.draw(ctx);
+				return true;
+			} catch (Throwable t) {
+				fail(ch, t);
+			}
+		}
+		return false;
+	}
+
+	public boolean hidesVanillaEffects() {
+		PotionHUD ph = modules.get(PotionHUD.class);
+		return ph != null && ph.hidesVanilla() && !crashed.contains(ph);
 	}
 
 	private static void flush(WorldDraw draw) {

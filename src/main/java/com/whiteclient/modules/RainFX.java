@@ -560,7 +560,13 @@ public class RainFX extends Module {
 		}
 		if (!any) {
 			m.set(x, top, z);
+			//#if MC >= 1.21.6
 			if (world.precipitationAt(m) != Biome.Precipitation.RAIN) {
+			//#elif MC >= 1.21.2
+			//$ if (world.getBiome(m).value().getPrecipitationAt(m, world.getSeaLevel()) != Biome.Precipitation.RAIN) {
+			//#else
+			//$ if (world.getBiome(m).value().getPrecipitationAt(m) != Biome.Precipitation.RAIN) {
+			//#endif
 				return Float.NaN;
 			}
 		}

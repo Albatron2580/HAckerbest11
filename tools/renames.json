@@ -393,5 +393,15 @@
 		"if": "MC >= 26.3",
 		"from": "com.mojang.blaze3d.platform.CompareOp",
 		"to": "com.mojang.renderpearl.api.pipeline.CompareOp"
+	},
+	{
+		"if": "MC < 1.21.5",
+		"regex": "new DynamicTexture\\(\\(\\) -> [^,]+?, ",
+		"to": "new DynamicTexture("
+	},
+	{
+		"if": "MC < 1.21.5",
+		"regex": "super\\(\\(\\) -> [^,]+?, (\\w+, \\w+, false\\))",
+		"to": "super(\\1"
 	}
 ]

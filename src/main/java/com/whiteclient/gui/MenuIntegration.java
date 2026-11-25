@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
@@ -21,6 +22,31 @@ import java.util.List;
 
 public final class MenuIntegration {
 	private MenuIntegration() {
+	}
+
+	public interface Background {
+		void draw(Screen s, GuiGraphics context, int mouseX, int mouseY, float delta);
+	}
+
+	//#if MC < 1.21.6
+	//$ private static final java.util.Map<Screen, java.util.List<Background>> BACKGROUNDS = new java.util.WeakHashMap<>();
+	//$
+	//$ public static void fireBackground(Screen s, GuiGraphics context, int mouseX, int mouseY, float delta) {
+	//$ 	java.util.List<Background> list = BACKGROUNDS.get(s);
+	//$ 	if (list != null) {
+	//$ 		for (Background b : list) {
+	//$ 			b.draw(s, context, mouseX, mouseY, delta);
+	//$ 		}
+	//$ 	}
+	//$ }
+	//#endif
+
+	private static void afterBackground(Screen screen, Background b) {
+		//#if MC >= 1.21.6
+		ScreenEvents.afterBackground(screen).register(b::draw);
+		//#else
+		//$ BACKGROUNDS.computeIfAbsent(screen, k -> new java.util.ArrayList<>()).add(b);
+		//#endif
 	}
 
 	public static void register() {
@@ -66,7 +92,7 @@ public final class MenuIntegration {
 			}
 		}
 		if (screen instanceof PauseScreen || screen instanceof TitleScreen) {
-			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
+			afterBackground(screen, (s, context, mouseX, mouseY, delta) -> {
 				MenuBackground bg = wc.modules().get(MenuBackground.class);
 				if (bg == null || !bg.isEnabled()) {
 					return;
@@ -88,7 +114,7 @@ public final class MenuIntegration {
 				}
 			});
 		} else if (isLoading(screen)) {
-			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
+			afterBackground(screen, (s, context, mouseX, mouseY, delta) -> {
 				MenuBackground bg = wc.modules().get(MenuBackground.class);
 				if (bg == null || !bg.isEnabled() || !bg.loadingScreens.isOn()) {
 					return;
@@ -108,7 +134,7 @@ public final class MenuIntegration {
 				context.drawString(client.font, UiFont.title(word), Math.round(s.width / 2f - tw / 2f), Math.round(ly + r * 1.6f + 4), 0xFFFFFFFF, false);
 			});
 		} else if (client.level == null && isPlainMenu(screen)) {
-			ScreenEvents.afterBackground(screen).register((s, context, mouseX, mouseY, delta) -> {
+			afterBackground(screen, (s, context, mouseX, mouseY, delta) -> {
 				MenuBackground bg = wc.modules().get(MenuBackground.class);
 				if (bg == null || !bg.isEnabled() || !bg.otherMenus.isOn() || Minecraft.getInstance().level != null) {
 					return;

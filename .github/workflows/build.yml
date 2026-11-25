@@ -75,8 +75,8 @@ jobs:
         if: steps.cfg.outputs.gametest == 'true'
         continue-on-error: true
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb imagemagick > /dev/null
-          xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClientGameTest -Pmc="${{ matrix.mc }}" --stacktrace
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb imagemagick mesa-vulkan-drivers libgl1-mesa-dri libegl1 > /dev/null
+          SDL_VIDEO_FORCE_EGL=1 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClientGameTest -Pmc="${{ matrix.mc }}" --stacktrace
       - name: Export screenshots and crash reports
         if: always()
         run: |

@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.render.Img;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
@@ -151,7 +152,7 @@ public class InventoryTheme extends Module {
 		int[] orig = new int[w * h];
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				orig[y * w + x] = img.getPixel(x, y);
+				orig[y * w + x] = Img.get(img, x, y);
 			}
 		}
 		for (int y = 0; y < h; y++) {
@@ -178,7 +179,7 @@ public class InventoryTheme extends Module {
 				}
 				float al = alpha[k] + (alpha[k + 1] - alpha[k]) * t;
 				int na = Math.round(a * al);
-				img.setPixel(x, y, (na << 24) | out);
+				Img.set(img, x, y, (na << 24) | out);
 			}
 		}
 	}

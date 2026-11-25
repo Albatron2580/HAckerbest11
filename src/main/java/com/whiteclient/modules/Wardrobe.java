@@ -1,5 +1,6 @@
 package com.whiteclient.modules;
 
+import com.whiteclient.render.Img;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.whiteclient.WhiteClient;
 import com.whiteclient.module.Category;
@@ -137,15 +138,15 @@ public class Wardrobe extends Module {
 		NativeImage img = new NativeImage(64, 64, true);
 		for (int y = 0; y < 32; y++) {
 			for (int x = 0; x < 64; x++) {
-				img.setPixel(x, y, old.getPixel(x, y));
+				Img.set(img, x, y, Img.get(old, x, y));
 			}
 		}
 		for (int y = 16; y < 32; y++) {
 			for (int x = 0; x < 16; x++) {
-				img.setPixel(x + 16, y + 32, old.getPixel(x, y));
+				Img.set(img, x + 16, y + 32, Img.get(old, x, y));
 			}
 			for (int x = 40; x < 56; x++) {
-				img.setPixel(x - 8, y + 32, old.getPixel(x, y));
+				Img.set(img, x - 8, y + 32, Img.get(old, x, y));
 			}
 		}
 		old.close();

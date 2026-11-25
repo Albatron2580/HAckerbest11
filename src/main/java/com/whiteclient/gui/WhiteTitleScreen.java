@@ -174,7 +174,13 @@ public class WhiteTitleScreen extends Screen {
 		boolean silk = settings == null || settings.background.is("Silk");
 		if (settings != null && settings.background.is("Panorama")) {
 			renderPanorama(ctx, delta);
+			//#if MC >= 1.21.6
 			renderBlurredBackground(ctx);
+			//#elif MC >= 1.21.2
+			//$ renderBlurredBackground();
+			//#else
+			//$ renderBlurredBackground(delta);
+			//#endif
 		} else if (silk) {
 			MenuBackgroundRenderer.draw(ctx, width, height, 1f, BackgroundShader.SILK);
 		} else {

@@ -153,27 +153,27 @@ public final class CapeTextures {
 	private static void paint(NativeImage img, String name) {
 		for (int y = 0; y < 32; y++) {
 			for (int x = 0; x < 64; x++) {
-				img.setPixel(x, y, 0);
+				Img.set(img, x, y, 0);
 			}
 		}
 		for (int y = 0; y < 17; y++) {
 			for (int x = 0; x < 22; x++) {
 				float u = (x % 11) / 10f, v = Math.max(0, y - 1) / 15f;
-				img.setPixel(x, y, base(name, u, v, x, y));
+				Img.set(img, x, y, base(name, u, v, x, y));
 			}
 		}
 		for (int y = 0; y < 22; y++) {
 			for (int x = 22; x < 46; x++) {
-				img.setPixel(x, y, base(name, (x - 22) / 23f, y / 21f, x, y));
+				Img.set(img, x, y, base(name, (x - 22) / 23f, y / 21f, x, y));
 			}
 		}
 		Random r = new Random(name.hashCode());
 		if (name.equals("Galaxy")) {
 			for (int i = 0; i < 26; i++) {
 				int x = 1 + r.nextInt(10), y = 1 + r.nextInt(16);
-				img.setPixel(x, y, r.nextInt(4) == 0 ? 0xFFAEC8FF : 0xFFFFFFFF);
+				Img.set(img, x, y, r.nextInt(4) == 0 ? 0xFFAEC8FF : 0xFFFFFFFF);
 				int ex = 22 + r.nextInt(24), ey = r.nextInt(22);
-				img.setPixel(ex, ey, 0xFFFFFFFF);
+				Img.set(img, ex, ey, 0xFFFFFFFF);
 			}
 		}
 		int fg = switch (name) {
@@ -182,12 +182,12 @@ public final class CapeTextures {
 		};
 		if (name.equals("Black")) {
 			for (int x = 1; x <= 10; x++) {
-				img.setPixel(x, 1, 0xFFFFFFFF);
-				img.setPixel(x, 16, 0xFFFFFFFF);
+				Img.set(img, x, 1, 0xFFFFFFFF);
+				Img.set(img, x, 16, 0xFFFFFFFF);
 			}
 			for (int y = 1; y <= 16; y++) {
-				img.setPixel(1, y, 0xFFFFFFFF);
-				img.setPixel(10, y, 0xFFFFFFFF);
+				Img.set(img, 1, y, 0xFFFFFFFF);
+				Img.set(img, 10, y, 0xFFFFFFFF);
 			}
 		}
 		planet(img, 5.5f, 7.5f, fg);
@@ -198,13 +198,13 @@ public final class CapeTextures {
 			for (int x = 2; x <= 9; x++) {
 				float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
 				if (dx * dx + dy * dy <= 4.2f) {
-					img.setPixel(x, y, color);
+					Img.set(img, x, y, color);
 				}
 			}
 		}
 		int[][] ring = {{2, 9}, {3, 9}, {4, 9}, {7, 6}, {8, 6}, {9, 5}, {2, 10}, {9, 6}};
 		for (int[] p : ring) {
-			img.setPixel(p[0], p[1], color);
+			Img.set(img, p[0], p[1], color);
 		}
 	}
 }

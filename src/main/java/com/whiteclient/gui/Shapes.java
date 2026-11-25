@@ -1,5 +1,6 @@
 package com.whiteclient.gui;
 
+import com.whiteclient.render.Img;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
@@ -15,7 +16,6 @@ import java.util.OptionalDouble;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 
@@ -54,7 +54,9 @@ public final class Shapes {
 			this.linear = linear;
 			//#if MC < 1.21.11
 			//$ setFilter(linear, false);
+			//#if MC >= 1.21.2
 			//$ setClamp(true);
+			//#endif
 			//#endif
 		}
 
@@ -82,7 +84,7 @@ public final class Shapes {
 		NativeImage img = tex.getPixels();
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				img.setPixel(x, y, argb[y * w + x]);
+				Img.set(img, x, y, argb[y * w + x]);
 			}
 		}
 		tex.upload();
@@ -179,7 +181,7 @@ public final class Shapes {
 		m.pushMatrix();
 		m.translate(cx - half, cy - half);
 		m.scale(half * 2 / n, half * 2 / n);
-		ctx.blit(RenderPipelines.GUI_TEXTURED, id, 0, 0, 0f, 0f, n, n, n, n, n, n, argb);
+		Gfx.blit(ctx, id, 0, 0, 0f, 0f, n, n, n, n, n, n, argb);
 		m.popMatrix();
 	}
 
@@ -220,10 +222,10 @@ public final class Shapes {
 
 	private static void corners(GuiGraphics ctx, Identifier c, int r, int x0, int y0, int x1, int y1, int argb) {
 		int n = r * 2;
-		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x0, y0, 0f, 0f, r, r, r, r, n, n, argb);
-		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x1 - r, y0, r, 0f, r, r, r, r, n, n, argb);
-		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x0, y1 - r, 0f, r, r, r, r, r, n, n, argb);
-		ctx.blit(RenderPipelines.GUI_TEXTURED, c, x1 - r, y1 - r, r, r, r, r, r, r, n, n, argb);
+		Gfx.blit(ctx, c, x0, y0, 0f, 0f, r, r, r, r, n, n, argb);
+		Gfx.blit(ctx, c, x1 - r, y0, r, 0f, r, r, r, r, n, n, argb);
+		Gfx.blit(ctx, c, x0, y1 - r, 0f, r, r, r, r, r, n, n, argb);
+		Gfx.blit(ctx, c, x1 - r, y1 - r, r, r, r, r, r, r, n, n, argb);
 	}
 
 	public static boolean roundRectOutline(GuiGraphics ctx, float x, float y, float w, float h, float radius, float thickness, int argb) {

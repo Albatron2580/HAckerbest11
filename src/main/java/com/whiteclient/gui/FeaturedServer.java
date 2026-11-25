@@ -16,7 +16,6 @@ import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -177,7 +176,7 @@ public final class FeaturedServer {
 		updateIcon(mc);
 		Render2D.roundRect(ctx, ix - 1, iy - 1, 34, 34, 6, 0xFF16161D);
 		if (iconReady) {
-			ctx.blit(RenderPipelines.GUI_TEXTURED, ICON, ix, iy, 0f, 0f, 32, 32, 64, 64, 64, 64, 0xFFFFFFFF);
+			Gfx.blit(ctx, ICON, ix, iy, 0f, 0f, 32, 32, 64, 64, 64, 64, 0xFFFFFFFF);
 		} else {
 			Render2D.planetLogo(ctx, ix + 16, iy + 16, 8, time, 255);
 		}
