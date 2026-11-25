@@ -53,5 +53,30 @@
 		"if": "MC < 1.21.11",
 		"from": "net.minecraft.world.entity.monster.zombie.Husk",
 		"to": "net.minecraft.world.entity.monster.Husk"
+	},
+	{
+		"if": "MC < 1.21.9",
+		"from": "net.minecraft.world.entity.player.PlayerSkin",
+		"to": "net.minecraft.client.resources.PlayerSkin"
+	},
+	{
+		"if": "MC < 1.21.9",
+		"from": "net.fabricmc.fabric.api.client.rendering.v1.world.",
+		"to": "net.fabricmc.fabric.api.client.rendering.v1."
+	},
+	{
+		"if": "MC < 1.21.9",
+		"regex": "createLookup\\(([^,()]+(?:\\(\\))?), false\\)",
+		"to": "lookupInsecure(\\1)"
+	},
+	{
+		"if": "MC < 1.21.9",
+		"from": "import net.minecraft.client.renderer.SubmitNodeCollector;",
+		"to": "import net.minecraft.client.renderer.MultiBufferSource;"
+	},
+	{
+		"if": "MC < 1.21.9",
+		"regex": "\\bSubmitNodeCollector queue\\b",
+		"to": "MultiBufferSource queue"
 	}
 ]

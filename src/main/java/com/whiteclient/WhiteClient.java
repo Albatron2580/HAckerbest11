@@ -66,7 +66,11 @@ public final class WhiteClient implements ClientModInitializer {
 	private KeyMapping zoomKey;
 	private KeyMapping carKey;
 	private KeyMapping browserKey;
+	//#if MC >= 1.21.9
 	public static final KeyMapping.Category KEY_CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
+	//#else
+	//$ public static final String KEY_CATEGORY = "key.category.whiteclient.main";
+	//#endif
 	private boolean openMenuNextTick;
 	private final long startNanos = System.nanoTime();
 	private long lastFrameNanos = System.nanoTime();
@@ -134,7 +138,9 @@ public final class WhiteClient implements ClientModInitializer {
 		modules.register(new CustomCrosshair());
 		modules.register(new LowHealth());
 		modules.register(new Notifications());
+		//#if MC >= 1.21.9
 		modules.register(new Browser());
+		//#endif
 		modules.register(new Cinematic());
 		modules.register(new com.whiteclient.modules.DiscordStatus());
 		modules.register(new com.whiteclient.modules.AutoUpdate());
@@ -190,10 +196,12 @@ public final class WhiteClient implements ClientModInitializer {
 				"key.whiteclient.car",
 				GLFW.GLFW_KEY_N,
 				KEY_CATEGORY));
+		//#if MC >= 1.21.9
 		browserKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.whiteclient.browser",
 				GLFW.GLFW_KEY_B,
 				KEY_CATEGORY));
+		//#endif
 		CombatTracker.init();
 		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (ctx, tickCounter) -> {
 			CustomCrosshair ch = modules.get(CustomCrosshair.class);
@@ -221,7 +229,11 @@ public final class WhiteClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "hud"), this::renderHud);
+		//#if MC >= 1.21.9
 		WorldRenderEvents.END_MAIN.register(this::renderWorld);
+		//#else
+		//$ WorldRenderEvents.LAST.register(this::renderWorld);
+		//#endif
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> config.save());
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			com.whiteclient.modules.AutoUpdate au = modules.get(com.whiteclient.modules.AutoUpdate.class);
@@ -256,12 +268,14 @@ public final class WhiteClient implements ClientModInitializer {
 		} catch (Throwable t) {
 			LOGGER.debug("[WHITECLIENT] combat tick", t);
 		}
+		//#if MC >= 1.21.9
 		while (browserKey != null && browserKey.consumeClick()) {
 			Browser br = modules.get(Browser.class);
 			if (br != null && br.isEnabled() && client.screen == null) {
 				br.open();
 			}
 		}
+		//#endif
 		while (menuKey.consumeClick()) {
 			if (client.screen == null) {
 				client.setScreen(new ClickGuiScreen(null));
@@ -316,16 +330,29 @@ public final class WhiteClient implements ClientModInitializer {
 		float frameDelta = Math.min(0.1f, Math.max(0f, (now - lastFrameNanos) / 1.0e9f));
 		lastFrameNanos = now;
 
+		//#if MC >= 1.21.9
 		MultiBufferSource consumers = context.consumers();
+		//#else
+		//$ MultiBufferSource consumers = context.consumers() != null ? context.consumers() : client.renderBuffers().bufferSource();
+		//#endif
 		if (consumers == null) {
 			return;
 		}
+		//#if MC >= 1.21.9
 		Vec3 cam = context.worldState().cameraRenderState.pos;
 		Quaternionf rotation = context.worldState().cameraRenderState.orientation;
+		//#else
+		//$ Vec3 cam = context.camera().getPosition();
+		//$ Quaternionf rotation = context.camera().rotation();
+		//#endif
 		if (cam == null) {
 			return;
 		}
+		//#if MC >= 1.21.9
 		PoseStack matrices = context.matrices() != null ? context.matrices() : new PoseStack();
+		//#else
+		//$ PoseStack matrices = context.matrixStack() != null ? context.matrixStack() : new PoseStack();
+		//#endif
 		float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 
 		WorldContext ctx = new WorldContext(client, matrices, consumers, cam,

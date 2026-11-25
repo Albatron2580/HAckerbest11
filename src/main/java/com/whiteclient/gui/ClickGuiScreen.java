@@ -16,9 +16,11 @@ import com.whiteclient.setting.TextSetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.screens.Screen;
+//#if MC >= 1.21.9
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+//#endif
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -469,7 +471,11 @@ public class ClickGuiScreen extends Screen {
 			});
 		}
 
+		//#if MC >= 1.21.9
 		String[] labels = {"Wardrobe", "Browser", "Search", "Theme", "Support"};
+		//#else
+		//$ String[] labels = {"Wardrobe", "Search", "Theme", "Support"};
+		//#endif
 		float sw = 48, sh = 32, sg = 8;
 		float sx0 = cx - (labels.length * sw + (labels.length - 1) * sg) / 2f;
 		float sy = y0 + cs + 22;
@@ -506,31 +512,33 @@ public class ClickGuiScreen extends Screen {
 			Render2D.roundRectOutline(ctx, x, y - h, sw, sh, r * 0.75f, 1, Colors.argb(th.accent.rgb(), (0.12f + 0.45f * h) * si));
 			int ic = Colors.argb(Colors.mix(th.subtext.rgb(), th.text.rgb(), 0.5f + 0.5f * h), si);
 			float icx = x + sw / 2f, icy = y - h + 11;
-			switch (i) {
-				case 0 -> Icons.shirt(ctx, icx, icy, 9, ic);
-				case 1 -> Icons.globe(ctx, icx, icy, 9, ic);
-				case 2 -> Icons.search(ctx, icx, icy, 9, ic);
-				case 3 -> Icons.palette(ctx, icx, icy, 9, ic, Colors.argb(th.card.rgb(), si));
+			switch (labels[i]) {
+				case "Wardrobe" -> Icons.shirt(ctx, icx, icy, 9, ic);
+				case "Browser" -> Icons.globe(ctx, icx, icy, 9, ic);
+				case "Search" -> Icons.search(ctx, icx, icy, 9, ic);
+				case "Theme" -> Icons.palette(ctx, icx, icy, 9, ic, Colors.argb(th.card.rgb(), si));
 				default -> Icons.heart(ctx, icx, icy, 9, ic);
 			}
 			UiFont.drawScaled(ctx, font, labels[i], icx - UiFont.width(font, labels[i]) * 0.36f, y - h + 20, 0.72f, Colors.argb(th.text.rgb(), si));
 			ctx.pose().popMatrix();
-			final int idx = i;
+			final String label = labels[i];
 			hit(x, y, sw, sh, null, null, (a, b, btn) -> {
-				switch (idx) {
-					case 0 -> minecraft.setScreen(new WardrobeScreen(this));
-					case 1 -> {
+				switch (label) {
+					case "Wardrobe" -> minecraft.setScreen(new WardrobeScreen(this));
+					//#if MC >= 1.21.9
+					case "Browser" -> {
 						com.whiteclient.modules.Browser br = com.whiteclient.modules.Browser.get();
 						if (br != null) {
 							com.whiteclient.browser.WebView.startEngine();
 							minecraft.setScreen(new BrowserScreen(this, br));
 						}
 					}
-					case 2 -> {
+					//#endif
+					case "Search" -> {
 						searching = true;
 						search = "";
 					}
-					case 3 -> {
+					case "Theme" -> {
 						themePage = true;
 						selected = null;
 						go(View.WINDOW);
@@ -1031,10 +1039,15 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		double[] p = local(click.x(), click.y());
-		double mx = p[0], my = p[1];
 		int button = click.button();
+	//#else
+	//$ public boolean mouseClicked(double rawX, double rawY, int button) {
+	//$ 	double[] p = local(rawX, rawY);
+	//#endif
+		double mx = p[0], my = p[1];
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit h = hits.get(i);
 			if (mx < h.x1() || mx >= h.x2() || my < h.y1() || my >= h.y2()) {
@@ -1054,33 +1067,50 @@ public class ClickGuiScreen extends Screen {
 			go(View.HOME);
 			return true;
 		}
+		//#if MC >= 1.21.9
 		return super.mouseClicked(click, doubled);
+		//#else
+		//$ return super.mouseClicked(rawX, rawY, button);
+		//#endif
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean mouseReleased(MouseButtonEvent click) {
+	//#else
+	//$ public boolean mouseReleased(double rawX, double rawY, int button) {
+	//#endif
 		boolean was = slider != null || picking != null || dragMode != 0;
 		slider = null;
 		picking = null;
 		dragMode = 0;
+		//#if MC >= 1.21.9
 		return was || super.mouseReleased(click);
+		//#else
+		//$ return was || super.mouseReleased(rawX, rawY, button);
+		//#endif
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean mouseDragged(MouseButtonEvent click, double offsetX, double offsetY) {
+		double ex = click.x(), ey = click.y();
+	//#else
+	//$ public boolean mouseDragged(double ex, double ey, int button, double offsetX, double offsetY) {
+	//#endif
 		if (dragMode == 1) {
-			winX = (float) (click.x() - dragDx);
-			winY = (float) (click.y() - dragDy);
+			winX = (float) (ex - dragDx);
+			winY = (float) (ey - dragDy);
 			clampWindow();
 			return true;
 		}
 		if (dragMode == 2) {
-			winW = (float) (click.x() + dragDx - winX);
-			winH = (float) (click.y() + dragDy - winY);
+			winW = (float) (ex + dragDx - winX);
+			winH = (float) (ey + dragDy - winY);
 			clampWindow();
 			return true;
 		}
-		double[] p = local(click.x(), click.y());
+		double[] p = local(ex, ey);
 		if (slider != null) {
 			slider.setFraction((p[0] - sliderX) / sliderW);
 			return true;
@@ -1089,7 +1119,11 @@ public class ClickGuiScreen extends Screen {
 			applyPick(p[0]);
 			return true;
 		}
+		//#if MC >= 1.21.9
 		return super.mouseDragged(click, offsetX, offsetY);
+		//#else
+		//$ return super.mouseDragged(ex, ey, button, offsetX, offsetY);
+		//#endif
 	}
 
 	@Override
@@ -1106,8 +1140,14 @@ public class ClickGuiScreen extends Screen {
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean keyPressed(KeyEvent input) {
 		int key = input.input();
+		boolean paste = input.isPaste();
+	//#else
+	//$ public boolean keyPressed(int key, int scanCode, int modifiers) {
+	//$ 	boolean paste = Screen.isPaste(key);
+	//#endif
 		if (editing != null) {
 			switch (key) {
 				case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> commitEdit();
@@ -1118,7 +1158,7 @@ public class ClickGuiScreen extends Screen {
 					}
 				}
 				default -> {
-					if (input.isPaste() && minecraft != null) {
+					if (paste && minecraft != null) {
 						String clip = minecraft.keyboardHandler.getClipboard();
 						if (clip != null) {
 							String combined = editBuffer + clip.replace('\n', ' ');
@@ -1149,12 +1189,21 @@ public class ClickGuiScreen extends Screen {
 			}
 			return true;
 		}
+		//#if MC >= 1.21.9
 		return super.keyPressed(input);
+		//#else
+		//$ return super.keyPressed(key, scanCode, modifiers);
+		//#endif
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean charTyped(CharacterEvent input) {
 		String s = input.codepointAsString();
+	//#else
+	//$ public boolean charTyped(char chr, int modifiers) {
+	//$ 	String s = String.valueOf(chr);
+	//#endif
 		if (editing != null) {
 			if (s != null && !s.isEmpty() && editBuffer.length() < editing.getMaxLength()) {
 				editBuffer += s;
@@ -1172,6 +1221,10 @@ public class ClickGuiScreen extends Screen {
 			search = s;
 			return true;
 		}
+		//#if MC >= 1.21.9
 		return super.charTyped(input);
+		//#else
+		//$ return super.charTyped(chr, modifiers);
+		//#endif
 	}
 }

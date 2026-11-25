@@ -583,6 +583,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new ClickGuiScreen(null).openSearch("pet"));
 			context.waitTicks(15);
 			context.takeScreenshot("menu_search");
+			//#if MC >= 1.21.9
 			context.setScreen(() -> new com.whiteclient.gui.BrowserScreen(null, WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class)));
 			context.waitTicks(10);
 			context.takeScreenshot("browser_window");
@@ -601,6 +602,7 @@ public class WhiteClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("browser_pinned");
 				context.runOnClient(client -> WhiteClient.get().modules().get(com.whiteclient.modules.Browser.class).closePage());
 			}
+			//#endif
 			context.setScreen(() -> null);
 			context.runOnClient(client -> TargetESP.forcedTarget = null);
 			sp.getServer().runCommand("kill @e[type=husk]");

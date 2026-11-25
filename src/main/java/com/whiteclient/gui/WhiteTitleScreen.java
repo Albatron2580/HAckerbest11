@@ -16,7 +16,9 @@ import net.minecraft.client.gui.screens.multiplayer.SafetyScreen;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
+//#if MC >= 1.21.9
 import net.minecraft.client.input.MouseButtonEvent;
+//#endif
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -601,16 +603,26 @@ public class WhiteTitleScreen extends Screen {
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-		if (click.button() == 0) {
+		double mx = click.x(), my = click.y();
+		int button = click.button();
+	//#else
+	//$ public boolean mouseClicked(double mx, double my, int button) {
+	//#endif
+		if (button == 0) {
 			for (int i = hits.size() - 1; i >= 0; i--) {
 				Hit h = hits.get(i);
-				if (click.x() >= h.x1() && click.x() < h.x2() && click.y() >= h.y1() && click.y() < h.y2()) {
+				if (mx >= h.x1() && mx < h.x2() && my >= h.y1() && my < h.y2()) {
 					h.action().run();
 					return true;
 				}
 			}
 		}
+		//#if MC >= 1.21.9
 		return super.mouseClicked(click, doubled);
+		//#else
+		//$ return super.mouseClicked(mx, my, button);
+		//#endif
 	}
 }

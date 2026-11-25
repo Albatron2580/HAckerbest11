@@ -9,9 +9,13 @@ import com.whiteclient.setting.TextSetting;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+//#if MC >= 1.21.9
 import net.minecraft.core.ClientAsset;
+//#endif
 import net.minecraft.resources.Identifier;
+//#if MC >= 1.21.9
 import net.minecraft.world.entity.player.PlayerModelType;
+//#endif
 import net.minecraft.world.entity.player.PlayerSkin;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -170,11 +174,17 @@ public class Wardrobe extends Module {
 		}
 		try {
 			boolean slim = w != null && w.slim.isOn();
+			//#if MC >= 1.21.9
 			return original.with(PlayerSkin.Patch.create(
 					body != null ? Optional.of(new ClientAsset.ResourceTexture(body)) : Optional.empty(),
 					cape != null ? Optional.of(new ClientAsset.ResourceTexture(cape)) : Optional.empty(),
 					Optional.empty(),
 					body != null ? Optional.of(PlayerModelType.byLegacyServicesName(slim ? "slim" : "default")) : Optional.empty()));
+			//#else
+			//$ return new PlayerSkin(body != null ? body : original.texture(), body != null ? null : original.textureUrl(),
+			//$ 		cape != null ? cape : original.capeTexture(), original.elytraTexture(),
+			//$ 		body != null ? (slim ? PlayerSkin.Model.SLIM : PlayerSkin.Model.WIDE) : original.model(), original.secure());
+			//#endif
 		} catch (Throwable t) {
 			return original;
 		}

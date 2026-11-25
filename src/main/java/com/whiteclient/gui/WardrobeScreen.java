@@ -16,8 +16,10 @@ import com.whiteclient.setting.Setting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.screens.Screen;
+//#if MC >= 1.21.9
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+//#endif
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -477,8 +479,12 @@ public class WardrobeScreen extends Screen {
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		double mx = click.x(), my = click.y();
+	//#else
+	//$ public boolean mouseClicked(double mx, double my, int button) {
+	//#endif
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit h = hits.get(i);
 			if (mx >= h.x1() && mx < h.x2() && my >= h.y1() && my < h.y2()) {
@@ -486,7 +492,11 @@ public class WardrobeScreen extends Screen {
 				return true;
 			}
 		}
+		//#if MC >= 1.21.9
 		return super.mouseClicked(click, doubled);
+		//#else
+		//$ return super.mouseClicked(mx, my, button);
+		//#endif
 	}
 
 	@Override
@@ -499,11 +509,20 @@ public class WardrobeScreen extends Screen {
 	}
 
 	@Override
+	//#if MC >= 1.21.9
 	public boolean keyPressed(KeyEvent input) {
-		if (input.input() == GLFW.GLFW_KEY_ESCAPE) {
+		int key = input.input();
+	//#else
+	//$ public boolean keyPressed(int key, int scanCode, int modifiers) {
+	//#endif
+		if (key == GLFW.GLFW_KEY_ESCAPE) {
 			onClose();
 			return true;
 		}
+		//#if MC >= 1.21.9
 		return super.keyPressed(input);
+		//#else
+		//$ return super.keyPressed(key, scanCode, modifiers);
+		//#endif
 	}
 }

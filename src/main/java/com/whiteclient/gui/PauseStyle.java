@@ -1,7 +1,9 @@
 package com.whiteclient.gui;
 
 import com.whiteclient.WhiteClient;
+//#if MC >= 1.21.9
 import com.whiteclient.modules.Browser;
+//#endif
 import com.whiteclient.modules.MainMenu;
 import com.whiteclient.modules.MenuBackground;
 import com.whiteclient.modules.Wardrobe;
@@ -195,10 +197,12 @@ public final class PauseStyle {
 
 		List<Object[]> icons = new ArrayList<>();
 		icons.add(new Object[]{"Wardrobe", (IconPainter) Icons::shirt, (Runnable) () -> client.setScreen(new WardrobeScreen(screen))});
+		//#if MC >= 1.21.9
 		Browser browser = WhiteClient.get().modules().get(Browser.class);
 		if (browser != null) {
 			icons.add(new Object[]{"Browser", (IconPainter) Icons::globe, (Runnable) () -> client.setScreen(new BrowserScreen(screen, browser))});
 		}
+		//#endif
 		int is = 20, ig = 5;
 		int ix = width - 10 - icons.size() * is - (icons.size() - 1) * ig;
 		for (Object[] d : icons) {

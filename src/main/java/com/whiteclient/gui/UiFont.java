@@ -4,7 +4,9 @@ import com.whiteclient.WhiteClient;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+//#if MC >= 1.21.9
 import net.minecraft.network.chat.FontDescription;
+//#endif
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix3x2fStack;
@@ -12,8 +14,13 @@ import org.joml.Matrix3x2fStack;
 public final class UiFont {
 	public static final Identifier UI = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "ui");
 	public static final Identifier TITLE = Identifier.fromNamespaceAndPath(WhiteClient.MOD_ID, "title");
+	//#if MC >= 1.21.9
 	private static final Style UI_STYLE = Style.EMPTY.withFont(new FontDescription.Resource(UI));
 	private static final Style TITLE_STYLE = Style.EMPTY.withFont(new FontDescription.Resource(TITLE));
+	//#else
+	//$ private static final Style UI_STYLE = Style.EMPTY.withFont(UI);
+	//$ private static final Style TITLE_STYLE = Style.EMPTY.withFont(TITLE);
+	//#endif
 
 	private UiFont() {
 	}

@@ -1,3 +1,4 @@
+//#file MC >= 1.21.9
 package com.whiteclient.gui;
 
 import com.whiteclient.browser.WebView;
