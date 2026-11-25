@@ -116,16 +116,22 @@ public final class FeaturedServer {
 		}
 		screen = s;
 
-		HeaderAndFooterLayout layout = acc.whiteclient$layout();
 		int header = 30 + CARD_H + 10;
+		//#if MC >= 1.21.9
+		HeaderAndFooterLayout layout = acc.whiteclient$layout();
 		layout.setHeaderHeight(header);
+		//#endif
 		for (AbstractWidget wdg : Screens.getButtons(s)) {
 			if (wdg instanceof AbstractStringWidget t && wdg.getY() < 40) {
 				t.visible = false;
 			}
 		}
+		//#if MC >= 1.21.9
 		layout.arrangeElements();
 		acc.whiteclient$serverListWidget().updateSize(s.width, layout);
+		//#else
+		//$ acc.whiteclient$serverListWidget().updateSizeAndPosition(s.width, s.height - 64 - header, header);
+		//#endif
 
 		w = Math.min(440, s.width - 20);
 		h = CARD_H;

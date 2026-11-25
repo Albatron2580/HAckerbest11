@@ -10,8 +10,10 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(JoinMultiplayerScreen.class)
 public interface MultiplayerScreenAccessor {
+	//#if MC >= 1.21.9
 	@Accessor("layout")
 	HeaderAndFooterLayout whiteclient$layout();
+	//#endif
 
 	@Accessor("serverSelectionList")
 	ServerSelectionList whiteclient$serverListWidget();

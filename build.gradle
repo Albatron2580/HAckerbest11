@@ -20,6 +20,13 @@ base {
 	archivesName = project.archives_base_name
 }
 
+def centralMirror = repositories.maven {
+	name = "Maven Central mirror"
+	url = "https://maven-central.storage-download.googleapis.com/maven2/"
+}
+repositories.remove(centralMirror)
+repositories.addFirst(centralMirror)
+
 repositories {
 	maven {
 		url = "https://maven.dimaskama.net/releases"
