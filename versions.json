@@ -8,5 +8,5 @@
 	"1.21.11": {"range": ">=1.21.11 <1.21.12", "fabric_api": "0.141.6+1.21.11", "java": 21, "mcef": "0.3.3+mc1.21.11.jcef146.0.10", "gametest": true, "ready": true},
 	"26.1.2": {"range": ">=26.1 <26.2", "fabric_api": "0.155.3+26.1.2", "java": 25, "unobf": true, "mcef": "0.3.3+mc26.1.jcef146.0.10", "gametest": true, "ready": true},
 	"26.2": {"range": ">=26.2 <26.3", "fabric_api": "0.161.0+26.2", "java": 25, "unobf": true, "mcef": "0.3.3+mc26.2.jcef146.0.10", "gametest": true, "ready": true},
-	"26.3": {"range": ">=26.3 <26.4", "fabric_api": "0.167.0+26.3", "java": 25, "unobf": true, "mcef": "0.3.3+mc26.3.jcef146.0.10", "gametest": true}
+	"26.3": {"range": ">=26.3 <26.4", "fabric_api": "0.167.0+26.3", "java": 25, "unobf": true, "mcef": "0.3.3+mc26.3.jcef146.0.10", "gametest": true, "ready": true}
 }

@@ -18,6 +18,7 @@
 		"DrawContextInvoker",
 		"PlayerSkinWidgetAccessor",
 		"PressableWidgetMixin",
+		"SpriteIconButtonMixin",
 		"SliderWidgetMixin",
 		"TooltipBackgroundMixin",
 		"CameraFovMixin",

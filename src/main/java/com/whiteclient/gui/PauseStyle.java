@@ -15,6 +15,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.AbstractStringWidget;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -185,6 +186,9 @@ public final class PauseStyle {
 			w.setX(Math.round(colX - hw / 2f));
 			w.setY(Math.round(y + (step - hh) / 2f));
 			ITEMS.put(w, new Item(i, scale, accent));
+			if (w instanceof SpriteIconButton) {
+				w.setTooltip(null);
+			}
 			maxW = Math.max(maxW, hw);
 			y += step;
 			if (gapAfter[i]) {
