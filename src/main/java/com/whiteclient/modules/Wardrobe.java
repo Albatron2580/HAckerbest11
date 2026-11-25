@@ -181,8 +181,8 @@ public class Wardrobe extends Module {
 					Optional.empty(),
 					body != null ? Optional.of(PlayerModelType.byLegacyServicesName(slim ? "slim" : "default")) : Optional.empty()));
 			//#else
-			//$ return new PlayerSkin(body != null ? body : original.texture(), body != null ? null : original.textureUrl(),
-			//$ 		cape != null ? cape : original.capeTexture(), original.elytraTexture(),
+			//$ return new PlayerSkin(body != null ? texturePath(body) : original.texture(), body != null ? null : original.textureUrl(),
+			//$ 		cape != null ? texturePath(cape) : original.capeTexture(), original.elytraTexture(),
 			//$ 		body != null ? (slim ? PlayerSkin.Model.SLIM : PlayerSkin.Model.WIDE) : original.model(), original.secure());
 			//#endif
 		} catch (Throwable t) {

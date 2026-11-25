@@ -117,6 +117,9 @@ public final class FeaturedServer {
 		screen = s;
 
 		int header = 30 + CARD_H + 10;
+		//#if MC < 1.21.9
+		//$ ((com.whiteclient.mixin.ScreenTitleAccessor) s).whiteclient$setTitle(Component.empty());
+		//#endif
 		//#if MC >= 1.21.9
 		HeaderAndFooterLayout layout = acc.whiteclient$layout();
 		layout.setHeaderHeight(header);

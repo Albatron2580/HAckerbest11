@@ -18,7 +18,8 @@
 		"PressableWidgetMixin",
 		"SliderWidgetMixin",
 		"TooltipBackgroundMixin",
-		"CameraFovMixin"
+		"CameraFovMixin",
+		"ScreenTitleAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 0
